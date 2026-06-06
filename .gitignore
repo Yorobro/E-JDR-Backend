@@ -1,0 +1,17 @@
+# Dépendances
+node_modules/
+
+# Build
+dist/
+
+# Variables d'environnement (ne jamais committer les secrets)
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Divers
+.DS_Store
+coverage/
