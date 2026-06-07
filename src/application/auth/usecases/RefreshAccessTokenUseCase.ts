@@ -1,5 +1,3 @@
-import { User } from "@domain/auth/entities/User";
-
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { InvalidRefreshTokenError } from "@application/auth/errors/InvalidRefreshTokenError";
@@ -13,7 +11,6 @@ import { IRefreshTokenRepository } from "@application/auth/abstractions/reposito
 import { ITokenProvider } from "@application/auth/abstractions/services/ITokenProvider";
 import { ITokenHasher } from "@application/auth/abstractions/services/ITokenHasher";
 import { IAuthTokenService } from "@application/auth/abstractions/services/IAuthTokenService";
-import { Email } from "@domain/auth/value-objects/Email";
 
 /**
  * Use case de rafraîchissement des jetons (avec rotation des refresh tokens).
@@ -59,15 +56,33 @@ export class RefreshAccessTokenUseCase implements IRefreshAccessTokenUseCase {
       return Result.failure(new InvalidRefreshTokenError());
     }
 
-    const user = await this.loadUser(payload.email);
+    // L'utilisateur est rechargé par son identifiant (claim `userId`), clé naturelle de
+    // l'identité métier ; on s'assure qu'il existe toujours avant de réémettre des jetons.
+    const user = await this.userRepository.findById(payload.userId);
     if (user === null) {
       return Result.failure(new InvalidRefreshTokenError());
     }
 
-    await this.rotate(command.refreshToken, user);
+    await this.rotate(command.refreshToken);
+    await this.purgeExpiredTokens();
 
-    const tokens = await this.authTokenService.issueTokensForUser(user);
+    const tokens = await this.authTokenService.issueTokens(payload.userId, payload.email);
     return Result.success({ tokens });
+  }
+
+  /**
+   * Purge d'entretien, opportuniste : supprime les refresh tokens déjà expirés.
+   *
+   * Greffée sur le flux de rafraîchissement (événement peu fréquent) pour éviter une
+   * croissance illimitée de la table sans introduire de planificateur. Best-effort : une
+   * éventuelle erreur de purge ne doit pas faire échouer le rafraîchissement lui-même.
+   */
+  private async purgeExpiredTokens(): Promise<void> {
+    try {
+      await this.refreshTokenRepository.deleteExpired(new Date());
+    } catch {
+      // Purge non critique : on ignore silencieusement un échec de maintenance.
+    }
   }
 
   /**
@@ -83,24 +98,13 @@ export class RefreshAccessTokenUseCase implements IRefreshAccessTokenUseCase {
   }
 
   /**
-   * Recharge l'utilisateur associé au token à partir de son e-mail.
-   *
-   * @param rawEmail - L'e-mail issu de la charge utile du token.
-   * @returns L'utilisateur correspondant, ou `null` s'il n'existe plus.
-   */
-  private async loadUser(rawEmail: string): Promise<User | null> {
-    return this.userRepository.findByEmail(Email.create(rawEmail));
-  }
-
-  /**
    * Applique la rotation : révoque l'ancien refresh token. La nouvelle paire est ensuite
    * émise par le service appelant. Révoquer avant d'émettre garantit qu'un token ne peut
    * pas être réutilisé.
    *
    * @param oldRefreshToken - Le refresh token courant à révoquer.
-   * @param user - L'utilisateur concerné (réservé pour d'éventuelles règles de rotation).
    */
-  private async rotate(oldRefreshToken: string, _user: User): Promise<void> {
+  private async rotate(oldRefreshToken: string): Promise<void> {
     const oldTokenHash = this.tokenHasher.hash(oldRefreshToken);
     await this.refreshTokenRepository.deleteByTokenHash(oldTokenHash);
   }

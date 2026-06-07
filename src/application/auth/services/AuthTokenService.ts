@@ -1,4 +1,3 @@
-import { User } from "@domain/auth/entities/User";
 import {
   AuthTokens,
   IAuthTokenService,
@@ -35,16 +34,16 @@ export class AuthTokenService implements IAuthTokenService {
   /**
    * @inheritdoc
    *
-   * Signe la paire de jetons pour l'utilisateur, persiste l'empreinte du refresh token,
+   * Signe la paire de jetons pour l'identité fournie, persiste l'empreinte du refresh token,
    * puis retourne les jetons bruts (à transmettre au client via cookies).
    */
-  public async issueTokensForUser(user: User): Promise<AuthTokens> {
-    const payload = { userId: user.id, email: user.email.value };
+  public async issueTokens(userId: string, email: string): Promise<AuthTokens> {
+    const payload = { userId, email };
 
     const accessToken = this.tokenProvider.signAccessToken(payload);
     const refreshToken = this.tokenProvider.signRefreshToken(payload);
 
-    await this.persistRefreshToken(user.id, refreshToken.token, refreshToken.expiresAt);
+    await this.persistRefreshToken(userId, refreshToken.token, refreshToken.expiresAt);
 
     return {
       accessToken: accessToken.token,

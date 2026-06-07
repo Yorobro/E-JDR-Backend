@@ -29,6 +29,13 @@ export class PlainPassword {
    * @throws {WeakPasswordError} Si le mot de passe ne respecte pas la politique.
    */
   public static create(raw: string): PlainPassword {
+    // Garde défensive : une entrée absente ou non textuelle (corps de requête vide,
+    // type incorrect) est traitée comme un mot de passe invalide (→ 400) plutôt que
+    // de laisser l'accès à `.length` lever un `TypeError` (→ 500).
+    if (typeof raw !== "string") {
+      throw new WeakPasswordError("un mot de passe est requis.");
+    }
+
     if (raw.length < PlainPassword.MIN_LENGTH) {
       throw new WeakPasswordError(
         `il doit contenir au moins ${PlainPassword.MIN_LENGTH} caractères.`,

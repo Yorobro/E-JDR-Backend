@@ -14,13 +14,18 @@ describe("Email (value object)", () => {
     expect(a.equals(b)).toBe(true);
   });
 
-  it.each([
-    "",
-    "not-an-email",
-    "missing@domain",
-    "@no-local.com",
-    "spaces in@email.com",
-  ])("rejette une adresse invalide : %s", (invalid) => {
-    expect(() => Email.create(invalid)).toThrow(InvalidEmailError);
-  });
+  it.each(["", "not-an-email", "missing@domain", "@no-local.com", "spaces in@email.com"])(
+    "rejette une adresse invalide : %s",
+    (invalid) => {
+      expect(() => Email.create(invalid)).toThrow(InvalidEmailError);
+    },
+  );
+
+  it.each([undefined, null, 42, {}])(
+    "rejette une entrée non textuelle (%s) avec InvalidEmailError plutôt qu'un TypeError",
+    (invalid) => {
+      // Garde défensive : un corps de requête vide/malformé ne doit pas provoquer de 500.
+      expect(() => Email.create(invalid as unknown as string)).toThrow(InvalidEmailError);
+    },
+  );
 });

@@ -1,8 +1,10 @@
 import { User } from "@domain/auth/entities/User";
+import { Credential } from "@domain/auth/entities/Credential";
 import { Email } from "@domain/auth/value-objects/Email";
 import { HashedPassword } from "@domain/auth/value-objects/HashedPassword";
 
 import { IUserRepository } from "@application/auth/abstractions/repositories/IUserRepository";
+import { ICredentialRepository } from "@application/auth/abstractions/repositories/ICredentialRepository";
 import {
   IRefreshTokenRepository,
   StoredRefreshToken,
@@ -28,25 +30,43 @@ import {
  * comme les implémentations d'infrastructure.
  */
 
-/** Repository utilisateur en mémoire. */
+/** Repository utilisateur métier en mémoire (indexé par id). */
 export class FakeUserRepository implements IUserRepository {
   private readonly users = new Map<string, User>();
 
-  public async findByEmail(email: Email): Promise<User | null> {
-    return this.users.get(email.value) ?? null;
-  }
-
-  public async existsByEmail(email: Email): Promise<boolean> {
-    return this.users.has(email.value);
+  public async findById(id: string): Promise<User | null> {
+    return this.users.get(id) ?? null;
   }
 
   public async save(user: User): Promise<void> {
-    this.users.set(user.email.value, user);
+    this.users.set(user.id, user);
   }
 
   /** Aide de test : pré-remplit le repository avec un utilisateur. */
   public seed(user: User): void {
-    this.users.set(user.email.value, user);
+    this.users.set(user.id, user);
+  }
+}
+
+/** Repository d'identifiants d'authentification en mémoire (indexé par e-mail). */
+export class FakeCredentialRepository implements ICredentialRepository {
+  private readonly credentials = new Map<string, Credential>();
+
+  public async findByEmail(email: Email): Promise<Credential | null> {
+    return this.credentials.get(email.value) ?? null;
+  }
+
+  public async existsByEmail(email: Email): Promise<boolean> {
+    return this.credentials.has(email.value);
+  }
+
+  public async save(credential: Credential): Promise<void> {
+    this.credentials.set(credential.email.value, credential);
+  }
+
+  /** Aide de test : pré-remplit le repository avec un identifiant. */
+  public seed(credential: Credential): void {
+    this.credentials.set(credential.email.value, credential);
   }
 }
 
@@ -69,6 +89,14 @@ export class FakeRefreshTokenRepository implements IRefreshTokenRepository {
   public async deleteAllForUser(userId: string): Promise<void> {
     for (const [hash, token] of this.tokens.entries()) {
       if (token.userId === userId) {
+        this.tokens.delete(hash);
+      }
+    }
+  }
+
+  public async deleteExpired(now: Date): Promise<void> {
+    for (const [hash, token] of this.tokens.entries()) {
+      if (token.expiresAt.getTime() < now.getTime()) {
         this.tokens.delete(hash);
       }
     }
@@ -135,32 +163,50 @@ export class FakeTokenProvider implements ITokenProvider {
   }
 }
 
-/** Service de tokens factice : produit une paire fixe et trace les utilisateurs servis. */
+/** Service de tokens factice : produit une paire fixe et trace les identités servies. */
 export class FakeAuthTokenService implements IAuthTokenService {
   public readonly issuedFor: string[] = [];
 
-  public async issueTokensForUser(user: User): Promise<AuthTokens> {
-    this.issuedFor.push(user.id);
+  public async issueTokens(userId: string, _email: string): Promise<AuthTokens> {
+    this.issuedFor.push(userId);
     return {
-      accessToken: `access-for-${user.id}`,
+      accessToken: `access-for-${userId}`,
       accessTokenExpiresAt: new Date("2999-01-01"),
-      refreshToken: `refresh-for-${user.id}`,
+      refreshToken: `refresh-for-${userId}`,
       refreshTokenExpiresAt: new Date("2999-01-01"),
     };
   }
 }
 
 /**
- * Aide de test : construit un utilisateur avec un mot de passe déjà "haché" par le fake hasher.
+ * Aide de test : construit un utilisateur métier.
  *
- * @param email - L'e-mail de l'utilisateur.
- * @param plainPassword - Le mot de passe en clair (sera préfixé "hashed:").
  * @param id - L'identifiant (par défaut "user-1").
  * @returns Une entité `User` prête pour les tests.
  */
-export function buildTestUser(email: string, plainPassword: string, id = "user-1"): User {
-  return User.create({
+export function buildTestUser(id = "user-1"): User {
+  return User.create({ id, createdAt: new Date("2025-01-01T00:00:00Z") });
+}
+
+/**
+ * Aide de test : construit un identifiant d'authentification avec un mot de passe déjà
+ * "haché" par le fake hasher.
+ *
+ * @param email - L'e-mail du compte.
+ * @param plainPassword - Le mot de passe en clair (sera préfixé "hashed:").
+ * @param userId - L'identifiant de l'utilisateur rattaché (par défaut "user-1").
+ * @param id - L'identifiant de l'enregistrement (par défaut "cred-1").
+ * @returns Une entité `Credential` prête pour les tests.
+ */
+export function buildTestCredential(
+  email: string,
+  plainPassword: string,
+  userId = "user-1",
+  id = "cred-1",
+): Credential {
+  return Credential.create({
     id,
+    userId,
     email: Email.create(email),
     password: HashedPassword.fromHash(`hashed:${plainPassword}`),
     createdAt: new Date("2025-01-01T00:00:00Z"),

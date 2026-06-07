@@ -1,13 +1,31 @@
--- Migration V001 — Création des tables d'authentification.
--- Tables : users, refresh_tokens.
+-- Migration V001 — Création des tables d'authentification et d'identité.
+--
+-- Séparation des responsabilités au niveau des données :
+--   * `users`        : identité **métier** (sera enrichie par les champs JDR à venir).
+--   * `credentials`  : données d'**authentification** (e-mail + empreinte du mot de passe),
+--                      reliées 1–1 à un utilisateur.
+--   * `refresh_tokens` : sessions révocables, rattachées à l'utilisateur.
 
 CREATE TABLE IF NOT EXISTS users (
+    id         CHAR(36) NOT NULL,
+    created_at DATETIME NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS credentials (
     id            CHAR(36)     NOT NULL,
+    user_id       CHAR(36)     NOT NULL,
     email         VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     created_at    DATETIME     NOT NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY uq_users_email (email)
+    UNIQUE KEY uq_credentials_user_id (user_id),
+    UNIQUE KEY uq_credentials_email (email),
+    CONSTRAINT fk_credentials_user
+        FOREIGN KEY (user_id) REFERENCES users (id)
+        ON DELETE CASCADE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

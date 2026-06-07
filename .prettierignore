@@ -1,0 +1,7 @@
+dist
+node_modules
+coverage
+package-lock.json
+
+# Documentation : mise en forme manuelle (tableaux alignés) préservée.
+*.md

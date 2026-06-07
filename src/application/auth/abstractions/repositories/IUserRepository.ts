@@ -1,29 +1,20 @@
 import { User } from "@domain/auth/entities/User";
-import { Email } from "@domain/auth/value-objects/Email";
 
 /**
- * Port de persistance des utilisateurs (port « out »).
+ * Port de persistance des utilisateurs métier (port « out »).
  *
- * Définit le contrat que la couche application attend pour stocker et retrouver des `User`,
- * sans connaître la technologie sous-jacente (MySQL, etc.). L'implémentation vit dans
- * l'infrastructure et est injectée au use case.
+ * Ne gère que l'identité applicative (`User`) ; les données d'authentification (e-mail,
+ * mot de passe) relèvent d'`ICredentialRepository`. L'implémentation vit dans l'infrastructure
+ * et est injectée au use case.
  */
 export interface IUserRepository {
   /**
-   * Recherche un utilisateur par son adresse e-mail.
+   * Recherche un utilisateur par son identifiant.
    *
-   * @param email - L'e-mail (value object) recherché.
+   * @param id - L'identifiant de l'utilisateur recherché.
    * @returns Le `User` correspondant, ou `null` s'il n'existe pas.
    */
-  findByEmail(email: Email): Promise<User | null>;
-
-  /**
-   * Indique si un compte existe déjà pour une adresse e-mail donnée.
-   *
-   * @param email - L'e-mail (value object) à tester.
-   * @returns `true` si un utilisateur existe avec cet e-mail, `false` sinon.
-   */
-  existsByEmail(email: Email): Promise<boolean>;
+  findById(id: string): Promise<User | null>;
 
   /**
    * Persiste un nouvel utilisateur.

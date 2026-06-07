@@ -6,8 +6,10 @@ import { AppConfig, loadConfig } from "@config/env";
 // Infrastructure
 import { MysqlConnection } from "@infrastructure/persistence/mysql/MysqlConnection";
 import { UserDao } from "@infrastructure/persistence/mysql/auth/dao/UserDao";
+import { CredentialDao } from "@infrastructure/persistence/mysql/auth/dao/CredentialDao";
 import { RefreshTokenDao } from "@infrastructure/persistence/mysql/auth/dao/RefreshTokenDao";
 import { MysqlUserRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlUserRepository";
+import { MysqlCredentialRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlCredentialRepository";
 import { MysqlRefreshTokenRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlRefreshTokenRepository";
 import { BcryptPasswordHasher } from "@infrastructure/security/BcryptPasswordHasher";
 import { JwtTokenProvider } from "@infrastructure/security/JwtTokenProvider";
@@ -47,6 +49,7 @@ function buildAuthController(connection: MysqlConnection, config: AppConfig): Au
 
   // DAO (SQL pur) → repositories (assemblage + mapping)
   const userRepository = new MysqlUserRepository(new UserDao(pool));
+  const credentialRepository = new MysqlCredentialRepository(new CredentialDao(pool));
   const refreshTokenRepository = new MysqlRefreshTokenRepository(new RefreshTokenDao(pool));
 
   // Adapters de sécurité / identifiants
@@ -71,11 +74,12 @@ function buildAuthController(connection: MysqlConnection, config: AppConfig): Au
   // Use cases (orchestration pure)
   const registerUser = new RegisterUserUseCase(
     userRepository,
+    credentialRepository,
     passwordHasher,
     idGenerator,
     authTokenService,
   );
-  const loginUser = new LoginUserUseCase(userRepository, passwordHasher, authTokenService);
+  const loginUser = new LoginUserUseCase(credentialRepository, passwordHasher, authTokenService);
   const logoutUser = new LogoutUserUseCase(refreshTokenRepository, tokenHasher);
   const refreshAccessToken = new RefreshAccessTokenUseCase(
     userRepository,
@@ -91,10 +95,14 @@ function buildAuthController(connection: MysqlConnection, config: AppConfig): Au
 /**
  * Construit l'application Express : middlewares globaux, routes, gestion d'erreurs.
  *
+ * Exportée pour permettre des tests d'intégration HTTP (via supertest) qui montent la
+ * pile Express réelle — routage, parsing JSON, cookies, controller, gestion d'erreurs —
+ * en injectant un controller câblé sur des doublures, sans base de données.
+ *
  * @param authController - Le controller d'authentification câblé.
  * @returns L'application Express prête à écouter.
  */
-function buildHttpApp(authController: AuthController): Application {
+export function buildHttpApp(authController: AuthController): Application {
   const app = express();
 
   app.use(express.json());
@@ -135,8 +143,13 @@ async function bootstrap(): Promise<void> {
   });
 }
 
-void bootstrap().catch((error) => {
-  // eslint-disable-next-line no-console
-  console.error("Échec du démarrage de l'application :", error);
-  process.exit(1);
-});
+// Démarre le serveur uniquement lorsque ce fichier est exécuté directement
+// (et non lorsqu'il est importé, par ex. par les tests d'intégration qui réutilisent
+// `buildHttpApp` sans ouvrir de connexion MySQL).
+if (require.main === module) {
+  void bootstrap().catch((error) => {
+    // eslint-disable-next-line no-console
+    console.error("Échec du démarrage de l'application :", error);
+    process.exit(1);
+  });
+}

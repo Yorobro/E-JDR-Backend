@@ -84,4 +84,17 @@ export class RefreshTokenDao {
   public async deleteAllForUser(userId: string): Promise<void> {
     await this.pool.execute("DELETE FROM refresh_tokens WHERE user_id = ?", [userId]);
   }
+
+  /**
+   * Supprime toutes les lignes de refresh token déjà expirées (`expires_at < now`).
+   *
+   * Purge d'entretien : évite que la table croisse indéfiniment avec des jetons
+   * qui ne sont de toute façon plus valides. S'appuie sur l'index `expires_at`.
+   *
+   * @param now - L'horodatage de référence (injecté pour rester déterministe/testable).
+   * @returns Une promesse résolue une fois la purge effectuée.
+   */
+  public async deleteExpired(now: Date): Promise<void> {
+    await this.pool.execute("DELETE FROM refresh_tokens WHERE expires_at < ?", [now]);
+  }
 }

@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 
 import { DomainError } from "@domain/entities/errors/DomainError";
 import { AppConfig } from "@config/env";
+import { AppError } from "@application/errors/AppError";
 
 import { IRegisterUserUseCase } from "@application/auth/abstractions/usecases/IRegisterUserUseCase";
 import { ILoginUserUseCase } from "@application/auth/abstractions/usecases/ILoginUserUseCase";
@@ -140,8 +141,8 @@ export class AuthController {
    * @param res - La réponse Express.
    * @param error - L'erreur applicative à transmettre.
    */
-  private sendAppError(res: Response, error: { code: string; message: string }): void {
-    const status = AuthHttpMapper.toHttpStatus(error as never);
+  private sendAppError(res: Response, error: AppError): void {
+    const status = AuthHttpMapper.toHttpStatus(error);
     res.status(status).json({ code: error.code, message: error.message });
   }
 

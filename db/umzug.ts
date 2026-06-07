@@ -72,9 +72,14 @@ function buildUmzug(pool: Pool): Umzug<Pool> {
           await pool.query(`INSERT INTO ${MIGRATIONS_TABLE} (name) VALUES (?)`, [name]);
         },
         down: async () => {
-          // Les migrations SQL "up-only" ne définissent pas de rollback automatique :
-          // on se contente de retirer la trace, le SQL de retour doit être géré manuellement.
-          await pool.query(`DELETE FROM ${MIGRATIONS_TABLE} WHERE name = ?`, [name]);
+          // Stratégie assumée : migrations **forward-only**. Aucun rollback automatique
+          // n'est fourni, car retirer la seule trace sans annuler le DDL laisserait la base
+          // dans un état incohérent (tables présentes mais marquées « non appliquées »).
+          // Pour revenir en arrière, écrire une nouvelle migration `Vxxx` correctrice.
+          throw new Error(
+            `Rollback non supporté : les migrations sont forward-only. ` +
+              `Pour annuler « ${name} », créez une nouvelle migration correctrice.`,
+          );
         },
       }),
     },
@@ -130,8 +135,14 @@ async function main(): Promise<void> {
       case "status": {
         const pending = await umzug.pending();
         const executed = await umzug.executed();
-        console.log("Migrations appliquées :", executed.map((m) => m.name));
-        console.log("Migrations en attente :", pending.map((m) => m.name));
+        console.log(
+          "Migrations appliquées :",
+          executed.map((m) => m.name),
+        );
+        console.log(
+          "Migrations en attente :",
+          pending.map((m) => m.name),
+        );
         break;
       }
       default:

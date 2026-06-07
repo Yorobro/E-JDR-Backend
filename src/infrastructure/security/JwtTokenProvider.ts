@@ -1,9 +1,18 @@
-import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
+import jwt, { Algorithm, JwtPayload, SignOptions } from "jsonwebtoken";
 import {
   ITokenProvider,
   SignedToken,
   TokenPayload,
 } from "@application/auth/abstractions/services/ITokenProvider";
+
+/**
+ * Algorithme de signature/vérification épinglé.
+ *
+ * Les secrets access/refresh sont symétriques : on impose explicitement `HS256`
+ * en signature **et** en vérification. Épingler l'algorithme ferme toute confusion
+ * d'algorithme (un token forgé avec un autre `alg` est rejeté au lieu d'être accepté).
+ */
+const JWT_ALGORITHM: Algorithm = "HS256";
 
 /**
  * Configuration nécessaire au provider JWT : secrets et durées de vie distincts pour
@@ -69,9 +78,9 @@ export class JwtTokenProvider implements ITokenProvider {
    * @returns Le token signé et sa date d'expiration.
    */
   private sign(payload: TokenPayload, secret: string, expiresIn: string): SignedToken {
-    const options = { expiresIn } as SignOptions;
+    const options = { expiresIn, algorithm: JWT_ALGORITHM } as SignOptions;
     const token = jwt.sign({ userId: payload.userId, email: payload.email }, secret, options);
-    return { token, expiresAt: this.readExpiry(token, secret) };
+    return { token, expiresAt: this.readExpiry(token) };
   }
 
   /**
@@ -83,7 +92,7 @@ export class JwtTokenProvider implements ITokenProvider {
    */
   private verify(token: string, secret: string): TokenPayload | null {
     try {
-      const decoded = jwt.verify(token, secret);
+      const decoded = jwt.verify(token, secret, { algorithms: [JWT_ALGORITHM] });
       return this.extractPayload(decoded);
     } catch {
       // Signature invalide, token expiré ou malformé : échec métier, pas technique.
@@ -115,13 +124,17 @@ export class JwtTokenProvider implements ITokenProvider {
   /**
    * Lit la date d'expiration (`exp`) effective d'un token fraîchement signé.
    *
+   * On **décode** (sans re-vérifier) : le token vient d'être produit localement, donc sa
+   * signature est connue et le re-vérifier serait à la fois redondant et fragile (un token
+   * volontairement déjà expiré ferait lever `jwt.verify`). `jwt.decode` lit simplement les
+   * claims sans contrôle d'expiration.
+   *
    * @param token - Le token signé.
-   * @param secret - Le secret ayant servi à la signature.
    * @returns La date d'expiration absolue du token.
    */
-  private readExpiry(token: string, secret: string): Date {
-    const decoded = jwt.verify(token, secret) as JwtPayload;
-    const expSeconds = decoded.exp ?? 0;
+  private readExpiry(token: string): Date {
+    const decoded = jwt.decode(token) as JwtPayload | null;
+    const expSeconds = decoded?.exp ?? 0;
     return new Date(expSeconds * 1000);
   }
 }

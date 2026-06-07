@@ -56,6 +56,13 @@ export class MysqlRefreshTokenRepository implements IRefreshTokenRepository {
   }
 
   /**
+   * @inheritdoc
+   */
+  public async deleteExpired(now: Date): Promise<void> {
+    await this.refreshTokenDao.deleteExpired(now);
+  }
+
+  /**
    * Traduit une ligne SQL brute vers le modèle applicatif `StoredRefreshToken`.
    *
    * @param row - La ligne `refresh_tokens` issue de la base.

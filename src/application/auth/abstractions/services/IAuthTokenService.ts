@@ -1,5 +1,3 @@
-import { User } from "@domain/auth/entities/User";
-
 /**
  * Paire de jetons émise pour une session authentifiée, avec leurs expirations.
  *
@@ -29,10 +27,15 @@ export interface AuthTokens {
  */
 export interface IAuthTokenService {
   /**
-   * Émet une nouvelle paire de jetons pour un utilisateur et persiste le refresh token.
+   * Émet une nouvelle paire de jetons pour une identité authentifiée et persiste le refresh token.
    *
-   * @param user - L'utilisateur authentifié pour lequel émettre les jetons.
+   * Prend l'`userId` et l'`email` séparément car ils proviennent désormais de deux entités
+   * distinctes (`User` pour l'identité, `Credential` pour l'e-mail) : le service ne dépend
+   * ainsi d'aucune des deux, seulement des claims à encoder.
+   *
+   * @param userId - Identifiant de l'utilisateur authentifié (claim `userId`).
+   * @param email - Adresse e-mail de l'utilisateur authentifié (claim `email`).
    * @returns La paire de jetons (access + refresh) avec leurs dates d'expiration.
    */
-  issueTokensForUser(user: User): Promise<AuthTokens>;
+  issueTokens(userId: string, email: string): Promise<AuthTokens>;
 }

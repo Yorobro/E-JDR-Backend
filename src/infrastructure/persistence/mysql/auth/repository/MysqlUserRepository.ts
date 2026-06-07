@@ -1,5 +1,4 @@
 import { User } from "@domain/auth/entities/User";
-import { Email } from "@domain/auth/value-objects/Email";
 import { IUserRepository } from "@application/auth/abstractions/repositories/IUserRepository";
 import { UserDao } from "@infrastructure/persistence/mysql/auth/dao/UserDao";
 import { UserMapper } from "@infrastructure/persistence/mysql/auth/mappers/UserMapper";
@@ -19,16 +18,9 @@ export class MysqlUserRepository implements IUserRepository {
   /**
    * @inheritdoc
    */
-  public async findByEmail(email: Email): Promise<User | null> {
-    const row = await this.userDao.findByEmail(email.value);
+  public async findById(id: string): Promise<User | null> {
+    const row = await this.userDao.findById(id);
     return row === null ? null : UserMapper.toDomain(row);
-  }
-
-  /**
-   * @inheritdoc
-   */
-  public async existsByEmail(email: Email): Promise<boolean> {
-    return this.userDao.existsByEmail(email.value);
   }
 
   /**

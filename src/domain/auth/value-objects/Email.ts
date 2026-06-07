@@ -27,6 +27,14 @@ export class Email {
    * @throws {InvalidEmailError} Si la valeur normalisée ne respecte pas le format attendu.
    */
   public static create(raw: string): Email {
+    // Garde défensive : une entrée absente ou non textuelle (corps de requête vide,
+    // type incorrect) est une violation d'invariant métier, pas une erreur technique.
+    // On la transforme donc en `InvalidEmailError` (→ 400) plutôt que de laisser
+    // `normalize` lever un `TypeError` (→ 500).
+    if (typeof raw !== "string") {
+      throw new InvalidEmailError(String(raw));
+    }
+
     const normalized = Email.normalize(raw);
 
     if (!Email.isValid(normalized)) {

@@ -20,8 +20,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests
-        run: npm run test
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Check formatting (Prettier)
+        run: npm run format:check
+
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build

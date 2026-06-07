@@ -8,26 +8,26 @@ import {
   ILoginUserUseCase,
   LoginUserResult,
 } from "@application/auth/abstractions/usecases/ILoginUserUseCase";
-import { IUserRepository } from "@application/auth/abstractions/repositories/IUserRepository";
+import { ICredentialRepository } from "@application/auth/abstractions/repositories/ICredentialRepository";
 import { IPasswordHasher } from "@application/auth/abstractions/services/IPasswordHasher";
 import { IAuthTokenService } from "@application/auth/abstractions/services/IAuthTokenService";
 
 /**
  * Use case de connexion d'un utilisateur existant.
  *
- * Orchestration pure : retrouve l'utilisateur par e-mail, vérifie le mot de passe, puis
- * délègue l'émission des jetons au service partagé. En cas d'e-mail inconnu OU de mot de
- * passe incorrect, renvoie une seule et même erreur métier pour ne pas révéler quel champ
- * est en cause (protection contre l'énumération).
+ * Orchestration pure : retrouve l'identifiant d'authentification (`Credential`) par e-mail,
+ * vérifie le mot de passe, puis délègue l'émission des jetons au service partagé. En cas
+ * d'e-mail inconnu OU de mot de passe incorrect, renvoie une seule et même erreur métier
+ * pour ne pas révéler quel champ est en cause (protection contre l'énumération).
  */
 export class LoginUserUseCase implements ILoginUserUseCase {
   /**
-   * @param userRepository - Port de persistance des utilisateurs.
+   * @param credentialRepository - Port de persistance des identifiants d'authentification.
    * @param passwordHasher - Port de comparaison du mot de passe.
    * @param authTokenService - Service partagé d'émission des jetons.
    */
   constructor(
-    private readonly userRepository: IUserRepository,
+    private readonly credentialRepository: ICredentialRepository,
     private readonly passwordHasher: IPasswordHasher,
     private readonly authTokenService: IAuthTokenService,
   ) {}
@@ -36,27 +36,36 @@ export class LoginUserUseCase implements ILoginUserUseCase {
    * @inheritdoc
    */
   public async execute(command: LoginUserCommand): Promise<Result<LoginUserResult, AppError>> {
-    const email = Email.create(command.email);
-    const user = await this.userRepository.findByEmail(email);
-
-    if (user === null) {
+    // Un mot de passe absent ou non textuel (corps de requête partiel) est traité comme
+    // des identifiants invalides : on ne révèle pas quel champ pose problème, et on évite
+    // de transmettre une valeur non-string au comparateur bcrypt.
+    if (typeof command.password !== "string") {
       return Result.failure(new InvalidCredentialsError());
     }
 
-    const passwordMatches = await user.verifyPassword(
-      command.password,
-      (plain, hash) => this.passwordHasher.compare(plain, hash),
+    const email = Email.create(command.email);
+    const credential = await this.credentialRepository.findByEmail(email);
+
+    if (credential === null) {
+      return Result.failure(new InvalidCredentialsError());
+    }
+
+    const passwordMatches = await credential.verifyPassword(command.password, (plain, hash) =>
+      this.passwordHasher.compare(plain, hash),
     );
 
     if (!passwordMatches) {
       return Result.failure(new InvalidCredentialsError());
     }
 
-    const tokens = await this.authTokenService.issueTokensForUser(user);
+    const tokens = await this.authTokenService.issueTokens(
+      credential.userId,
+      credential.email.value,
+    );
 
     return Result.success({
-      userId: user.id,
-      email: user.email.value,
+      userId: credential.userId,
+      email: credential.email.value,
       tokens,
     });
   }

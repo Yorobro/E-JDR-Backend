@@ -57,4 +57,12 @@ export interface IRefreshTokenRepository {
    * @returns Une promesse résolue une fois les suppressions effectuées.
    */
   deleteAllForUser(userId: string): Promise<void>;
+
+  /**
+   * Supprime tous les refresh tokens déjà expirés (purge d'entretien).
+   *
+   * @param now - L'horodatage de référence : toute ligne dont `expiresAt < now` est purgée.
+   * @returns Une promesse résolue une fois la purge effectuée.
+   */
+  deleteExpired(now: Date): Promise<void>;
 }
