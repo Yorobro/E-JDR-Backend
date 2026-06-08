@@ -72,7 +72,7 @@ export function loadConfig(): AppConfig {
       port: Number(optionalEnv("DB_PORT", "3306")),
       user: requireEnv("DB_USER"),
       password: requireEnv("DB_PASSWORD"),
-      database: optionalEnv("DB_NAME", "") || undefined
+      database: optionalEnv("DB_NAME", "") || undefined,
     },
     jwt: {
       accessSecret: requireEnv("JWT_ACCESS_SECRET"),
