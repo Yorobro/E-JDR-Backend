@@ -75,8 +75,7 @@ function buildAuthController(
 ): AuthController {
   const { userRepository, credentialRepository, refreshTokenRepository } =
     buildAuthRepositories(connection);
-  const { passwordHasher, tokenProvider, tokenHasher, idGenerator } =
-    buildSecurityAdapters(config);
+  const { passwordHasher, tokenProvider, tokenHasher, idGenerator } = buildSecurityAdapters(config);
 
   const authTokenService = new AuthTokenService(
     tokenProvider,

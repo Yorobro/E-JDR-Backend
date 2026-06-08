@@ -72,13 +72,27 @@ export class Credential {
     return new Credential(snapshot);
   }
 
-  public get id(): string { return this.props.id; }
-  public get userId(): string { return this.props.userId; }
-  public get email(): Email { return this.props.email; }
-  public get password(): HashedPassword { return this.props.password; }
-  public get createdAt(): Date { return this.props.createdAt; }
-  public get failedAttempts(): number { return this.props.failedAttempts; }
-  public get lockedUntil(): Date | null { return this.props.lockedUntil; }
+  public get id(): string {
+    return this.props.id;
+  }
+  public get userId(): string {
+    return this.props.userId;
+  }
+  public get email(): Email {
+    return this.props.email;
+  }
+  public get password(): HashedPassword {
+    return this.props.password;
+  }
+  public get createdAt(): Date {
+    return this.props.createdAt;
+  }
+  public get failedAttempts(): number {
+    return this.props.failedAttempts;
+  }
+  public get lockedUntil(): Date | null {
+    return this.props.lockedUntil;
+  }
 
   /**
    * Indique si le compte est actuellement verrouillé.
@@ -122,10 +136,7 @@ export class Credential {
    * @param compare - Fonction de comparaison ({@link PasswordCompareFn}),
    *                  typiquement fournie par le port `IPasswordHasher`.
    */
-  public async verifyPassword(
-    plainPassword: string,
-    compare: PasswordCompareFn,
-  ): Promise<boolean> {
+  public async verifyPassword(plainPassword: string, compare: PasswordCompareFn): Promise<boolean> {
     return compare(plainPassword, this.props.password.value);
   }
 }

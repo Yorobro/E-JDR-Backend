@@ -31,7 +31,15 @@ export class CredentialDao {
     await this.pool.execute(
       `INSERT INTO credentials (id, user_id, email, password_hash, created_at, failed_attempts, locked_until)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [row.id, row.user_id, row.email, row.password_hash, row.created_at, row.failed_attempts, row.locked_until],
+      [
+        row.id,
+        row.user_id,
+        row.email,
+        row.password_hash,
+        row.created_at,
+        row.failed_attempts,
+        row.locked_until,
+      ],
     );
   }
 
@@ -52,7 +60,10 @@ export class CredentialDao {
     return rows.length > 0;
   }
 
-  public async update(id: string, data: { failed_attempts: number; locked_until: Date | null }): Promise<void> {
+  public async update(
+    id: string,
+    data: { failed_attempts: number; locked_until: Date | null },
+  ): Promise<void> {
     await this.pool.execute(
       "UPDATE credentials SET failed_attempts = ?, locked_until = ? WHERE id = ?",
       [data.failed_attempts, data.locked_until, id],

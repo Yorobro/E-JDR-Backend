@@ -11,8 +11,7 @@ import { NextFunction, Request, Response } from "express";
  *   - renvoyé dans le header `X-Request-ID` de la réponse (utile pour le débogage côté client)
  */
 export function requestIdMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const requestId =
-    (req.headers["x-request-id"] as string | undefined) ?? randomUUID();
+  const requestId = (req.headers["x-request-id"] as string | undefined) ?? randomUUID();
 
   req.requestId = requestId;
   res.setHeader("X-Request-ID", requestId);

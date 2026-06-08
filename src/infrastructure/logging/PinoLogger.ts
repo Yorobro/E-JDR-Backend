@@ -13,8 +13,7 @@ export class PinoLogger implements ILogger {
   private constructor(private readonly logger: Logger) {}
 
   public static create(level: string): PinoLogger {
-    const transport =
-      process.env.NODE_ENV !== "production" ? { target: "pino-pretty" } : undefined;
+    const transport = process.env.NODE_ENV !== "production" ? { target: "pino-pretty" } : undefined;
 
     return new PinoLogger(pino({ level, transport }));
   }

@@ -189,7 +189,9 @@ export class FakeLogger implements ILogger {
   public warn(): void {}
   public error(): void {}
   public debug(): void {}
-  public child(): ILogger { return this; }
+  public child(): ILogger {
+    return this;
+  }
 }
 
 /**

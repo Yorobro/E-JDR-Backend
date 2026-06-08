@@ -82,10 +82,7 @@ export class LoginUserUseCase implements ILoginUserUseCase {
     const updated = credential.resetFailedAttempts();
     await this.credentialRepository.update(updated);
 
-    const tokens = await this.authTokenService.issueTokens(
-      updated.userId,
-      updated.email.value,
-    );
+    const tokens = await this.authTokenService.issueTokens(updated.userId, updated.email.value);
 
     this.logger.info("Connexion réussie", { userId: updated.userId });
 

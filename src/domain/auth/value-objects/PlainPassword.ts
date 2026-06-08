@@ -52,9 +52,7 @@ export class PlainPassword {
     }
 
     if (!PlainPassword.COMPLEXITY_REGEX.test(raw)) {
-      throw new WeakPasswordError(
-        "il doit contenir au moins un chiffre ou un caractère spécial.",
-      );
+      throw new WeakPasswordError("il doit contenir au moins un chiffre ou un caractère spécial.");
     }
 
     return new PlainPassword(raw);
