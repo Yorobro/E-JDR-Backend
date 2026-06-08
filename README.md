@@ -12,7 +12,7 @@ presentation ─┐
 infrastructure┘
 ```
 
-- **`domain`** — entités riches, value objects, erreurs métier. Ne dépend de **rien** (ni autre couche, ni lib npm).
+- **`domain`** — entités riches, value objects, erreurs métier. Ne dépend de **rien** (ni autre couche, ni lib npm). C'est ici que vivent les **invariants métier** : voir [Domaine riche](#domaine-riche).
 - **`application`** — interfaces (ports), use cases, services, commands, erreurs applicatives. Dépend **uniquement** de `domain`.
 - **`infrastructure`** — implémentations concrètes des ports (MySQL, bcrypt, JWT). Dépend de `application` (+ `domain`).
 - **`presentation`** — Express : controllers, routes, middlewares, mappers HTTP. Dépend de `application` (+ `domain`).
@@ -26,6 +26,7 @@ Le fichier `src/main.ts` est le **composition root** : le seul endroit qui insta
 - Les **use cases** font de l'orchestration pure et peuvent manipuler les repositories directement.
 - **DAO = SQL pur** (1 DAO = 1 table) ; **Repository = assemblage** (DAO + mapping vers le domaine).
 - Erreurs : `Result<T, E>` pour le métier attendu, exceptions pour le technique imprévu.
+- Les **invariants métier** (validation, règles de robustesse, verrouillage…) sont encodés dans les entités et value objects du domaine, pas dans les use cases. Un objet invalide ne peut pas exister : si `Email.create("x")` lève une `DomainError`, c'est parce qu'un e-mail invalide est une impossibilité métier, pas une erreur technique.
 
 ### Modèle de données — authentification séparée du métier
 
@@ -34,13 +35,44 @@ L'identité **métier** et les données d'**authentification** sont volontaireme
 | Table | Responsabilité | Colonnes |
 |---|---|---|
 | `users` | Identité applicative (enrichie par le métier JDR à venir : pseudo, avatar…). | `id`, `created_at` |
-| `credentials` | Authentification : e-mail + empreinte du mot de passe, reliés 1–1 à un `user`. | `id`, `user_id` (FK→users, UNIQUE), `email` (UNIQUE), `password_hash`, `created_at` |
+| `credentials` | Authentification : e-mail + empreinte du mot de passe, reliés 1–1 à un `user`. Protection anti-brute-force intégrée. | `id`, `user_id` (FK→users, UNIQUE), `email` (UNIQUE), `password_hash`, `created_at`, `failed_attempts`, `locked_until` |
 | `refresh_tokens` | Sessions révocables rattachées à un `user`. | `id`, `user_id` (FK→users), `token_hash`, `expires_at`, `created_at` |
 
 Côté domaine, cela donne deux entités : `User` (identité, sans e-mail ni mot de passe) et
 `Credential` (e-mail + hash + `userId`, porte la vérification du mot de passe). Le métier
 évolue ainsi sans toucher au modèle de sécurité, et inversement. Le contrat HTTP reste
 inchangé : `register`/`login` renvoient toujours `{ userId, email }`.
+
+## Domaine riche
+
+Le domaine suit le principe du **modèle riche** (rich domain model) : les entités et value objects ne sont pas de simples conteneurs de données — ils portent les règles métier et garantissent leurs propres invariants.
+
+### Ce que ça signifie concrètement
+
+**Un objet invalide ne peut pas exister.** La construction passe toujours par une factory (`create()`, `fromHash()`, `restore()`). Si l'entrée viole une règle métier, une `DomainError` est levée immédiatement — pas de retour `null`, pas de champ `isValid`.
+
+```ts
+Email.create("pas-un-email")       // → lève InvalidEmailError
+PlainPassword.create("abc")        // → lève WeakPasswordError (trop court)
+PlainPassword.create("abcdefgh")   // → lève WeakPasswordError (pas de chiffre/spécial)
+HashedPassword.fromHash("")        // → lève InvalidHashError
+```
+
+**Les règles métier vivent dans l'entité qui les concerne.** L'anti-brute-force n'est pas dans un middleware ni dans un use case — il est dans `Credential` :
+
+```ts
+credential.isLocked(now)              // règle : lockedUntil !== null && now < lockedUntil
+credential.recordFailedAttempt(now)   // règle : après 5 échecs → verrouillage 15 min
+credential.resetFailedAttempts()      // règle : connexion réussie → compteur remis à zéro
+```
+
+**Les entités sont immuables de l'extérieur.** Aucun setter. Les méthodes qui changent l'état retournent une nouvelle instance (`recordFailedAttempt` et `resetFailedAttempts` retournent un nouveau `Credential`).
+
+**Les dépendances techniques sont injectées, jamais importées.** `Credential.verifyPassword()` prend une fonction de comparaison en paramètre (`PasswordCompareFn`) : l'entité sait *que* le mot de passe doit être vérifié, mais ignore *comment* bcrypt fonctionne.
+
+### Ce qui reste hors du domaine
+
+Le domaine ne contient aucun `import` vers une lib npm. HTTP, bcrypt, JWT, MySQL vivent dans `infrastructure` et `presentation`. Les use cases dans `application` orchestrent le domaine sans y introduire de logique métier.
 
 ## Authentification
 
