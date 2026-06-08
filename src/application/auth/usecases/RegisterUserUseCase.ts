@@ -3,10 +3,12 @@ import { Credential } from "@domain/auth/entities/Credential";
 import { Email } from "@domain/auth/value-objects/Email";
 import { PlainPassword } from "@domain/auth/value-objects/PlainPassword";
 import { HashedPassword } from "@domain/auth/value-objects/HashedPassword";
+import { DomainError } from "@domain/shared/errors/DomainError";
 
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { EmailAlreadyUsedError } from "@application/auth/errors/EmailAlreadyUsedError";
+import { InvalidInputError } from "@application/auth/errors/InvalidInputError";
 import { RegisterUserCommand } from "@application/auth/commands/RegisterUserCommand";
 import {
   IRegisterUserUseCase,
@@ -27,13 +29,6 @@ import { IAuthTokenService } from "@application/auth/abstractions/services/IAuth
  * des jetons au service partagé `IAuthTokenService`.
  */
 export class RegisterUserUseCase implements IRegisterUserUseCase {
-  /**
-   * @param userRepository - Port de persistance des utilisateurs métier.
-   * @param credentialRepository - Port de persistance des identifiants d'authentification.
-   * @param passwordHasher - Port de hachage du mot de passe.
-   * @param idGenerator - Port de génération des identifiants.
-   * @param authTokenService - Service partagé d'émission des jetons (connexion directe).
-   */
   constructor(
     private readonly userRepository: IUserRepository,
     private readonly credentialRepository: ICredentialRepository,
@@ -42,15 +37,21 @@ export class RegisterUserUseCase implements IRegisterUserUseCase {
     private readonly authTokenService: IAuthTokenService,
   ) {}
 
-  /**
-   * @inheritdoc
-   */
   public async execute(
     command: RegisterUserCommand,
   ): Promise<Result<RegisterUserResult, AppError>> {
-    // Validation de format déléguée au domaine (peut lever DomainError -> géré en amont).
-    const email = Email.create(command.email);
-    const plainPassword = PlainPassword.create(command.password);
+    let email: Email;
+    let plainPassword: PlainPassword;
+
+    try {
+      email = Email.create(command.email);
+      plainPassword = PlainPassword.create(command.password);
+    } catch (error) {
+      if (error instanceof DomainError) {
+        return Result.failure(new InvalidInputError(error.code, error.message));
+      }
+      throw error;
+    }
 
     if (await this.credentialRepository.existsByEmail(email)) {
       return Result.failure(new EmailAlreadyUsedError());
@@ -71,15 +72,6 @@ export class RegisterUserUseCase implements IRegisterUserUseCase {
     });
   }
 
-  /**
-   * Construit l'identifiant d'authentification rattaché à un utilisateur : hache le mot de
-   * passe et génère l'identifiant et la date de création de l'enregistrement.
-   *
-   * @param userId - L'identifiant de l'utilisateur métier rattaché.
-   * @param email - L'e-mail validé du futur compte.
-   * @param plainPassword - Le mot de passe en clair validé à hacher.
-   * @returns L'entité `Credential` nouvellement créée.
-   */
   private async buildCredential(
     userId: string,
     email: Email,

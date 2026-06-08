@@ -1,9 +1,11 @@
 import { Email } from "@domain/auth/value-objects/Email";
+import { DomainError } from "@domain/shared/errors/DomainError";
 
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { AccountLockedError } from "@application/auth/errors/AccountLockedError";
 import { InvalidCredentialsError } from "@application/auth/errors/InvalidCredentialsError";
+import { InvalidInputError } from "@application/auth/errors/InvalidInputError";
 import { LoginUserCommand } from "@application/auth/commands/LoginUserCommand";
 import {
   ILoginUserUseCase,
@@ -36,7 +38,15 @@ export class LoginUserUseCase implements ILoginUserUseCase {
       return Result.failure(new InvalidCredentialsError());
     }
 
-    const email = Email.create(command.email);
+    let email: Email;
+    try {
+      email = Email.create(command.email);
+    } catch (error) {
+      if (error instanceof DomainError) {
+        return Result.failure(new InvalidInputError(error.code, error.message));
+      }
+      throw error;
+    }
     const credential = await this.credentialRepository.findByEmail(email);
 
     if (credential === null) {

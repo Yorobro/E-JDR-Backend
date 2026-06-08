@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 
-import { DomainError } from "@domain/shared/errors/DomainError";
 import { AppConfig } from "@config/env";
 import { AppError } from "@application/errors/AppError";
 
@@ -147,19 +146,10 @@ export class AuthController {
   }
 
   /**
-   * Gère une erreur **levée** durant le traitement :
-   * - une `DomainError` (entrée invalide) devient un `400` directement ;
-   * - toute autre exception est considérée comme technique et relayée au middleware d'erreurs.
-   *
-   * @param error - L'erreur capturée.
-   * @param res - La réponse Express.
-   * @param next - Le relais vers le middleware d'erreurs.
+   * Relaie une exception technique imprévue au middleware d'erreurs (→ 500).
+   * Les erreurs métier attendues sont transportées via `Result` et ne passent pas ici.
    */
-  private handleThrownError(error: unknown, res: Response, next: NextFunction): void {
-    if (error instanceof DomainError) {
-      res.status(400).json({ code: error.code, message: error.message });
-      return;
-    }
+  private handleThrownError(error: unknown, _res: Response, next: NextFunction): void {
     next(error);
   }
 }

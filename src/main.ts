@@ -37,33 +37,39 @@ import { errorHandler } from "@presentation/http/middlewares/errorHandler";
  * → controller/routes (présentation) → application Express.
  */
 
+function buildAuthRepositories(connection: MysqlConnection) {
+  const pool = connection.getPool();
+  return {
+    userRepository: new MysqlUserRepository(new UserDao(pool)),
+    credentialRepository: new MysqlCredentialRepository(new CredentialDao(pool)),
+    refreshTokenRepository: new MysqlRefreshTokenRepository(new RefreshTokenDao(pool)),
+  };
+}
+
+function buildSecurityAdapters(config: AppConfig) {
+  return {
+    passwordHasher: new BcryptPasswordHasher(),
+    tokenProvider: new JwtTokenProvider({
+      accessSecret: config.jwt.accessSecret,
+      refreshSecret: config.jwt.refreshSecret,
+      accessExpiresIn: config.jwt.accessExpiresIn,
+      refreshExpiresIn: config.jwt.refreshExpiresIn,
+    }),
+    tokenHasher: new Sha256TokenHasher(),
+    idGenerator: new UuidGenerator(),
+  };
+}
+
 /**
- * Assemble les composants d'authentification et construit le controller correspondant.
- *
- * @param connection - La connexion MySQL partagée.
- * @param config - La configuration applicative.
- * @returns Le `AuthController` entièrement câblé.
+ * **Composition root** du module auth : assemble repositories, adapters de sécurité,
+ * services et use cases, puis retourne le controller câblé.
  */
 function buildAuthController(connection: MysqlConnection, config: AppConfig): AuthController {
-  const pool = connection.getPool();
+  const { userRepository, credentialRepository, refreshTokenRepository } =
+    buildAuthRepositories(connection);
+  const { passwordHasher, tokenProvider, tokenHasher, idGenerator } =
+    buildSecurityAdapters(config);
 
-  // DAO (SQL pur) → repositories (assemblage + mapping)
-  const userRepository = new MysqlUserRepository(new UserDao(pool));
-  const credentialRepository = new MysqlCredentialRepository(new CredentialDao(pool));
-  const refreshTokenRepository = new MysqlRefreshTokenRepository(new RefreshTokenDao(pool));
-
-  // Adapters de sécurité / identifiants
-  const passwordHasher = new BcryptPasswordHasher();
-  const tokenProvider = new JwtTokenProvider({
-    accessSecret: config.jwt.accessSecret,
-    refreshSecret: config.jwt.refreshSecret,
-    accessExpiresIn: config.jwt.accessExpiresIn,
-    refreshExpiresIn: config.jwt.refreshExpiresIn,
-  });
-  const tokenHasher = new Sha256TokenHasher();
-  const idGenerator = new UuidGenerator();
-
-  // Service partagé d'émission des jetons
   const authTokenService = new AuthTokenService(
     tokenProvider,
     tokenHasher,
@@ -71,7 +77,6 @@ function buildAuthController(connection: MysqlConnection, config: AppConfig): Au
     refreshTokenRepository,
   );
 
-  // Use cases (orchestration pure)
   const registerUser = new RegisterUserUseCase(
     userRepository,
     credentialRepository,

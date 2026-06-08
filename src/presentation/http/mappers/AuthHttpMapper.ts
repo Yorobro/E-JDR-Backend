@@ -1,5 +1,9 @@
 import { CookieOptions, Request, Response } from "express";
 import { AppError } from "@application/errors/AppError";
+import { AccountLockedError } from "@application/auth/errors/AccountLockedError";
+import { EmailAlreadyUsedError } from "@application/auth/errors/EmailAlreadyUsedError";
+import { InvalidCredentialsError } from "@application/auth/errors/InvalidCredentialsError";
+import { InvalidRefreshTokenError } from "@application/auth/errors/InvalidRefreshTokenError";
 import { AuthTokens } from "@application/auth/abstractions/services/IAuthTokenService";
 
 /** Nom du cookie portant l'access token. */
@@ -79,16 +83,10 @@ export class AuthHttpMapper {
    * @returns Le code HTTP correspondant.
    */
   public static toHttpStatus(error: AppError): number {
-    switch (error.code) {
-      case "EMAIL_ALREADY_USED":
-        return 409;
-      case "INVALID_CREDENTIALS":
-      case "INVALID_REFRESH_TOKEN":
-        return 401;
-      case "ACCOUNT_LOCKED":
-        return 429;
-      default:
-        return 400;
-    }
+    if (error instanceof EmailAlreadyUsedError) return 409;
+    if (error instanceof InvalidCredentialsError) return 401;
+    if (error instanceof InvalidRefreshTokenError) return 401;
+    if (error instanceof AccountLockedError) return 429;
+    return 400;
   }
 }
