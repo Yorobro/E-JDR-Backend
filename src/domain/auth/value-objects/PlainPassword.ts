@@ -15,6 +15,9 @@ export class PlainPassword {
   /** Longueur maximale acceptée (borne de sûreté, bcrypt traite jusqu'à 72 octets). */
   private static readonly MAX_LENGTH = 72;
 
+  /** Le mot de passe doit contenir au moins un chiffre ou un caractère non alphabétique. */
+  private static readonly COMPLEXITY_REGEX = /[^a-zA-Z]/;
+
   /**
    * @param value - Le mot de passe en clair déjà validé.
    *                Constructeur privé : passer par {@link PlainPassword.create}.
@@ -45,6 +48,12 @@ export class PlainPassword {
     if (raw.length > PlainPassword.MAX_LENGTH) {
       throw new WeakPasswordError(
         `il ne doit pas dépasser ${PlainPassword.MAX_LENGTH} caractères.`,
+      );
+    }
+
+    if (!PlainPassword.COMPLEXITY_REGEX.test(raw)) {
+      throw new WeakPasswordError(
+        "il doit contenir au moins un chiffre ou un caractère spécial.",
       );
     }
 

@@ -1,4 +1,4 @@
-import { DomainError } from "@domain/entities/errors/DomainError";
+import { DomainError } from "@domain/shared/errors/DomainError";
 
 /**
  * Erreur domaine levée lorsqu'un mot de passe en clair ne respecte pas la

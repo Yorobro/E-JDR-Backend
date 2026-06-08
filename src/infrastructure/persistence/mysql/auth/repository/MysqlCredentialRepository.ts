@@ -37,4 +37,14 @@ export class MysqlCredentialRepository implements ICredentialRepository {
   public async save(credential: Credential): Promise<void> {
     await this.credentialDao.insert(CredentialMapper.toRow(credential));
   }
+
+  /**
+   * @inheritdoc
+   */
+  public async update(credential: Credential): Promise<void> {
+    await this.credentialDao.update(credential.id, {
+      failed_attempts: credential.failedAttempts,
+      locked_until: credential.lockedUntil,
+    });
+  }
 }
