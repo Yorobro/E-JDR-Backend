@@ -9,8 +9,9 @@
   },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/main.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node -r tsconfig-paths/register dist/main.js",
+    "serve": "npm run migrate:up && ts-node --transpile-only -r tsconfig-paths/register src/main.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -18,9 +19,9 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "migrate:up": "ts-node -r tsconfig-paths/register db/umzug.ts up",
-    "migrate:down": "ts-node -r tsconfig-paths/register db/umzug.ts down",
-    "migrate:status": "ts-node -r tsconfig-paths/register db/umzug.ts status"
+    "migrate:up": "ts-node --transpile-only -r tsconfig-paths/register db/umzug.ts up",
+    "migrate:down": "ts-node --transpile-only -r tsconfig-paths/register db/umzug.ts down",
+    "migrate:status": "ts-node --transpile-only -r tsconfig-paths/register db/umzug.ts status"
   },
   "keywords": [
     "clean-architecture",
@@ -37,6 +38,8 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.12.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "umzug": "^3.8.2"
   },
   "devDependencies": {
@@ -52,9 +55,7 @@
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.3",
     "supertest": "^7.2.2",
-    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.60.1",
     "vitest": "^2.1.8"
