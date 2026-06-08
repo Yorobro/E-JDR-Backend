@@ -2,6 +2,7 @@ import { Email } from "@domain/auth/value-objects/Email";
 
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
+import { AccountLockedError } from "@application/auth/errors/AccountLockedError";
 import { InvalidCredentialsError } from "@application/auth/errors/InvalidCredentialsError";
 import { LoginUserCommand } from "@application/auth/commands/LoginUserCommand";
 import {
@@ -19,26 +20,18 @@ import { IAuthTokenService } from "@application/auth/abstractions/services/IAuth
  * vérifie le mot de passe, puis délègue l'émission des jetons au service partagé. En cas
  * d'e-mail inconnu OU de mot de passe incorrect, renvoie une seule et même erreur métier
  * pour ne pas révéler quel champ est en cause (protection contre l'énumération).
+ *
+ * Implémente également la protection anti-brute-force : après 5 tentatives échouées,
+ * le compte est verrouillé 15 minutes. Une connexion réussie réinitialise le compteur.
  */
 export class LoginUserUseCase implements ILoginUserUseCase {
-  /**
-   * @param credentialRepository - Port de persistance des identifiants d'authentification.
-   * @param passwordHasher - Port de comparaison du mot de passe.
-   * @param authTokenService - Service partagé d'émission des jetons.
-   */
   constructor(
     private readonly credentialRepository: ICredentialRepository,
     private readonly passwordHasher: IPasswordHasher,
     private readonly authTokenService: IAuthTokenService,
   ) {}
 
-  /**
-   * @inheritdoc
-   */
   public async execute(command: LoginUserCommand): Promise<Result<LoginUserResult, AppError>> {
-    // Un mot de passe absent ou non textuel (corps de requête partiel) est traité comme
-    // des identifiants invalides : on ne révèle pas quel champ pose problème, et on évite
-    // de transmettre une valeur non-string au comparateur bcrypt.
     if (typeof command.password !== "string") {
       return Result.failure(new InvalidCredentialsError());
     }
@@ -50,22 +43,32 @@ export class LoginUserUseCase implements ILoginUserUseCase {
       return Result.failure(new InvalidCredentialsError());
     }
 
+    const now = new Date();
+
+    if (credential.isLocked(now)) {
+      return Result.failure(new AccountLockedError(credential.lockedUntil!));
+    }
+
     const passwordMatches = await credential.verifyPassword(command.password, (plain, hash) =>
       this.passwordHasher.compare(plain, hash),
     );
 
     if (!passwordMatches) {
+      await this.credentialRepository.update(credential.recordFailedAttempt(now));
       return Result.failure(new InvalidCredentialsError());
     }
 
+    const updated = credential.resetFailedAttempts();
+    await this.credentialRepository.update(updated);
+
     const tokens = await this.authTokenService.issueTokens(
-      credential.userId,
-      credential.email.value,
+      updated.userId,
+      updated.email.value,
     );
 
     return Result.success({
-      userId: credential.userId,
-      email: credential.email.value,
+      userId: updated.userId,
+      email: updated.email.value,
       tokens,
     });
   }

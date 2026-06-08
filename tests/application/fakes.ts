@@ -64,6 +64,10 @@ export class FakeCredentialRepository implements ICredentialRepository {
     this.credentials.set(credential.email.value, credential);
   }
 
+  public async update(credential: Credential): Promise<void> {
+    this.credentials.set(credential.email.value, credential);
+  }
+
   /** Aide de test : pré-remplit le repository avec un identifiant. */
   public seed(credential: Credential): void {
     this.credentials.set(credential.email.value, credential);

@@ -29,7 +29,13 @@ export interface ICredentialRepository {
    * Persiste un nouvel identifiant d'authentification.
    *
    * @param credential - L'entité `Credential` à enregistrer.
-   * @returns Une promesse résolue une fois l'identifiant enregistré.
    */
   save(credential: Credential): Promise<void>;
+
+  /**
+   * Met à jour un identifiant existant (ex : compteur de tentatives, verrouillage).
+   *
+   * @param credential - L'entité `Credential` dont l'état doit être persisté.
+   */
+  update(credential: Credential): Promise<void>;
 }

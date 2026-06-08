@@ -85,6 +85,8 @@ export class AuthHttpMapper {
       case "INVALID_CREDENTIALS":
       case "INVALID_REFRESH_TOKEN":
         return 401;
+      case "ACCOUNT_LOCKED":
+        return 429;
       default:
         return 400;
     }

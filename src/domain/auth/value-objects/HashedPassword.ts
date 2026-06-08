@@ -1,3 +1,5 @@
+import { InvalidHashError } from "@domain/auth/errors/InvalidHashError";
+
 /**
  * Value Object représentant un mot de passe **déjà haché**.
  *
@@ -24,11 +26,11 @@ export class HashedPassword {
    *
    * @param hash - L'empreinte du mot de passe (non vide).
    * @returns Une instance de `HashedPassword`.
-   * @throws {Error} Si l'empreinte est vide (situation technique anormale, pas une erreur métier).
+   * @throws {InvalidHashError} Si l'empreinte est vide (anomalie de persistance).
    */
   public static fromHash(hash: string): HashedPassword {
     if (hash.length === 0) {
-      throw new Error("Une empreinte de mot de passe ne peut pas être vide.");
+      throw new InvalidHashError();
     }
 
     return new HashedPassword(hash);
