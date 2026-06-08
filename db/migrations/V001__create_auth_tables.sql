@@ -6,6 +6,11 @@
 --                      reliées 1–1 à un utilisateur.
 --   * `refresh_tokens` : sessions révocables, rattachées à l'utilisateur.
 
+-- Crée le schéma `e_jdr` si nécessaire (même jeu de caractères que la base)
+CREATE SCHEMA IF NOT EXISTS e_jdr
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS users (
     id         CHAR(36) NOT NULL,
     created_at DATETIME NOT NULL,
