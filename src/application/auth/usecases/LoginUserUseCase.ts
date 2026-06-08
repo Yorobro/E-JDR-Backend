@@ -3,6 +3,7 @@ import { DomainError } from "@domain/shared/errors/DomainError";
 
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
+import { ILogger } from "@application/shared/ILogger";
 import { AccountLockedError } from "@application/auth/errors/AccountLockedError";
 import { InvalidCredentialsError } from "@application/auth/errors/InvalidCredentialsError";
 import { InvalidInputError } from "@application/auth/errors/InvalidInputError";
@@ -31,6 +32,7 @@ export class LoginUserUseCase implements ILoginUserUseCase {
     private readonly credentialRepository: ICredentialRepository,
     private readonly passwordHasher: IPasswordHasher,
     private readonly authTokenService: IAuthTokenService,
+    private readonly logger: ILogger,
   ) {}
 
   public async execute(command: LoginUserCommand): Promise<Result<LoginUserResult, AppError>> {
@@ -56,6 +58,10 @@ export class LoginUserUseCase implements ILoginUserUseCase {
     const now = new Date();
 
     if (credential.isLocked(now)) {
+      this.logger.warn("Connexion refusée — compte verrouillé", {
+        email: email.value,
+        lockedUntil: credential.lockedUntil,
+      });
       return Result.failure(new AccountLockedError(credential.lockedUntil!));
     }
 
@@ -64,7 +70,12 @@ export class LoginUserUseCase implements ILoginUserUseCase {
     );
 
     if (!passwordMatches) {
-      await this.credentialRepository.update(credential.recordFailedAttempt(now));
+      const failed = credential.recordFailedAttempt(now);
+      await this.credentialRepository.update(failed);
+      this.logger.warn("Tentative de connexion échouée", {
+        email: email.value,
+        failedAttempts: failed.failedAttempts,
+      });
       return Result.failure(new InvalidCredentialsError());
     }
 
@@ -75,6 +86,8 @@ export class LoginUserUseCase implements ILoginUserUseCase {
       updated.userId,
       updated.email.value,
     );
+
+    this.logger.info("Connexion réussie", { userId: updated.userId });
 
     return Result.success({
       userId: updated.userId,

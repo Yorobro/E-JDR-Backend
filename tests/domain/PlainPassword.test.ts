@@ -9,8 +9,9 @@ describe("PlainPassword (value object)", () => {
   });
 
   it("accepte exactement la longueur minimale et maximale", () => {
-    expect(() => PlainPassword.create("a".repeat(8))).not.toThrow();
-    expect(() => PlainPassword.create("a".repeat(72))).not.toThrow();
+    // Les mots de passe doivent contenir au moins un chiffre ou caractère spécial.
+    expect(() => PlainPassword.create("aaaaaaa1")).not.toThrow();
+    expect(() => PlainPassword.create("a".repeat(71) + "1")).not.toThrow();
   });
 
   it("rejette un mot de passe trop court (< 8)", () => {

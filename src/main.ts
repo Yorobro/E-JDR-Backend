@@ -15,8 +15,10 @@ import { BcryptPasswordHasher } from "@infrastructure/security/BcryptPasswordHas
 import { JwtTokenProvider } from "@infrastructure/security/JwtTokenProvider";
 import { Sha256TokenHasher } from "@infrastructure/security/Sha256TokenHasher";
 import { UuidGenerator } from "@infrastructure/id/UuidGenerator";
+import { PinoLogger } from "@infrastructure/logging/PinoLogger";
 
 // Application
+import { ILogger } from "@application/shared/ILogger";
 import { AuthTokenService } from "@application/auth/services/AuthTokenService";
 import { RegisterUserUseCase } from "@application/auth/usecases/RegisterUserUseCase";
 import { LoginUserUseCase } from "@application/auth/usecases/LoginUserUseCase";
@@ -26,7 +28,9 @@ import { RefreshAccessTokenUseCase } from "@application/auth/usecases/RefreshAcc
 // Presentation
 import { AuthController } from "@presentation/http/controllers/AuthController";
 import { buildAuthRoutes } from "@presentation/http/routes/authRoutes";
-import { errorHandler } from "@presentation/http/middlewares/errorHandler";
+import { requestIdMiddleware } from "@presentation/http/middlewares/requestIdMiddleware";
+import { buildHttpLoggerMiddleware } from "@presentation/http/middlewares/httpLoggerMiddleware";
+import { buildErrorHandler } from "@presentation/http/middlewares/errorHandler";
 
 /**
  * **Composition root** de l'application : seul endroit qui instancie les classes concrètes
@@ -64,7 +68,11 @@ function buildSecurityAdapters(config: AppConfig) {
  * **Composition root** du module auth : assemble repositories, adapters de sécurité,
  * services et use cases, puis retourne le controller câblé.
  */
-function buildAuthController(connection: MysqlConnection, config: AppConfig): AuthController {
+function buildAuthController(
+  connection: MysqlConnection,
+  config: AppConfig,
+  logger: ILogger,
+): AuthController {
   const { userRepository, credentialRepository, refreshTokenRepository } =
     buildAuthRepositories(connection);
   const { passwordHasher, tokenProvider, tokenHasher, idGenerator } =
@@ -83,8 +91,14 @@ function buildAuthController(connection: MysqlConnection, config: AppConfig): Au
     passwordHasher,
     idGenerator,
     authTokenService,
+    logger,
   );
-  const loginUser = new LoginUserUseCase(credentialRepository, passwordHasher, authTokenService);
+  const loginUser = new LoginUserUseCase(
+    credentialRepository,
+    passwordHasher,
+    authTokenService,
+    logger,
+  );
   const logoutUser = new LogoutUserUseCase(refreshTokenRepository, tokenHasher);
   const refreshAccessToken = new RefreshAccessTokenUseCase(
     userRepository,
@@ -105,18 +119,23 @@ function buildAuthController(connection: MysqlConnection, config: AppConfig): Au
  * en injectant un controller câblé sur des doublures, sans base de données.
  *
  * @param authController - Le controller d'authentification câblé.
+ * @param logger - Le logger applicatif (injecté pour structurer les logs et les erreurs).
  * @returns L'application Express prête à écouter.
  */
-export function buildHttpApp(authController: AuthController): Application {
+export function buildHttpApp(authController: AuthController, logger: ILogger): Application {
   const app = express();
 
+  // Le requestId doit être attaché en premier pour que tous les middlewares suivants
+  // puissent corréler leurs logs avec l'identifiant de la requête.
+  app.use(requestIdMiddleware);
   app.use(express.json());
   app.use(cookieParser());
+  app.use(buildHttpLoggerMiddleware(logger));
 
   app.use("/auth", buildAuthRoutes(authController));
 
   // Le middleware d'erreurs doit être enregistré en dernier.
-  app.use(errorHandler);
+  app.use(buildErrorHandler(logger));
 
   return app;
 }
@@ -128,6 +147,7 @@ export function buildHttpApp(authController: AuthController): Application {
  */
 async function bootstrap(): Promise<void> {
   const config = loadConfig();
+  const logger = PinoLogger.create(config.logLevel);
 
   const connection = new MysqlConnection({
     host: config.db.host,
@@ -139,12 +159,11 @@ async function bootstrap(): Promise<void> {
     connectionLimit: 10,
   });
 
-  const authController = buildAuthController(connection, config);
-  const app = buildHttpApp(authController);
+  const authController = buildAuthController(connection, config, logger);
+  const app = buildHttpApp(authController, logger);
 
   app.listen(config.port, () => {
-    // eslint-disable-next-line no-console
-    console.log(`Serveur démarré sur le port ${config.port}`);
+    logger.info("Serveur démarré", { port: config.port });
   });
 }
 

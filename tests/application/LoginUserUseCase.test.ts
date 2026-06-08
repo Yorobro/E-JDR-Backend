@@ -3,6 +3,7 @@ import { LoginUserUseCase } from "@application/auth/usecases/LoginUserUseCase";
 import { InvalidCredentialsError } from "@application/auth/errors/InvalidCredentialsError";
 import {
   FakeCredentialRepository,
+  FakeLogger,
   FakePasswordHasher,
   FakeAuthTokenService,
   buildTestCredential,
@@ -20,6 +21,7 @@ describe("LoginUserUseCase", () => {
       credentialRepository,
       new FakePasswordHasher(),
       authTokenService,
+      new FakeLogger(),
     );
   });
 

@@ -3,6 +3,7 @@ import { Credential } from "@domain/auth/entities/Credential";
 import { Email } from "@domain/auth/value-objects/Email";
 import { HashedPassword } from "@domain/auth/value-objects/HashedPassword";
 
+import { ILogger } from "@application/shared/ILogger";
 import { IUserRepository } from "@application/auth/abstractions/repositories/IUserRepository";
 import { ICredentialRepository } from "@application/auth/abstractions/repositories/ICredentialRepository";
 import {
@@ -180,6 +181,15 @@ export class FakeAuthTokenService implements IAuthTokenService {
       refreshTokenExpiresAt: new Date("2999-01-01"),
     };
   }
+}
+
+/** Logger no-op pour les tests : absorbe silencieusement tous les appels. */
+export class FakeLogger implements ILogger {
+  public info(): void {}
+  public warn(): void {}
+  public error(): void {}
+  public debug(): void {}
+  public child(): ILogger { return this; }
 }
 
 /**

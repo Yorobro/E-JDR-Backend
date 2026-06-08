@@ -28,6 +28,8 @@ export interface AppConfig {
     readonly accessExpiresIn: string;
     readonly refreshExpiresIn: string;
   };
+  /** Niveau de verbosité des logs (`trace`, `debug`, `info`, `warn`, `error`, `fatal`). */
+  readonly logLevel: string;
 }
 
 /**
@@ -80,5 +82,6 @@ export function loadConfig(): AppConfig {
       accessExpiresIn: optionalEnv("JWT_ACCESS_EXPIRES_IN", "15m"),
       refreshExpiresIn: optionalEnv("JWT_REFRESH_EXPIRES_IN", "7d"),
     },
+    logLevel: optionalEnv("LOG_LEVEL", "info"),
   };
 }

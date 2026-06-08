@@ -7,6 +7,7 @@ import { DomainError } from "@domain/shared/errors/DomainError";
 
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
+import { ILogger } from "@application/shared/ILogger";
 import { EmailAlreadyUsedError } from "@application/auth/errors/EmailAlreadyUsedError";
 import { InvalidInputError } from "@application/auth/errors/InvalidInputError";
 import { RegisterUserCommand } from "@application/auth/commands/RegisterUserCommand";
@@ -35,6 +36,7 @@ export class RegisterUserUseCase implements IRegisterUserUseCase {
     private readonly passwordHasher: IPasswordHasher,
     private readonly idGenerator: IIdGenerator,
     private readonly authTokenService: IAuthTokenService,
+    private readonly logger: ILogger,
   ) {}
 
   public async execute(
@@ -54,6 +56,9 @@ export class RegisterUserUseCase implements IRegisterUserUseCase {
     }
 
     if (await this.credentialRepository.existsByEmail(email)) {
+      this.logger.warn("Tentative d'inscription avec un e-mail déjà utilisé", {
+        email: email.value,
+      });
       return Result.failure(new EmailAlreadyUsedError());
     }
 
@@ -64,6 +69,8 @@ export class RegisterUserUseCase implements IRegisterUserUseCase {
     await this.credentialRepository.save(credential);
 
     const tokens = await this.authTokenService.issueTokens(user.id, email.value);
+
+    this.logger.info("Inscription réussie", { userId: user.id });
 
     return Result.success({
       userId: user.id,

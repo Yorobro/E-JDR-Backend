@@ -5,7 +5,7 @@ import type { Application } from "express";
 import { AppConfig } from "@config/env";
 import { AuthController } from "@presentation/http/controllers/AuthController";
 import { buildAuthRoutes } from "@presentation/http/routes/authRoutes";
-import { errorHandler } from "@presentation/http/middlewares/errorHandler";
+import { buildErrorHandler } from "@presentation/http/middlewares/errorHandler";
 import { buildHttpApp } from "../../src/main";
 
 import { AuthTokenService } from "@application/auth/services/AuthTokenService";
@@ -18,6 +18,7 @@ import {
   FakeUserRepository,
   FakeCredentialRepository,
   FakeRefreshTokenRepository,
+  FakeLogger,
   FakePasswordHasher,
   FakeIdGenerator,
   FakeTokenHasher,
@@ -54,6 +55,8 @@ describe("Auth routes (intégration HTTP)", () => {
       refreshTokenRepository,
     );
 
+    const logger = new FakeLogger();
+
     const controller = new AuthController(
       new RegisterUserUseCase(
         userRepository,
@@ -61,8 +64,9 @@ describe("Auth routes (intégration HTTP)", () => {
         passwordHasher,
         idGenerator,
         authTokenService,
+        logger,
       ),
-      new LoginUserUseCase(credentialRepository, passwordHasher, authTokenService),
+      new LoginUserUseCase(credentialRepository, passwordHasher, authTokenService, logger),
       new LogoutUserUseCase(refreshTokenRepository, tokenHasher),
       new RefreshAccessTokenUseCase(
         userRepository,
@@ -74,7 +78,7 @@ describe("Auth routes (intégration HTTP)", () => {
       { isProduction: false } as AppConfig,
     );
 
-    return buildHttpApp(controller);
+    return buildHttpApp(controller, logger);
   }
 
   beforeEach(() => {
@@ -186,6 +190,6 @@ describe("Auth routes (intégration HTTP)", () => {
   // Garde-fou : la pile de gestion d'erreurs et le routage sont bien câblés.
   it("référence les middlewares attendus (routes + errorHandler)", () => {
     expect(typeof buildAuthRoutes).toBe("function");
-    expect(typeof errorHandler).toBe("function");
+    expect(typeof buildErrorHandler).toBe("function");
   });
 });

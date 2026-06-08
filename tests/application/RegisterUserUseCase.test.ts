@@ -5,6 +5,7 @@ import { EmailAlreadyUsedError } from "@application/auth/errors/EmailAlreadyUsed
 import {
   FakeUserRepository,
   FakeCredentialRepository,
+  FakeLogger,
   FakePasswordHasher,
   FakeIdGenerator,
   FakeAuthTokenService,
@@ -27,6 +28,7 @@ describe("RegisterUserUseCase", () => {
       new FakePasswordHasher(),
       new FakeIdGenerator(),
       authTokenService,
+      new FakeLogger(),
     );
   });
 
