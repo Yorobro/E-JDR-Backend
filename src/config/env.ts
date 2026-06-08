@@ -19,7 +19,7 @@ export interface AppConfig {
     readonly port: number;
     readonly user: string;
     readonly password: string;
-    readonly database: string;
+    readonly database?: string;
   };
   /** Configuration des jetons JWT. */
   readonly jwt: {
@@ -72,7 +72,7 @@ export function loadConfig(): AppConfig {
       port: Number(optionalEnv("DB_PORT", "3306")),
       user: requireEnv("DB_USER"),
       password: requireEnv("DB_PASSWORD"),
-      database: requireEnv("DB_NAME"),
+      database: optionalEnv("DB_NAME", "") || undefined
     },
     jwt: {
       accessSecret: requireEnv("JWT_ACCESS_SECRET"),
