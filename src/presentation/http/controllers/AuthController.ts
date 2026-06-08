@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
-import { DomainError } from "@domain/entities/errors/DomainError";
+import { DomainError } from "@domain/shared/errors/DomainError";
 import { AppConfig } from "@config/env";
 import { AppError } from "@application/errors/AppError";
 

@@ -1,4 +1,4 @@
-import { DomainError } from "@domain/entities/errors/DomainError";
+import { DomainError } from "@domain/shared/errors/DomainError";
 
 /**
  * Erreur domaine levée lorsqu'une chaîne ne respecte pas le format d'un e-mail valide.
