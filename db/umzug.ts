@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import mysql, { Pool } from "mysql2/promise";
 import { Umzug } from "umzug";
-import { loadConfig } from "@config/env";
+import { AppConfig, loadConfig } from "@config/env";
 
 /**
  * Runner de migrations façon Flyway, basé sur **Umzug** + **mysql2**.
@@ -21,12 +21,44 @@ const MIGRATIONS_DIR = resolve(__dirname, "migrations");
 const MIGRATIONS_TABLE = "schema_migrations";
 
 /**
+ * Crée le schéma MySQL s'il n'existe pas encore.
+ *
+ * Se connecte sans base sélectionnée via un pool bootstrap, exécute
+ * `CREATE DATABASE IF NOT EXISTS`, puis ferme ce pool temporaire.
+ *
+ * @param config - Configuration applicative.
+ */
+async function ensureSchema(config: AppConfig): Promise<void> {
+  const { database } = config.db;
+  if (!database) {
+    throw new Error(
+      "DB_NAME manquant : définissez la variable d'environnement DB_NAME pour que le schéma puisse être créé.",
+    );
+  }
+
+  const bootstrap = mysql.createPool({
+    host: config.db.host,
+    port: config.db.port,
+    user: config.db.user,
+    password: config.db.password,
+  });
+
+  try {
+    await bootstrap.query(
+      `CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
+    );
+  } finally {
+    await bootstrap.end();
+  }
+}
+
+/**
  * Crée le pool de connexions MySQL à partir de la configuration d'environnement.
  *
+ * @param config - Configuration applicative.
  * @returns Un pool `mysql2/promise` prêt à l'emploi.
  */
-function createPool(): Pool {
-  const config = loadConfig();
+function createPool(config: AppConfig): Pool {
   return mysql.createPool({
     host: config.db.host,
     port: config.db.port,
@@ -119,7 +151,11 @@ function buildUmzug(pool: Pool): Umzug<Pool> {
  */
 async function main(): Promise<void> {
   const command = process.argv[2] ?? "up";
-  const pool = createPool();
+  const config = loadConfig();
+
+  await ensureSchema(config);
+
+  const pool = createPool(config);
 
   try {
     await ensureMigrationsTable(pool);
