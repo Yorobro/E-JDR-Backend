@@ -1,4 +1,5 @@
-import { Pool, RowDataPacket } from "mysql2/promise";
+import { RowDataPacket } from "mysql2/promise";
+import { SqlExecutor } from "@infrastructure/persistence/mysql/SqlExecutor";
 
 /**
  * Représentation **brute** d'une ligne de la table `refresh_tokens`.
@@ -25,10 +26,7 @@ export interface RefreshTokenRow extends RowDataPacket {
  * et retourne des `RefreshTokenRow`.
  */
 export class RefreshTokenDao {
-  /**
-   * @param pool - Le pool de connexions MySQL.
-   */
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly executor: SqlExecutor) {}
 
   /**
    * Insère une nouvelle ligne de refresh token.
@@ -43,7 +41,7 @@ export class RefreshTokenDao {
     expires_at: Date;
     created_at: Date;
   }): Promise<void> {
-    await this.pool.execute(
+    await this.executor.execute(
       `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, created_at)
        VALUES (?, ?, ?, ?, ?)`,
       [row.id, row.user_id, row.token_hash, row.expires_at, row.created_at],
@@ -57,7 +55,7 @@ export class RefreshTokenDao {
    * @returns La ligne correspondante, ou `null` si aucune.
    */
   public async findByTokenHash(tokenHash: string): Promise<RefreshTokenRow | null> {
-    const [rows] = await this.pool.execute<RefreshTokenRow[]>(
+    const [rows] = await this.executor.execute<RefreshTokenRow[]>(
       `SELECT id, user_id, token_hash, expires_at, created_at
        FROM refresh_tokens WHERE token_hash = ? LIMIT 1`,
       [tokenHash],
@@ -72,7 +70,7 @@ export class RefreshTokenDao {
    * @returns Une promesse résolue une fois la suppression effectuée.
    */
   public async deleteByTokenHash(tokenHash: string): Promise<void> {
-    await this.pool.execute("DELETE FROM refresh_tokens WHERE token_hash = ?", [tokenHash]);
+    await this.executor.execute("DELETE FROM refresh_tokens WHERE token_hash = ?", [tokenHash]);
   }
 
   /**
@@ -82,7 +80,7 @@ export class RefreshTokenDao {
    * @returns Une promesse résolue une fois les suppressions effectuées.
    */
   public async deleteAllForUser(userId: string): Promise<void> {
-    await this.pool.execute("DELETE FROM refresh_tokens WHERE user_id = ?", [userId]);
+    await this.executor.execute("DELETE FROM refresh_tokens WHERE user_id = ?", [userId]);
   }
 
   /**
@@ -95,6 +93,6 @@ export class RefreshTokenDao {
    * @returns Une promesse résolue une fois la purge effectuée.
    */
   public async deleteExpired(now: Date): Promise<void> {
-    await this.pool.execute("DELETE FROM refresh_tokens WHERE expires_at < ?", [now]);
+    await this.executor.execute("DELETE FROM refresh_tokens WHERE expires_at < ?", [now]);
   }
 }
