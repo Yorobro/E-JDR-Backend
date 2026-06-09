@@ -1,0 +1,12 @@
+# Normalise les fins de ligne en LF pour tout le dépôt.
+# Évite que `core.autocrlf=true` (Windows) ne casse `prettier --check` (endOfLine: lf).
+* text=auto eol=lf
+
+# Fichiers binaires : jamais de conversion.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
