@@ -173,7 +173,11 @@ export class FakeTokenProvider implements ITokenProvider {
 export class FakeAuthTokenService implements IAuthTokenService {
   public readonly issuedFor: string[] = [];
 
-  public async issueTokens(userId: string, _email: string): Promise<AuthTokens> {
+  public async issueTokens(
+    userId: string,
+    _email: string,
+    _refreshTokenRepo?: IRefreshTokenRepository,
+  ): Promise<AuthTokens> {
     this.issuedFor.push(userId);
     return {
       accessToken: `access-for-${userId}`,

@@ -108,6 +108,7 @@ function buildAuthController(
     tokenProvider,
     tokenHasher,
     authTokenService,
+    unitOfWork,
   );
 
   return new AuthController(registerUser, loginUser, logoutUser, refreshAccessToken, config);

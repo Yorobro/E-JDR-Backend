@@ -1,3 +1,5 @@
+import { IRefreshTokenRepository } from "@application/auth/abstractions/repositories/IRefreshTokenRepository";
+
 /**
  * Paire de jetons émise pour une session authentifiée, avec leurs expirations.
  *
@@ -35,7 +37,14 @@ export interface IAuthTokenService {
    *
    * @param userId - Identifiant de l'utilisateur authentifié (claim `userId`).
    * @param email - Adresse e-mail de l'utilisateur authentifié (claim `email`).
+   * @param refreshTokenRepo - Repo transactionnel optionnel : quand fourni, la persistance du
+   *   refresh token l'utilise (au lieu du repo injecté), afin de partager une transaction avec
+   *   l'appelant (ex. rotation atomique : delete + insert).
    * @returns La paire de jetons (access + refresh) avec leurs dates d'expiration.
    */
-  issueTokens(userId: string, email: string): Promise<AuthTokens>;
+  issueTokens(
+    userId: string,
+    email: string,
+    refreshTokenRepo?: IRefreshTokenRepository,
+  ): Promise<AuthTokens>;
 }

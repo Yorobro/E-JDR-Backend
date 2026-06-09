@@ -11,6 +11,7 @@ import { IRefreshTokenRepository } from "@application/auth/abstractions/reposito
 import { ITokenProvider } from "@application/auth/abstractions/services/ITokenProvider";
 import { ITokenHasher } from "@application/auth/abstractions/services/ITokenHasher";
 import { IAuthTokenService } from "@application/auth/abstractions/services/IAuthTokenService";
+import { IUnitOfWork } from "@application/shared/IUnitOfWork";
 
 /**
  * Use case de rafraîchissement des jetons (avec rotation des refresh tokens).
@@ -31,6 +32,7 @@ export class RefreshAccessTokenUseCase implements IRefreshAccessTokenUseCase {
    * @param tokenProvider - Port de vérification du refresh token.
    * @param tokenHasher - Port de hachage déterministe (recherche/révocation par empreinte).
    * @param authTokenService - Service partagé d'émission des nouveaux jetons.
+   * @param unitOfWork - Unité de travail : rend la rotation (révocation + réémission) atomique.
    */
   constructor(
     private readonly userRepository: IUserRepository,
@@ -38,6 +40,7 @@ export class RefreshAccessTokenUseCase implements IRefreshAccessTokenUseCase {
     private readonly tokenProvider: ITokenProvider,
     private readonly tokenHasher: ITokenHasher,
     private readonly authTokenService: IAuthTokenService,
+    private readonly unitOfWork: IUnitOfWork,
   ) {}
 
   /**
@@ -63,10 +66,16 @@ export class RefreshAccessTokenUseCase implements IRefreshAccessTokenUseCase {
       return Result.failure(new InvalidRefreshTokenError());
     }
 
-    await this.rotate(command.refreshToken);
+    // Rotation atomique : la révocation de l'ancien token et la persistance du nouveau
+    // (via `issueTokens` + repo transactionnel) partagent une seule transaction.
+    const tokens = await this.unitOfWork.execute(async (repos) => {
+      const oldTokenHash = this.tokenHasher.hash(command.refreshToken);
+      await repos.refreshTokens.deleteByTokenHash(oldTokenHash);
+      return this.authTokenService.issueTokens(payload.userId, payload.email, repos.refreshTokens);
+    });
+
     await this.purgeExpiredTokens();
 
-    const tokens = await this.authTokenService.issueTokens(payload.userId, payload.email);
     return Result.success({ tokens });
   }
 
@@ -95,17 +104,5 @@ export class RefreshAccessTokenUseCase implements IRefreshAccessTokenUseCase {
     const tokenHash = this.tokenHasher.hash(rawRefreshToken);
     const stored = await this.refreshTokenRepository.findByTokenHash(tokenHash);
     return stored !== null;
-  }
-
-  /**
-   * Applique la rotation : révoque l'ancien refresh token. La nouvelle paire est ensuite
-   * émise par le service appelant. Révoquer avant d'émettre garantit qu'un token ne peut
-   * pas être réutilisé.
-   *
-   * @param oldRefreshToken - Le refresh token courant à révoquer.
-   */
-  private async rotate(oldRefreshToken: string): Promise<void> {
-    const oldTokenHash = this.tokenHasher.hash(oldRefreshToken);
-    await this.refreshTokenRepository.deleteByTokenHash(oldTokenHash);
   }
 }

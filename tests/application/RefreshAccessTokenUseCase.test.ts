@@ -7,6 +7,8 @@ import {
   FakeTokenProvider,
   FakeTokenHasher,
   FakeAuthTokenService,
+  FakeUnitOfWork,
+  buildFakeTransactionalRepositories,
   buildTestUser,
 } from "./fakes";
 
@@ -22,16 +24,19 @@ describe("RefreshAccessTokenUseCase", () => {
     `refresh:${JSON.stringify({ userId: "user-1", email: "user@test.com" })}`;
 
   beforeEach(() => {
-    userRepository = new FakeUserRepository();
-    refreshTokenRepository = new FakeRefreshTokenRepository();
+    const txRepos = buildFakeTransactionalRepositories();
+    userRepository = txRepos.users;
+    refreshTokenRepository = txRepos.refreshTokens;
     tokenProvider = new FakeTokenProvider();
     authTokenService = new FakeAuthTokenService();
+    const unitOfWork = new FakeUnitOfWork(txRepos);
     useCase = new RefreshAccessTokenUseCase(
       userRepository,
       refreshTokenRepository,
       tokenProvider,
       new FakeTokenHasher(),
       authTokenService,
+      unitOfWork,
     );
   });
 
