@@ -98,6 +98,7 @@ function buildAuthController(
     credentialRepository,
     passwordHasher,
     authTokenService,
+    unitOfWork,
     logger,
   );
   const logoutUser = new LogoutUserUseCase(refreshTokenRepository, tokenHasher);

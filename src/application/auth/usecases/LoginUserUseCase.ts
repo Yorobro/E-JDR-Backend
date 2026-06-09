@@ -15,6 +15,7 @@ import {
 import { ICredentialRepository } from "@application/auth/abstractions/repositories/ICredentialRepository";
 import { IPasswordHasher } from "@application/auth/abstractions/services/IPasswordHasher";
 import { IAuthTokenService } from "@application/auth/abstractions/services/IAuthTokenService";
+import { IUnitOfWork } from "@application/shared/IUnitOfWork";
 
 /**
  * Use case de connexion d'un utilisateur existant.
@@ -32,6 +33,7 @@ export class LoginUserUseCase implements ILoginUserUseCase {
     private readonly credentialRepository: ICredentialRepository,
     private readonly passwordHasher: IPasswordHasher,
     private readonly authTokenService: IAuthTokenService,
+    private readonly unitOfWork: IUnitOfWork,
     private readonly logger: ILogger,
   ) {}
 
@@ -71,7 +73,7 @@ export class LoginUserUseCase implements ILoginUserUseCase {
 
     if (!passwordMatches) {
       const failed = credential.recordFailedAttempt(now);
-      await this.credentialRepository.update(failed);
+      await this.unitOfWork.execute((repos) => repos.credentials.update(failed));
       this.logger.warn("Tentative de connexion échouée", {
         email: email.value,
         failedAttempts: failed.failedAttempts,
@@ -80,7 +82,7 @@ export class LoginUserUseCase implements ILoginUserUseCase {
     }
 
     const updated = credential.resetFailedAttempts();
-    await this.credentialRepository.update(updated);
+    await this.unitOfWork.execute((repos) => repos.credentials.update(updated));
 
     const tokens = await this.authTokenService.issueTokens(updated.userId, updated.email.value);
 
