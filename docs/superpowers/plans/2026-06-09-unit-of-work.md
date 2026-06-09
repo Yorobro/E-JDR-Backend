@@ -853,6 +853,83 @@ git commit -m "refactor(auth): atomic refresh token rotation via UnitOfWork"
 
 ---
 
+## Task 10b: Réparer le test d'intégration HTTP
+
+**Contexte (ajouté en cours d'exécution) :** `tests/presentation/authRoutes.integration.test.ts` construit lui-même les 4 use cases dans son `buildTestApp()` avec leurs anciennes signatures. Les Tasks 7-10 ayant changé ces signatures, ce fichier ne compile plus → `npm run test` complet est rouge. Cette tâche le remet au vert.
+
+**Files:**
+- Modify: `tests/presentation/authRoutes.integration.test.ts`
+
+- [ ] **Step 1: Adapter `buildTestApp()`**
+
+Dans `buildTestApp()`, remplacer la construction des fakes + use cases pour utiliser `buildFakeTransactionalRepositories` + `FakeUnitOfWork`, et les nouvelles signatures des 4 use cases.
+
+Ajouter aux imports depuis `"../application/fakes"` : `buildFakeTransactionalRepositories`, `FakeUnitOfWork`.
+
+Remplacer le début de `buildTestApp()` (les `new FakeUserRepository()` etc.) par un bundle transactionnel partagé, et garder les fakes hors-repo (hasher, idGenerator, tokenHasher, tokenProvider) :
+
+```ts
+    const txRepos = buildFakeTransactionalRepositories();
+    const userRepository = txRepos.users;
+    const credentialRepository = txRepos.credentials;
+    const refreshTokenRepository = txRepos.refreshTokens;
+    const unitOfWork = new FakeUnitOfWork(txRepos);
+    const passwordHasher = new FakePasswordHasher();
+    const idGenerator = new FakeIdGenerator();
+    const tokenHasher = new FakeTokenHasher();
+    const tokenProvider = new FakeTokenProvider();
+```
+
+Puis mettre à jour les 4 constructeurs de use cases avec leurs nouvelles signatures (voir Tasks 7-10) :
+
+```ts
+      new RegisterUserUseCase(
+        credentialRepository,
+        passwordHasher,
+        idGenerator,
+        authTokenService,
+        unitOfWork,
+        logger,
+      ),
+      new LoginUserUseCase(
+        credentialRepository,
+        passwordHasher,
+        authTokenService,
+        unitOfWork,
+        logger,
+      ),
+      new LogoutUserUseCase(tokenHasher, unitOfWork),
+      new RefreshAccessTokenUseCase(
+        userRepository,
+        refreshTokenRepository,
+        tokenProvider,
+        tokenHasher,
+        authTokenService,
+        unitOfWork,
+      ),
+```
+
+Retirer de l'import des fakes les classes devenues inutilisées si elles ne sont plus référencées (`FakeUserRepository`, `FakeCredentialRepository`, `FakeRefreshTokenRepository` — vérifier qu'elles ne sont plus utilisées ailleurs dans le fichier avant de les retirer).
+
+- [ ] **Step 2: Lancer le test d'intégration**
+
+Run: `npx vitest run tests/presentation/authRoutes.integration.test.ts`
+Expected: PASS (tous les tests d'intégration, dont la rotation refresh).
+
+- [ ] **Step 3: Suite complète**
+
+Run: `npm run test`
+Expected: PASS (tous les tests, unitaires + intégration).
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add tests/presentation/authRoutes.integration.test.ts
+git commit -m "test(auth): update integration test wiring for UnitOfWork"
+```
+
+---
+
 ## Task 11: Nettoyage du câblage `main.ts`
 
 **Files:**
