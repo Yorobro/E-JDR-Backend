@@ -101,7 +101,7 @@ function buildAuthController(
     unitOfWork,
     logger,
   );
-  const logoutUser = new LogoutUserUseCase(refreshTokenRepository, tokenHasher);
+  const logoutUser = new LogoutUserUseCase(tokenHasher, unitOfWork);
   const refreshAccessToken = new RefreshAccessTokenUseCase(
     userRepository,
     refreshTokenRepository,

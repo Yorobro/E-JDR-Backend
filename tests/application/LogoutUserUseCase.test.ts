@@ -1,19 +1,24 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { LogoutUserUseCase } from "@application/auth/usecases/LogoutUserUseCase";
-import { FakeRefreshTokenRepository, FakeTokenHasher } from "./fakes";
+import {
+  FakeTokenHasher,
+  FakeUnitOfWork,
+  buildFakeTransactionalRepositories,
+} from "./fakes";
 
 describe("LogoutUserUseCase", () => {
-  let refreshTokenRepository: FakeRefreshTokenRepository;
+  let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
   let useCase: LogoutUserUseCase;
 
   beforeEach(() => {
-    refreshTokenRepository = new FakeRefreshTokenRepository();
-    useCase = new LogoutUserUseCase(refreshTokenRepository, new FakeTokenHasher());
+    txRepos = buildFakeTransactionalRepositories();
+    const unitOfWork = new FakeUnitOfWork(txRepos);
+    useCase = new LogoutUserUseCase(new FakeTokenHasher(), unitOfWork);
   });
 
   it("révoque le refresh token correspondant en base", async () => {
     // On stocke un token dont l'empreinte correspond au fake hasher ("thash:" + token).
-    refreshTokenRepository.tokens.set("thash:my-refresh-token", {
+    txRepos.refreshTokens.tokens.set("thash:my-refresh-token", {
       id: "rt-1",
       userId: "user-1",
       tokenHash: "thash:my-refresh-token",
@@ -23,7 +28,7 @@ describe("LogoutUserUseCase", () => {
     const result = await useCase.execute({ refreshToken: "my-refresh-token" });
 
     expect(result.isSuccess).toBe(true);
-    expect(refreshTokenRepository.tokens.has("thash:my-refresh-token")).toBe(false);
+    expect(txRepos.refreshTokens.tokens.has("thash:my-refresh-token")).toBe(false);
   });
 
   it("réussit même si le token est déjà absent (idempotence)", async () => {
