@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  FakeUnitOfWork,
-  buildFakeTransactionalRepositories,
-  buildTestUser,
-} from "./fakes";
+import { FakeUnitOfWork, buildFakeTransactionalRepositories, buildTestUser } from "./fakes";
 
 describe("FakeUnitOfWork", () => {
   it("exécute le callback avec les repos fournis et retourne sa valeur", async () => {

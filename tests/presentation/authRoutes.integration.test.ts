@@ -67,7 +67,13 @@ describe("Auth routes (intégration HTTP)", () => {
         unitOfWork,
         logger,
       ),
-      new LoginUserUseCase(credentialRepository, passwordHasher, authTokenService, unitOfWork, logger),
+      new LoginUserUseCase(
+        credentialRepository,
+        passwordHasher,
+        authTokenService,
+        unitOfWork,
+        logger,
+      ),
       new LogoutUserUseCase(tokenHasher, unitOfWork),
       new RefreshAccessTokenUseCase(
         userRepository,

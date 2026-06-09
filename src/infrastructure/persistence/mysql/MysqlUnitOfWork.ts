@@ -12,9 +12,7 @@ import { IUnitOfWork, TransactionalRepositories } from "@application/shared/IUni
 export class MysqlUnitOfWork implements IUnitOfWork {
   constructor(private readonly connection: MysqlConnection) {}
 
-  public async execute<T>(
-    work: (repos: TransactionalRepositories) => Promise<T>,
-  ): Promise<T> {
+  public async execute<T>(work: (repos: TransactionalRepositories) => Promise<T>): Promise<T> {
     const conn = await this.connection.getPool().getConnection();
     await conn.beginTransaction();
     try {

@@ -1,10 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { LogoutUserUseCase } from "@application/auth/usecases/LogoutUserUseCase";
-import {
-  FakeTokenHasher,
-  FakeUnitOfWork,
-  buildFakeTransactionalRepositories,
-} from "./fakes";
+import { FakeTokenHasher, FakeUnitOfWork, buildFakeTransactionalRepositories } from "./fakes";
 
 describe("LogoutUserUseCase", () => {
   let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
