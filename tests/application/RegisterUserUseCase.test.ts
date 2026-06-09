@@ -3,31 +3,31 @@ import { Email } from "@domain/auth/value-objects/Email";
 import { RegisterUserUseCase } from "@application/auth/usecases/RegisterUserUseCase";
 import { EmailAlreadyUsedError } from "@application/auth/errors/EmailAlreadyUsedError";
 import {
-  FakeUserRepository,
-  FakeCredentialRepository,
   FakeLogger,
   FakePasswordHasher,
   FakeIdGenerator,
   FakeAuthTokenService,
+  FakeUnitOfWork,
+  buildFakeTransactionalRepositories,
   buildTestCredential,
 } from "./fakes";
 
 describe("RegisterUserUseCase", () => {
-  let userRepository: FakeUserRepository;
-  let credentialRepository: FakeCredentialRepository;
+  let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
   let authTokenService: FakeAuthTokenService;
   let useCase: RegisterUserUseCase;
 
   beforeEach(() => {
-    userRepository = new FakeUserRepository();
-    credentialRepository = new FakeCredentialRepository();
+    txRepos = buildFakeTransactionalRepositories();
+    const credentialRepository = txRepos.credentials; // partagé lecture + écriture
+    const unitOfWork = new FakeUnitOfWork(txRepos);
     authTokenService = new FakeAuthTokenService();
     useCase = new RegisterUserUseCase(
-      userRepository,
       credentialRepository,
       new FakePasswordHasher(),
       new FakeIdGenerator(),
       authTokenService,
+      unitOfWork,
       new FakeLogger(),
     );
   });
@@ -42,15 +42,15 @@ describe("RegisterUserUseCase", () => {
     expect(result.value.email).toBe("new@test.com");
     expect(result.value.tokens.accessToken).toContain("access-for-");
     // L'identifiant d'authentification a bien été persisté.
-    expect(await credentialRepository.existsByEmail(Email.create("new@test.com"))).toBe(true);
+    expect(await txRepos.credentials.existsByEmail(Email.create("new@test.com"))).toBe(true);
     // L'utilisateur métier a bien été persisté (récupérable par son id).
-    expect(await userRepository.findById(result.value.userId)).not.toBeNull();
+    expect(await txRepos.users.findById(result.value.userId)).not.toBeNull();
     // La connexion directe a émis des jetons.
     expect(authTokenService.issuedFor).toHaveLength(1);
   });
 
   it("échoue avec EmailAlreadyUsedError si l'e-mail est déjà pris", async () => {
-    credentialRepository.seed(buildTestCredential("taken@test.com", "password123"));
+    txRepos.credentials.seed(buildTestCredential("taken@test.com", "password123"));
 
     const result = await useCase.execute({
       email: "taken@test.com",

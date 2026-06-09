@@ -11,6 +11,7 @@ import { RefreshTokenDao } from "@infrastructure/persistence/mysql/auth/dao/Refr
 import { MysqlUserRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlUserRepository";
 import { MysqlCredentialRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlCredentialRepository";
 import { MysqlRefreshTokenRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlRefreshTokenRepository";
+import { MysqlUnitOfWork } from "@infrastructure/persistence/mysql/MysqlUnitOfWork";
 import { BcryptPasswordHasher } from "@infrastructure/security/BcryptPasswordHasher";
 import { JwtTokenProvider } from "@infrastructure/security/JwtTokenProvider";
 import { Sha256TokenHasher } from "@infrastructure/security/Sha256TokenHasher";
@@ -75,6 +76,7 @@ function buildAuthController(
 ): AuthController {
   const { userRepository, credentialRepository, refreshTokenRepository } =
     buildAuthRepositories(connection);
+  const unitOfWork = new MysqlUnitOfWork(connection);
   const { passwordHasher, tokenProvider, tokenHasher, idGenerator } = buildSecurityAdapters(config);
 
   const authTokenService = new AuthTokenService(
@@ -85,11 +87,11 @@ function buildAuthController(
   );
 
   const registerUser = new RegisterUserUseCase(
-    userRepository,
     credentialRepository,
     passwordHasher,
     idGenerator,
     authTokenService,
+    unitOfWork,
     logger,
   );
   const loginUser = new LoginUserUseCase(

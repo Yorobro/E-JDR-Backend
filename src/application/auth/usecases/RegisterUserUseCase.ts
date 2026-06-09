@@ -15,11 +15,11 @@ import {
   IRegisterUserUseCase,
   RegisterUserResult,
 } from "@application/auth/abstractions/usecases/IRegisterUserUseCase";
-import { IUserRepository } from "@application/auth/abstractions/repositories/IUserRepository";
 import { ICredentialRepository } from "@application/auth/abstractions/repositories/ICredentialRepository";
 import { IPasswordHasher } from "@application/auth/abstractions/services/IPasswordHasher";
 import { IIdGenerator } from "@application/auth/abstractions/services/IIdGenerator";
 import { IAuthTokenService } from "@application/auth/abstractions/services/IAuthTokenService";
+import { IUnitOfWork } from "@application/shared/IUnitOfWork";
 
 /**
  * Use case d'inscription d'un nouvel utilisateur.
@@ -31,11 +31,11 @@ import { IAuthTokenService } from "@application/auth/abstractions/services/IAuth
  */
 export class RegisterUserUseCase implements IRegisterUserUseCase {
   constructor(
-    private readonly userRepository: IUserRepository,
     private readonly credentialRepository: ICredentialRepository,
     private readonly passwordHasher: IPasswordHasher,
     private readonly idGenerator: IIdGenerator,
     private readonly authTokenService: IAuthTokenService,
+    private readonly unitOfWork: IUnitOfWork,
     private readonly logger: ILogger,
   ) {}
 
@@ -65,8 +65,10 @@ export class RegisterUserUseCase implements IRegisterUserUseCase {
     const user = User.create({ id: this.idGenerator.generate(), createdAt: new Date() });
     const credential = await this.buildCredential(user.id, email, plainPassword);
 
-    await this.userRepository.save(user);
-    await this.credentialRepository.save(credential);
+    await this.unitOfWork.execute(async (repos) => {
+      await repos.users.save(user);
+      await repos.credentials.save(credential);
+    });
 
     const tokens = await this.authTokenService.issueTokens(user.id, email.value);
 
