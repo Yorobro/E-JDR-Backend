@@ -22,6 +22,7 @@ import {
   AuthTokens,
   IAuthTokenService,
 } from "@application/auth/abstractions/services/IAuthTokenService";
+import { IUnitOfWork, TransactionalRepositories } from "@application/shared/IUnitOfWork";
 
 /**
  * Fabriques de doublures de test (fakes) pour les ports applicatifs.
@@ -172,7 +173,11 @@ export class FakeTokenProvider implements ITokenProvider {
 export class FakeAuthTokenService implements IAuthTokenService {
   public readonly issuedFor: string[] = [];
 
-  public async issueTokens(userId: string, _email: string): Promise<AuthTokens> {
+  public async issueTokens(
+    userId: string,
+    _email: string,
+    _refreshTokenRepo?: IRefreshTokenRepository,
+  ): Promise<AuthTokens> {
     this.issuedFor.push(userId);
     return {
       accessToken: `access-for-${userId}`,
@@ -192,6 +197,39 @@ export class FakeLogger implements ILogger {
   public child(): ILogger {
     return this;
   }
+}
+
+/**
+ * UnitOfWork factice : exécute le callback avec un bundle de repos en mémoire, sans
+ * vraie transaction. Si le callback lève, l'erreur remonte telle quelle (les fakes ne
+ * « rollback » pas, mais le test peut vérifier la propagation de l'erreur).
+ */
+export class FakeUnitOfWork implements IUnitOfWork {
+  constructor(private readonly repos: TransactionalRepositories) {}
+
+  public execute<T>(work: (repos: TransactionalRepositories) => Promise<T>): Promise<T> {
+    return work(this.repos);
+  }
+}
+
+/**
+ * Aide de test : assemble un `TransactionalRepositories` à partir de fakes.
+ * Réutilise les fakes fournis pour que le test puisse inspecter leur état après coup.
+ */
+export function buildFakeTransactionalRepositories(overrides?: {
+  users?: FakeUserRepository;
+  credentials?: FakeCredentialRepository;
+  refreshTokens?: FakeRefreshTokenRepository;
+}): TransactionalRepositories & {
+  users: FakeUserRepository;
+  credentials: FakeCredentialRepository;
+  refreshTokens: FakeRefreshTokenRepository;
+} {
+  return {
+    users: overrides?.users ?? new FakeUserRepository(),
+    credentials: overrides?.credentials ?? new FakeCredentialRepository(),
+    refreshTokens: overrides?.refreshTokens ?? new FakeRefreshTokenRepository(),
+  };
 }
 
 /**

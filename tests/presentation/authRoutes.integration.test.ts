@@ -15,9 +15,8 @@ import { LogoutUserUseCase } from "@application/auth/usecases/LogoutUserUseCase"
 import { RefreshAccessTokenUseCase } from "@application/auth/usecases/RefreshAccessTokenUseCase";
 
 import {
-  FakeUserRepository,
-  FakeCredentialRepository,
-  FakeRefreshTokenRepository,
+  buildFakeTransactionalRepositories,
+  FakeUnitOfWork,
   FakeLogger,
   FakePasswordHasher,
   FakeIdGenerator,
@@ -40,9 +39,11 @@ describe("Auth routes (intégration HTTP)", () => {
 
   /** Construit une appli Express identique à la production mais sur doublures. */
   function buildTestApp(): Application {
-    const userRepository = new FakeUserRepository();
-    const credentialRepository = new FakeCredentialRepository();
-    const refreshTokenRepository = new FakeRefreshTokenRepository();
+    const txRepos = buildFakeTransactionalRepositories();
+    const userRepository = txRepos.users;
+    const credentialRepository = txRepos.credentials;
+    const refreshTokenRepository = txRepos.refreshTokens;
+    const unitOfWork = new FakeUnitOfWork(txRepos);
     const passwordHasher = new FakePasswordHasher();
     const idGenerator = new FakeIdGenerator();
     const tokenHasher = new FakeTokenHasher();
@@ -59,21 +60,28 @@ describe("Auth routes (intégration HTTP)", () => {
 
     const controller = new AuthController(
       new RegisterUserUseCase(
-        userRepository,
         credentialRepository,
         passwordHasher,
         idGenerator,
         authTokenService,
+        unitOfWork,
         logger,
       ),
-      new LoginUserUseCase(credentialRepository, passwordHasher, authTokenService, logger),
-      new LogoutUserUseCase(refreshTokenRepository, tokenHasher),
+      new LoginUserUseCase(
+        credentialRepository,
+        passwordHasher,
+        authTokenService,
+        unitOfWork,
+        logger,
+      ),
+      new LogoutUserUseCase(tokenHasher, unitOfWork),
       new RefreshAccessTokenUseCase(
         userRepository,
         refreshTokenRepository,
         tokenProvider,
         tokenHasher,
         authTokenService,
+        unitOfWork,
       ),
       { isProduction: false } as AppConfig,
     );

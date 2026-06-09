@@ -6,6 +6,8 @@ import {
   FakeLogger,
   FakePasswordHasher,
   FakeAuthTokenService,
+  FakeUnitOfWork,
+  buildFakeTransactionalRepositories,
   buildTestCredential,
 } from "./fakes";
 
@@ -15,12 +17,15 @@ describe("LoginUserUseCase", () => {
   let useCase: LoginUserUseCase;
 
   beforeEach(() => {
-    credentialRepository = new FakeCredentialRepository();
+    const txRepos = buildFakeTransactionalRepositories();
+    credentialRepository = txRepos.credentials; // partagé lecture + écriture
+    const unitOfWork = new FakeUnitOfWork(txRepos);
     authTokenService = new FakeAuthTokenService();
     useCase = new LoginUserUseCase(
       credentialRepository,
       new FakePasswordHasher(),
       authTokenService,
+      unitOfWork,
       new FakeLogger(),
     );
   });

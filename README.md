@@ -23,7 +23,7 @@ Le fichier `src/main.ts` est le **composition root** : le seul endroit qui insta
 
 - Un **use case** ne peut **pas** appeler un autre use case.
 - Les **services** peuvent s'appeler entre eux ; ils factorisent la logique redondante entre use cases.
-- Les **use cases** font de l'orchestration pure et peuvent manipuler les repositories directement.
+- Les **use cases** font de l'orchestration pure. **Toute écriture passe par le `UnitOfWork`** (atomicité) ; les lectures pures peuvent utiliser les repositories injectés directement. Voir [UnitOfWork](#unitofwork).
 - **DAO = SQL pur** (1 DAO = 1 table) ; **Repository = assemblage** (DAO + mapping vers le domaine).
 - Erreurs : `Result<T, E>` pour le métier attendu, exceptions pour le technique imprévu.
 - Les **invariants métier** (validation, règles de robustesse, verrouillage…) sont encodés dans les entités et value objects du domaine, pas dans les use cases. Un objet invalide ne peut pas exister : si `Email.create("x")` lève une `DomainError`, c'est parce qu'un e-mail invalide est une impossibilité métier, pas une erreur technique.
@@ -73,6 +73,29 @@ credential.resetFailedAttempts()      // règle : connexion réussie → compteu
 ### Ce qui reste hors du domaine
 
 Le domaine ne contient aucun `import` vers une lib npm. HTTP, bcrypt, JWT, MySQL vivent dans `infrastructure` et `presentation`. Les use cases dans `application` orchestrent le domaine sans y introduire de logique métier.
+
+## UnitOfWork
+
+Toute **écriture** en base passe par le `UnitOfWork` (`IUnitOfWork`), qui garantit
+l'**atomicité** : dans un même `execute(...)`, soit toutes les écritures réussissent
+(commit), soit aucune n'est appliquée (rollback). Les **lectures pures** n'en ont pas
+besoin et utilisent les repositories injectés directement.
+
+```ts
+await unitOfWork.execute(async (repos) => {
+  await repos.users.save(user);
+  await repos.credentials.save(credential); // les deux, ou rien
+});
+```
+
+- **Port** : `IUnitOfWork` + `TransactionalRepositories` (`src/application/shared/IUnitOfWork.ts`) — la couche application ne connaît pas MySQL.
+- **Implémentation** : `MysqlUnitOfWork` ouvre une connexion, `beginTransaction`, construit les repos sur cette connexion via `createAuthRepositories`, puis `commit`/`rollback`.
+- **Factory de repos** : `createAuthRepositories(executor)` est le point unique de construction des repos, partagé entre le composition root (sur le pool) et le `UnitOfWork` (sur la connexion transactionnelle).
+- **DAO** : acceptent un `SqlExecutor` (commun à `Pool` et `PoolConnection`), ce qui permet le même code en mode normal et transactionnel.
+
+**Règle pour les nouveaux domaines** : tout domaine ajouté (ex. `campaign`) fournit sa
+propre factory (`createCampaignRepositories`), enrichit `TransactionalRepositories` des
+repos nécessaires, et écrit exclusivement via le `UnitOfWork`.
 
 ## Authentification
 

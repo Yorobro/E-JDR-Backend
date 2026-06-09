@@ -37,13 +37,22 @@ export class AuthTokenService implements IAuthTokenService {
    * Signe la paire de jetons pour l'identité fournie, persiste l'empreinte du refresh token,
    * puis retourne les jetons bruts (à transmettre au client via cookies).
    */
-  public async issueTokens(userId: string, email: string): Promise<AuthTokens> {
+  public async issueTokens(
+    userId: string,
+    email: string,
+    refreshTokenRepo?: IRefreshTokenRepository,
+  ): Promise<AuthTokens> {
     const payload = { userId, email };
 
     const accessToken = this.tokenProvider.signAccessToken(payload);
     const refreshToken = this.tokenProvider.signRefreshToken(payload);
 
-    await this.persistRefreshToken(userId, refreshToken.token, refreshToken.expiresAt);
+    await this.persistRefreshToken(
+      userId,
+      refreshToken.token,
+      refreshToken.expiresAt,
+      refreshTokenRepo ?? this.refreshTokenRepository,
+    );
 
     return {
       accessToken: accessToken.token,
@@ -59,13 +68,15 @@ export class AuthTokenService implements IAuthTokenService {
    * @param userId - Identifiant du propriétaire du token.
    * @param rawRefreshToken - Le refresh token brut (jamais stocké tel quel).
    * @param expiresAt - Date d'expiration du token.
+   * @param repo - Repo de persistance à utiliser (injecté ou transactionnel selon l'appelant).
    */
   private async persistRefreshToken(
     userId: string,
     rawRefreshToken: string,
     expiresAt: Date,
+    repo: IRefreshTokenRepository,
   ): Promise<void> {
-    await this.refreshTokenRepository.save({
+    await repo.save({
       id: this.idGenerator.generate(),
       userId,
       tokenHash: this.tokenHasher.hash(rawRefreshToken),

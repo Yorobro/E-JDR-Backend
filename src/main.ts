@@ -5,12 +5,8 @@ import { AppConfig, loadConfig } from "@config/env";
 
 // Infrastructure
 import { MysqlConnection } from "@infrastructure/persistence/mysql/MysqlConnection";
-import { UserDao } from "@infrastructure/persistence/mysql/auth/dao/UserDao";
-import { CredentialDao } from "@infrastructure/persistence/mysql/auth/dao/CredentialDao";
-import { RefreshTokenDao } from "@infrastructure/persistence/mysql/auth/dao/RefreshTokenDao";
-import { MysqlUserRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlUserRepository";
-import { MysqlCredentialRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlCredentialRepository";
-import { MysqlRefreshTokenRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlRefreshTokenRepository";
+import { createAuthRepositories } from "@infrastructure/persistence/mysql/auth/createAuthRepositories";
+import { MysqlUnitOfWork } from "@infrastructure/persistence/mysql/MysqlUnitOfWork";
 import { BcryptPasswordHasher } from "@infrastructure/security/BcryptPasswordHasher";
 import { JwtTokenProvider } from "@infrastructure/security/JwtTokenProvider";
 import { Sha256TokenHasher } from "@infrastructure/security/Sha256TokenHasher";
@@ -41,15 +37,6 @@ import { buildErrorHandler } from "@presentation/http/middlewares/errorHandler";
  * → controller/routes (présentation) → application Express.
  */
 
-function buildAuthRepositories(connection: MysqlConnection) {
-  const pool = connection.getPool();
-  return {
-    userRepository: new MysqlUserRepository(new UserDao(pool)),
-    credentialRepository: new MysqlCredentialRepository(new CredentialDao(pool)),
-    refreshTokenRepository: new MysqlRefreshTokenRepository(new RefreshTokenDao(pool)),
-  };
-}
-
 function buildSecurityAdapters(config: AppConfig) {
   return {
     passwordHasher: new BcryptPasswordHasher(),
@@ -73,8 +60,12 @@ function buildAuthController(
   config: AppConfig,
   logger: ILogger,
 ): AuthController {
-  const { userRepository, credentialRepository, refreshTokenRepository } =
-    buildAuthRepositories(connection);
+  const {
+    users: userRepository,
+    credentials: credentialRepository,
+    refreshTokens: refreshTokenRepository,
+  } = createAuthRepositories(connection.getPool());
+  const unitOfWork = new MysqlUnitOfWork(connection);
   const { passwordHasher, tokenProvider, tokenHasher, idGenerator } = buildSecurityAdapters(config);
 
   const authTokenService = new AuthTokenService(
@@ -85,26 +76,28 @@ function buildAuthController(
   );
 
   const registerUser = new RegisterUserUseCase(
-    userRepository,
     credentialRepository,
     passwordHasher,
     idGenerator,
     authTokenService,
+    unitOfWork,
     logger,
   );
   const loginUser = new LoginUserUseCase(
     credentialRepository,
     passwordHasher,
     authTokenService,
+    unitOfWork,
     logger,
   );
-  const logoutUser = new LogoutUserUseCase(refreshTokenRepository, tokenHasher);
+  const logoutUser = new LogoutUserUseCase(tokenHasher, unitOfWork);
   const refreshAccessToken = new RefreshAccessTokenUseCase(
     userRepository,
     refreshTokenRepository,
     tokenProvider,
     tokenHasher,
     authTokenService,
+    unitOfWork,
   );
 
   return new AuthController(registerUser, loginUser, logoutUser, refreshAccessToken, config);

@@ -1,4 +1,5 @@
-import { Pool, RowDataPacket } from "mysql2/promise";
+import { RowDataPacket } from "mysql2/promise";
+import { SqlExecutor } from "@infrastructure/persistence/mysql/SqlExecutor";
 
 /**
  * Représentation **brute** d'une ligne de la table `users`, telle que renvoyée par MySQL.
@@ -20,10 +21,7 @@ export interface UserRow extends RowDataPacket {
  * retourne les `UserRow` correspondantes.
  */
 export class UserDao {
-  /**
-   * @param pool - Le pool de connexions MySQL utilisé pour exécuter les requêtes.
-   */
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly executor: SqlExecutor) {}
 
   /**
    * Insère une nouvelle ligne dans la table `users`.
@@ -32,7 +30,7 @@ export class UserDao {
    * @returns Une promesse résolue une fois l'insertion effectuée.
    */
   public async insert(row: { id: string; created_at: Date }): Promise<void> {
-    await this.pool.execute("INSERT INTO users (id, created_at) VALUES (?, ?)", [
+    await this.executor.execute("INSERT INTO users (id, created_at) VALUES (?, ?)", [
       row.id,
       row.created_at,
     ]);
@@ -45,7 +43,7 @@ export class UserDao {
    * @returns La ligne correspondante, ou `null` si aucune.
    */
   public async findById(id: string): Promise<UserRow | null> {
-    const [rows] = await this.pool.execute<UserRow[]>(
+    const [rows] = await this.executor.execute<UserRow[]>(
       "SELECT id, created_at FROM users WHERE id = ? LIMIT 1",
       [id],
     );
