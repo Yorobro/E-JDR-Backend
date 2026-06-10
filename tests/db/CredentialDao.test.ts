@@ -49,6 +49,7 @@ describe("CredentialDao (intégration MySQL)", () => {
     expect(row!.password_hash).toBe("bcrypt-hash");
     expect(row!.failed_attempts).toBe(0);
     expect(row!.locked_until).toBeNull();
+    expect(row!.created_at.getTime()).toBe(baseRow.created_at.getTime());
   });
 
   it("findByUserId renvoie la ligne du bon utilisateur", async () => {

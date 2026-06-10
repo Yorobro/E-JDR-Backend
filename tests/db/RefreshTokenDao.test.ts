@@ -94,4 +94,10 @@ describe("RefreshTokenDao (intégration MySQL)", () => {
       dao.insert(buildRow("rt-2", "user-2", "hash-1", new Date("2026-02-01T00:00:00Z"))),
     ).rejects.toThrow();
   });
+
+  it("insert refuse un user_id inexistant (FK)", async () => {
+    await expect(
+      dao.insert(buildRow("rt-1", "ghost", "hash-1", new Date("2026-02-01T00:00:00Z"))),
+    ).rejects.toThrow();
+  });
 });
