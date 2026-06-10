@@ -13,6 +13,9 @@ import { RegisterUserUseCase } from "@application/auth/usecases/RegisterUserUseC
 import { LoginUserUseCase } from "@application/auth/usecases/LoginUserUseCase";
 import { LogoutUserUseCase } from "@application/auth/usecases/LogoutUserUseCase";
 import { RefreshAccessTokenUseCase } from "@application/auth/usecases/RefreshAccessTokenUseCase";
+import { GetCurrentUserUseCase } from "@application/auth/usecases/GetCurrentUserUseCase";
+import { UserController } from "@presentation/http/controllers/UserController";
+import { buildAuthMiddleware } from "@presentation/http/middlewares/authMiddleware";
 
 import {
   buildFakeTransactionalRepositories,
@@ -86,7 +89,12 @@ describe("Auth routes (intégration HTTP)", () => {
       { isProduction: false } as AppConfig,
     );
 
-    return buildHttpApp(controller, logger);
+    const userController = new UserController(
+      new GetCurrentUserUseCase(userRepository, credentialRepository),
+    );
+    const authMiddleware = buildAuthMiddleware(tokenProvider);
+
+    return buildHttpApp(controller, userController, authMiddleware, logger);
   }
 
   beforeEach(() => {
@@ -199,5 +207,46 @@ describe("Auth routes (intégration HTTP)", () => {
   it("référence les middlewares attendus (routes + errorHandler)", () => {
     expect(typeof buildAuthRoutes).toBe("function");
     expect(typeof buildErrorHandler).toBe("function");
+  });
+
+  describe("GET /me (route protégée)", () => {
+    it("renvoie 200 et le profil avec les cookies posés par register", async () => {
+      // request.agent conserve les cookies entre les appels, comme un vrai client.
+      const agent = request.agent(app);
+      await agent.post("/auth/register").send({ email: "me@test.com", password: "password123" });
+
+      const res = await agent.get("/me");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ email: "me@test.com" });
+      expect(typeof res.body.userId).toBe("string");
+      expect(typeof res.body.createdAt).toBe("string");
+    });
+
+    it("renvoie 401 UNAUTHENTICATED sans cookie", async () => {
+      const res = await request(app).get("/me");
+
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe("UNAUTHENTICATED");
+    });
+
+    it("renvoie 401 UNAUTHENTICATED avec un token invalide", async () => {
+      const res = await request(app).get("/me").set("Cookie", "access_token=garbage");
+
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe("UNAUTHENTICATED");
+    });
+
+    it("renvoie 401 USER_NOT_FOUND si le compte n'existe plus", async () => {
+      // Jeton techniquement valide (signé par le FakeTokenProvider) pour un compte inexistant.
+      const ghostToken = `access:${JSON.stringify({ userId: "ghost", email: "g@test.com" })}`;
+
+      const res = await request(app)
+        .get("/me")
+        .set("Cookie", `access_token=${encodeURIComponent(ghostToken)}`);
+
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe("USER_NOT_FOUND");
+    });
   });
 });

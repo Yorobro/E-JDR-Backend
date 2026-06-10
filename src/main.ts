@@ -1,4 +1,4 @@
-import express, { Application } from "express";
+import express, { Application, RequestHandler } from "express";
 import cookieParser from "cookie-parser";
 
 import { AppConfig, loadConfig } from "@config/env";
@@ -20,13 +20,17 @@ import { RegisterUserUseCase } from "@application/auth/usecases/RegisterUserUseC
 import { LoginUserUseCase } from "@application/auth/usecases/LoginUserUseCase";
 import { LogoutUserUseCase } from "@application/auth/usecases/LogoutUserUseCase";
 import { RefreshAccessTokenUseCase } from "@application/auth/usecases/RefreshAccessTokenUseCase";
+import { GetCurrentUserUseCase } from "@application/auth/usecases/GetCurrentUserUseCase";
 
 // Presentation
 import { AuthController } from "@presentation/http/controllers/AuthController";
+import { UserController } from "@presentation/http/controllers/UserController";
 import { buildAuthRoutes } from "@presentation/http/routes/authRoutes";
+import { buildUserRoutes } from "@presentation/http/routes/userRoutes";
 import { requestIdMiddleware } from "@presentation/http/middlewares/requestIdMiddleware";
 import { buildHttpLoggerMiddleware } from "@presentation/http/middlewares/httpLoggerMiddleware";
 import { buildErrorHandler } from "@presentation/http/middlewares/errorHandler";
+import { buildAuthMiddleware } from "@presentation/http/middlewares/authMiddleware";
 
 /**
  * **Composition root** de l'application : seul endroit qui instancie les classes concrètes
@@ -107,14 +111,21 @@ function buildAuthController(
  * Construit l'application Express : middlewares globaux, routes, gestion d'erreurs.
  *
  * Exportée pour permettre des tests d'intégration HTTP (via supertest) qui montent la
- * pile Express réelle — routage, parsing JSON, cookies, controller, gestion d'erreurs —
- * en injectant un controller câblé sur des doublures, sans base de données.
+ * pile Express réelle — routage, parsing JSON, cookies, controllers, gestion d'erreurs —
+ * en injectant les controllers câblés sur des doublures, sans base de données.
  *
  * @param authController - Le controller d'authentification câblé.
+ * @param userController - Le controller des routes utilisateur protégées.
+ * @param authMiddleware - Le middleware de vérification du jeton d'accès.
  * @param logger - Le logger applicatif (injecté pour structurer les logs et les erreurs).
  * @returns L'application Express prête à écouter.
  */
-export function buildHttpApp(authController: AuthController, logger: ILogger): Application {
+export function buildHttpApp(
+  authController: AuthController,
+  userController: UserController,
+  authMiddleware: RequestHandler,
+  logger: ILogger,
+): Application {
   const app = express();
 
   // Le requestId doit être attaché en premier pour que tous les middlewares suivants
@@ -125,6 +136,8 @@ export function buildHttpApp(authController: AuthController, logger: ILogger): A
   app.use(buildHttpLoggerMiddleware(logger));
 
   app.use("/auth", buildAuthRoutes(authController));
+  // Routes protégées : le middleware d'auth s'applique à tout ce qui est monté derrière.
+  app.use("/me", authMiddleware, buildUserRoutes(userController));
 
   // Le middleware d'erreurs doit être enregistré en dernier.
   app.use(buildErrorHandler(logger));
@@ -152,7 +165,15 @@ async function bootstrap(): Promise<void> {
   });
 
   const authController = buildAuthController(connection, config, logger);
-  const app = buildHttpApp(authController, logger);
+
+  // buildSecurityAdapters et createAuthRepositories sont sans état — les rappeler ici
+  // est sans effet de bord et évite de changer la signature de buildAuthController.
+  const { tokenProvider } = buildSecurityAdapters(config);
+  const { users, credentials } = createAuthRepositories(connection.getPool());
+  const userController = new UserController(new GetCurrentUserUseCase(users, credentials));
+  const authMiddleware = buildAuthMiddleware(tokenProvider);
+
+  const app = buildHttpApp(authController, userController, authMiddleware, logger);
 
   app.listen(config.port, () => {
     logger.info("Serveur démarré", { port: config.port });
