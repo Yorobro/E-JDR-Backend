@@ -4,8 +4,8 @@ import { UserNotFoundError } from "@application/features/auth/errors/UserNotFoun
 import { GetCurrentUserQuery } from "@application/features/auth/commands/GetCurrentUserQuery";
 import {
   CurrentUserResult,
-  IGetCurrentUserUseCase,
-} from "@application/features/auth/abstractions/usecases/IGetCurrentUserUseCase";
+  GetCurrentUserUseCase,
+} from "@application/features/auth/abstractions/usecases/GetCurrentUserUseCase";
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 
@@ -16,7 +16,7 @@ import { CredentialRepository } from "@application/features/auth/abstractions/re
  * Le `userId` provient du jeton vérifié en amont ; si l'utilisateur ou son credential
  * a disparu entre-temps (compte supprimé), la session est considérée invalide.
  */
-export class GetCurrentUserUseCase implements IGetCurrentUserUseCase {
+export class GetCurrentUserUseCaseImpl implements GetCurrentUserUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly credentialRepository: CredentialRepository,

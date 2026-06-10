@@ -22,7 +22,7 @@ export interface LoginUserResult {
  * Le controller dépend de cette interface, ce qui respecte l'inversion de dépendance
  * et facilite le mock dans les tests.
  */
-export interface ILoginUserUseCase {
+export interface LoginUserUseCase {
   /**
    * Authentifie un utilisateur à partir de ses identifiants.
    *

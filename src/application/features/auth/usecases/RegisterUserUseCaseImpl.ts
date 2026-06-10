@@ -12,9 +12,9 @@ import { EmailAlreadyUsedError } from "@application/features/auth/errors/EmailAl
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { RegisterUserCommand } from "@application/features/auth/commands/RegisterUserCommand";
 import {
-  IRegisterUserUseCase,
+  RegisterUserUseCase,
   RegisterUserResult,
-} from "@application/features/auth/abstractions/usecases/IRegisterUserUseCase";
+} from "@application/features/auth/abstractions/usecases/RegisterUserUseCase";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import { PasswordHasherService } from "@application/features/auth/abstractions/services/PasswordHasherService";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
@@ -29,7 +29,7 @@ import { IUnitOfWork } from "@application/shared/IUnitOfWork";
  * qui lui est rattaché, persiste les deux, et connecte directement en déléguant l'émission
  * des jetons au service partagé `AuthTokenService`.
  */
-export class RegisterUserUseCase implements IRegisterUserUseCase {
+export class RegisterUserUseCaseImpl implements RegisterUserUseCase {
   constructor(
     private readonly credentialRepository: CredentialRepository,
     private readonly passwordHasher: PasswordHasherService,

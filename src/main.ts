@@ -16,11 +16,11 @@ import { PinoLogger } from "@infrastructure/logging/PinoLogger";
 // Application
 import { ILogger } from "@application/shared/ILogger";
 import { AuthTokenServiceImpl } from "@application/features/auth/services/AuthTokenServiceImpl";
-import { RegisterUserUseCase } from "@application/features/auth/usecases/RegisterUserUseCase";
-import { LoginUserUseCase } from "@application/features/auth/usecases/LoginUserUseCase";
-import { LogoutUserUseCase } from "@application/features/auth/usecases/LogoutUserUseCase";
-import { RefreshAccessTokenUseCase } from "@application/features/auth/usecases/RefreshAccessTokenUseCase";
-import { GetCurrentUserUseCase } from "@application/features/auth/usecases/GetCurrentUserUseCase";
+import { RegisterUserUseCaseImpl } from "@application/features/auth/usecases/RegisterUserUseCaseImpl";
+import { LoginUserUseCaseImpl } from "@application/features/auth/usecases/LoginUserUseCaseImpl";
+import { LogoutUserUseCaseImpl } from "@application/features/auth/usecases/LogoutUserUseCaseImpl";
+import { RefreshAccessTokenUseCaseImpl } from "@application/features/auth/usecases/RefreshAccessTokenUseCaseImpl";
+import { GetCurrentUserUseCaseImpl } from "@application/features/auth/usecases/GetCurrentUserUseCaseImpl";
 
 // Presentation
 import { AuthController } from "@presentation/http/controllers/AuthController";
@@ -79,7 +79,7 @@ function buildAuthController(
     refreshTokenRepository,
   );
 
-  const registerUser = new RegisterUserUseCase(
+  const registerUser = new RegisterUserUseCaseImpl(
     credentialRepository,
     passwordHasher,
     idGenerator,
@@ -87,15 +87,15 @@ function buildAuthController(
     unitOfWork,
     logger,
   );
-  const loginUser = new LoginUserUseCase(
+  const loginUser = new LoginUserUseCaseImpl(
     credentialRepository,
     passwordHasher,
     authTokenService,
     unitOfWork,
     logger,
   );
-  const logoutUser = new LogoutUserUseCase(tokenHasher, unitOfWork);
-  const refreshAccessToken = new RefreshAccessTokenUseCase(
+  const logoutUser = new LogoutUserUseCaseImpl(tokenHasher, unitOfWork);
+  const refreshAccessToken = new RefreshAccessTokenUseCaseImpl(
     userRepository,
     refreshTokenRepository,
     tokenProvider,
@@ -170,7 +170,7 @@ async function bootstrap(): Promise<void> {
   // est sans effet de bord et évite de changer la signature de buildAuthController.
   const { tokenProvider } = buildSecurityAdapters(config);
   const { users, credentials } = createAuthRepositories(connection.getPool());
-  const userController = new UserController(new GetCurrentUserUseCase(users, credentials));
+  const userController = new UserController(new GetCurrentUserUseCaseImpl(users, credentials));
   const authMiddleware = buildAuthMiddleware(tokenProvider);
 
   const app = buildHttpApp(authController, userController, authMiddleware, logger);

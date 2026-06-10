@@ -9,9 +9,9 @@ import { InvalidCredentialsError } from "@application/features/auth/errors/Inval
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { LoginUserCommand } from "@application/features/auth/commands/LoginUserCommand";
 import {
-  ILoginUserUseCase,
+  LoginUserUseCase,
   LoginUserResult,
-} from "@application/features/auth/abstractions/usecases/ILoginUserUseCase";
+} from "@application/features/auth/abstractions/usecases/LoginUserUseCase";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import { PasswordHasherService } from "@application/features/auth/abstractions/services/PasswordHasherService";
 import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
@@ -28,7 +28,7 @@ import { IUnitOfWork } from "@application/shared/IUnitOfWork";
  * Implémente également la protection anti-brute-force : après 5 tentatives échouées,
  * le compte est verrouillé 15 minutes. Une connexion réussie réinitialise le compteur.
  */
-export class LoginUserUseCase implements ILoginUserUseCase {
+export class LoginUserUseCaseImpl implements LoginUserUseCase {
   constructor(
     private readonly credentialRepository: CredentialRepository,
     private readonly passwordHasher: PasswordHasherService,

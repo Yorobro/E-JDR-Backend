@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { IGetCurrentUserUseCase } from "@application/features/auth/abstractions/usecases/IGetCurrentUserUseCase";
+import { GetCurrentUserUseCase } from "@application/features/auth/abstractions/usecases/GetCurrentUserUseCase";
 
 /**
  * Controller HTTP des routes utilisateur protégées.
@@ -11,7 +11,7 @@ export class UserController {
   /**
    * @param getCurrentUser - Use case de consultation du profil courant.
    */
-  constructor(private readonly getCurrentUser: IGetCurrentUserUseCase) {}
+  constructor(private readonly getCurrentUser: GetCurrentUserUseCase) {}
 
   /**
    * `GET /me` — renvoie le profil de l'utilisateur authentifié.

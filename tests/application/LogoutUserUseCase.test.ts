@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { LogoutUserUseCase } from "@application/features/auth/usecases/LogoutUserUseCase";
+import { LogoutUserUseCaseImpl } from "@application/features/auth/usecases/LogoutUserUseCaseImpl";
 import { FakeTokenHasher, FakeUnitOfWork, buildFakeTransactionalRepositories } from "./fakes";
 
-describe("LogoutUserUseCase", () => {
+describe("LogoutUserUseCaseImpl", () => {
   let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
-  let useCase: LogoutUserUseCase;
+  let useCase: LogoutUserUseCaseImpl;
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
     const unitOfWork = new FakeUnitOfWork(txRepos);
-    useCase = new LogoutUserUseCase(new FakeTokenHasher(), unitOfWork);
+    useCase = new LogoutUserUseCaseImpl(new FakeTokenHasher(), unitOfWork);
   });
 
   it("révoque le refresh token correspondant en base", async () => {

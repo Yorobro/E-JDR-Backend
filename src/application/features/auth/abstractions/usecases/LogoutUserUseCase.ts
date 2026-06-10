@@ -8,7 +8,7 @@ import { LogoutUserCommand } from "@application/features/auth/commands/LogoutUse
  * Le controller dépend de cette interface, ce qui respecte l'inversion de dépendance
  * et facilite le mock dans les tests.
  */
-export interface ILogoutUserUseCase {
+export interface LogoutUserUseCase {
   /**
    * Déconnecte l'utilisateur en révoquant son refresh token côté serveur.
    *

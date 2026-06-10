@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { RefreshAccessTokenUseCase } from "@application/features/auth/usecases/RefreshAccessTokenUseCase";
+import { RefreshAccessTokenUseCaseImpl } from "@application/features/auth/usecases/RefreshAccessTokenUseCaseImpl";
 import { InvalidRefreshTokenError } from "@application/features/auth/errors/InvalidRefreshTokenError";
 import {
   FakeUserRepository,
@@ -12,12 +12,12 @@ import {
   buildTestUser,
 } from "./fakes";
 
-describe("RefreshAccessTokenUseCase", () => {
+describe("RefreshAccessTokenUseCaseImpl", () => {
   let userRepository: FakeUserRepository;
   let refreshTokenRepository: FakeRefreshTokenRepository;
   let tokenProvider: FakeTokenProvider;
   let authTokenService: FakeAuthTokenService;
-  let useCase: RefreshAccessTokenUseCase;
+  let useCase: RefreshAccessTokenUseCaseImpl;
 
   /** Construit un refresh token "valide" reconnu par le FakeTokenProvider. */
   const validRefreshToken = (): string =>
@@ -30,7 +30,7 @@ describe("RefreshAccessTokenUseCase", () => {
     tokenProvider = new FakeTokenProvider();
     authTokenService = new FakeAuthTokenService();
     const unitOfWork = new FakeUnitOfWork(txRepos);
-    useCase = new RefreshAccessTokenUseCase(
+    useCase = new RefreshAccessTokenUseCaseImpl(
       userRepository,
       refreshTokenRepository,
       tokenProvider,

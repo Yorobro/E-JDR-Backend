@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { GetCurrentUserUseCase } from "@application/features/auth/usecases/GetCurrentUserUseCase";
+import { GetCurrentUserUseCaseImpl } from "@application/features/auth/usecases/GetCurrentUserUseCaseImpl";
 import { UserNotFoundError } from "@application/features/auth/errors/UserNotFoundError";
 
 import {
@@ -10,11 +10,11 @@ import {
   buildTestCredential,
 } from "./fakes";
 
-describe("GetCurrentUserUseCase", () => {
+describe("GetCurrentUserUseCaseImpl", () => {
   function buildUseCase() {
     const users = new FakeUserRepository();
     const credentials = new FakeCredentialRepository();
-    return { useCase: new GetCurrentUserUseCase(users, credentials), users, credentials };
+    return { useCase: new GetCurrentUserUseCaseImpl(users, credentials), users, credentials };
   }
 
   it("renvoie le profil quand l'utilisateur et son credential existent", async () => {

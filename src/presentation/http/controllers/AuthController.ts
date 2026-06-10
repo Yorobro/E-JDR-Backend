@@ -3,10 +3,10 @@ import { NextFunction, Request, Response } from "express";
 import { AppConfig } from "@config/env";
 import { AppError } from "@application/errors/AppError";
 
-import { IRegisterUserUseCase } from "@application/features/auth/abstractions/usecases/IRegisterUserUseCase";
-import { ILoginUserUseCase } from "@application/features/auth/abstractions/usecases/ILoginUserUseCase";
-import { ILogoutUserUseCase } from "@application/features/auth/abstractions/usecases/ILogoutUserUseCase";
-import { IRefreshAccessTokenUseCase } from "@application/features/auth/abstractions/usecases/IRefreshAccessTokenUseCase";
+import { RegisterUserUseCase } from "@application/features/auth/abstractions/usecases/RegisterUserUseCase";
+import { LoginUserUseCase } from "@application/features/auth/abstractions/usecases/LoginUserUseCase";
+import { LogoutUserUseCase } from "@application/features/auth/abstractions/usecases/LogoutUserUseCase";
+import { RefreshAccessTokenUseCase } from "@application/features/auth/abstractions/usecases/RefreshAccessTokenUseCase";
 
 import { AuthHttpMapper } from "@presentation/http/mappers/AuthHttpMapper";
 
@@ -27,10 +27,10 @@ export class AuthController {
    * @param config - Configuration applicative (pour le flag `secure` des cookies).
    */
   constructor(
-    private readonly registerUser: IRegisterUserUseCase,
-    private readonly loginUser: ILoginUserUseCase,
-    private readonly logoutUser: ILogoutUserUseCase,
-    private readonly refreshAccessToken: IRefreshAccessTokenUseCase,
+    private readonly registerUser: RegisterUserUseCase,
+    private readonly loginUser: LoginUserUseCase,
+    private readonly logoutUser: LogoutUserUseCase,
+    private readonly refreshAccessToken: RefreshAccessTokenUseCase,
     private readonly config: AppConfig,
   ) {}
 

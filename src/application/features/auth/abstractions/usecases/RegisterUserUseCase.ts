@@ -22,7 +22,7 @@ export interface RegisterUserResult {
  * Le controller dépend de cette interface (et non de l'implémentation concrète), ce qui
  * respecte l'inversion de dépendance et facilite le mock dans les tests.
  */
-export interface IRegisterUserUseCase {
+export interface RegisterUserUseCase {
   /**
    * Inscrit un nouvel utilisateur puis le connecte directement.
    *

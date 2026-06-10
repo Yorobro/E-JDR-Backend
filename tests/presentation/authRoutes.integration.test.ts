@@ -9,11 +9,11 @@ import { buildErrorHandler } from "@presentation/http/middlewares/errorHandler";
 import { buildHttpApp } from "../../src/main";
 
 import { AuthTokenServiceImpl } from "@application/features/auth/services/AuthTokenServiceImpl";
-import { RegisterUserUseCase } from "@application/features/auth/usecases/RegisterUserUseCase";
-import { LoginUserUseCase } from "@application/features/auth/usecases/LoginUserUseCase";
-import { LogoutUserUseCase } from "@application/features/auth/usecases/LogoutUserUseCase";
-import { RefreshAccessTokenUseCase } from "@application/features/auth/usecases/RefreshAccessTokenUseCase";
-import { GetCurrentUserUseCase } from "@application/features/auth/usecases/GetCurrentUserUseCase";
+import { RegisterUserUseCaseImpl } from "@application/features/auth/usecases/RegisterUserUseCaseImpl";
+import { LoginUserUseCaseImpl } from "@application/features/auth/usecases/LoginUserUseCaseImpl";
+import { LogoutUserUseCaseImpl } from "@application/features/auth/usecases/LogoutUserUseCaseImpl";
+import { RefreshAccessTokenUseCaseImpl } from "@application/features/auth/usecases/RefreshAccessTokenUseCaseImpl";
+import { GetCurrentUserUseCaseImpl } from "@application/features/auth/usecases/GetCurrentUserUseCaseImpl";
 import { UserController } from "@presentation/http/controllers/UserController";
 import { buildAuthMiddleware } from "@presentation/http/middlewares/authMiddleware";
 
@@ -62,7 +62,7 @@ describe("Auth routes (intégration HTTP)", () => {
     const logger = new FakeLogger();
 
     const controller = new AuthController(
-      new RegisterUserUseCase(
+      new RegisterUserUseCaseImpl(
         credentialRepository,
         passwordHasher,
         idGenerator,
@@ -70,15 +70,15 @@ describe("Auth routes (intégration HTTP)", () => {
         unitOfWork,
         logger,
       ),
-      new LoginUserUseCase(
+      new LoginUserUseCaseImpl(
         credentialRepository,
         passwordHasher,
         authTokenService,
         unitOfWork,
         logger,
       ),
-      new LogoutUserUseCase(tokenHasher, unitOfWork),
-      new RefreshAccessTokenUseCase(
+      new LogoutUserUseCaseImpl(tokenHasher, unitOfWork),
+      new RefreshAccessTokenUseCaseImpl(
         userRepository,
         refreshTokenRepository,
         tokenProvider,
@@ -90,7 +90,7 @@ describe("Auth routes (intégration HTTP)", () => {
     );
 
     const userController = new UserController(
-      new GetCurrentUserUseCase(userRepository, credentialRepository),
+      new GetCurrentUserUseCaseImpl(userRepository, credentialRepository),
     );
     const authMiddleware = buildAuthMiddleware(tokenProvider);
 

@@ -1,7 +1,7 @@
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { LogoutUserCommand } from "@application/features/auth/commands/LogoutUserCommand";
-import { ILogoutUserUseCase } from "@application/features/auth/abstractions/usecases/ILogoutUserUseCase";
+import { LogoutUserUseCase } from "@application/features/auth/abstractions/usecases/LogoutUserUseCase";
 import { TokenHasherService } from "@application/features/auth/abstractions/services/TokenHasherService";
 import { IUnitOfWork } from "@application/shared/IUnitOfWork";
 
@@ -11,7 +11,7 @@ import { IUnitOfWork } from "@application/shared/IUnitOfWork";
  * Révoque le refresh token côté serveur en supprimant son empreinte de la base, via le
  * `UnitOfWork`. L'opération est **idempotente** — révoquer un token déjà absent réussit.
  */
-export class LogoutUserUseCase implements ILogoutUserUseCase {
+export class LogoutUserUseCaseImpl implements LogoutUserUseCase {
   constructor(
     private readonly tokenHasher: TokenHasherService,
     private readonly unitOfWork: IUnitOfWork,

@@ -3,9 +3,9 @@ import { AppError } from "@application/errors/AppError";
 import { InvalidRefreshTokenError } from "@application/features/auth/errors/InvalidRefreshTokenError";
 import { RefreshAccessTokenCommand } from "@application/features/auth/commands/RefreshAccessTokenCommand";
 import {
-  IRefreshAccessTokenUseCase,
+  RefreshAccessTokenUseCase,
   RefreshAccessTokenResult,
-} from "@application/features/auth/abstractions/usecases/IRefreshAccessTokenUseCase";
+} from "@application/features/auth/abstractions/usecases/RefreshAccessTokenUseCase";
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
 import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
@@ -25,7 +25,7 @@ import { IUnitOfWork } from "@application/shared/IUnitOfWork";
  * Toute incohérence (signature, expiration, absence en base, utilisateur introuvable)
  * renvoie une unique erreur métier {@link InvalidRefreshTokenError}.
  */
-export class RefreshAccessTokenUseCase implements IRefreshAccessTokenUseCase {
+export class RefreshAccessTokenUseCaseImpl implements RefreshAccessTokenUseCase {
   /**
    * @param userRepository - Port de persistance des utilisateurs.
    * @param refreshTokenRepository - Port de persistance des refresh tokens.

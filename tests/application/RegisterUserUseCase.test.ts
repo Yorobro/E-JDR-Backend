@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { Email } from "@domain/features/auth/value-objects/Email";
-import { RegisterUserUseCase } from "@application/features/auth/usecases/RegisterUserUseCase";
+import { RegisterUserUseCaseImpl } from "@application/features/auth/usecases/RegisterUserUseCaseImpl";
 import { EmailAlreadyUsedError } from "@application/features/auth/errors/EmailAlreadyUsedError";
 import {
   FakeLogger,
@@ -12,17 +12,17 @@ import {
   buildTestCredential,
 } from "./fakes";
 
-describe("RegisterUserUseCase", () => {
+describe("RegisterUserUseCaseImpl", () => {
   let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
   let authTokenService: FakeAuthTokenService;
-  let useCase: RegisterUserUseCase;
+  let useCase: RegisterUserUseCaseImpl;
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
     const credentialRepository = txRepos.credentials; // partagé lecture + écriture
     const unitOfWork = new FakeUnitOfWork(txRepos);
     authTokenService = new FakeAuthTokenService();
-    useCase = new RegisterUserUseCase(
+    useCase = new RegisterUserUseCaseImpl(
       credentialRepository,
       new FakePasswordHasher(),
       new FakeIdGenerator(),

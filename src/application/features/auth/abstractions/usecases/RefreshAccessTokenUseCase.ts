@@ -17,7 +17,7 @@ export interface RefreshAccessTokenResult {
  * Le controller dépend de cette interface, ce qui respecte l'inversion de dépendance
  * et facilite le mock dans les tests.
  */
-export interface IRefreshAccessTokenUseCase {
+export interface RefreshAccessTokenUseCase {
   /**
    * Émet une nouvelle paire de jetons à partir d'un refresh token valide, en révoquant
    * l'ancien (rotation des refresh tokens).

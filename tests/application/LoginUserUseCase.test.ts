@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { LoginUserUseCase } from "@application/features/auth/usecases/LoginUserUseCase";
+import { LoginUserUseCaseImpl } from "@application/features/auth/usecases/LoginUserUseCaseImpl";
 import { InvalidCredentialsError } from "@application/features/auth/errors/InvalidCredentialsError";
 import {
   FakeCredentialRepository,
@@ -11,17 +11,17 @@ import {
   buildTestCredential,
 } from "./fakes";
 
-describe("LoginUserUseCase", () => {
+describe("LoginUserUseCaseImpl", () => {
   let credentialRepository: FakeCredentialRepository;
   let authTokenService: FakeAuthTokenService;
-  let useCase: LoginUserUseCase;
+  let useCase: LoginUserUseCaseImpl;
 
   beforeEach(() => {
     const txRepos = buildFakeTransactionalRepositories();
     credentialRepository = txRepos.credentials; // partagé lecture + écriture
     const unitOfWork = new FakeUnitOfWork(txRepos);
     authTokenService = new FakeAuthTokenService();
-    useCase = new LoginUserUseCase(
+    useCase = new LoginUserUseCaseImpl(
       credentialRepository,
       new FakePasswordHasher(),
       authTokenService,

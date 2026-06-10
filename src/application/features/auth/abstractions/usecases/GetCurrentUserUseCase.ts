@@ -17,7 +17,7 @@ export interface CurrentUserResult {
 /**
  * Port d'entrée du use case de consultation du profil courant (`GET /me`).
  */
-export interface IGetCurrentUserUseCase {
+export interface GetCurrentUserUseCase {
   /**
    * Récupère le profil de l'utilisateur authentifié.
    *
