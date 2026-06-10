@@ -27,6 +27,14 @@ export class MysqlCredentialRepository implements ICredentialRepository {
   /**
    * @inheritdoc
    */
+  public async findByUserId(userId: string): Promise<Credential | null> {
+    const row = await this.credentialDao.findByUserId(userId);
+    return row === null ? null : CredentialMapper.toDomain(row);
+  }
+
+  /**
+   * @inheritdoc
+   */
   public async existsByEmail(email: Email): Promise<boolean> {
     return this.credentialDao.existsByEmail(email.value);
   }

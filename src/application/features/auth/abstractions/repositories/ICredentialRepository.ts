@@ -18,6 +18,14 @@ export interface ICredentialRepository {
   findByEmail(email: Email): Promise<Credential | null>;
 
   /**
+   * Recherche un identifiant d'authentification par l'utilisateur auquel il est rattaché.
+   *
+   * @param userId - L'identifiant de l'utilisateur (relation 1–1 avec `Credential`).
+   * @returns Le `Credential` correspondant, ou `null` s'il n'existe pas.
+   */
+  findByUserId(userId: string): Promise<Credential | null>;
+
+  /**
    * Indique si un identifiant existe déjà pour une adresse e-mail donnée.
    *
    * @param email - L'e-mail (value object) à tester.
