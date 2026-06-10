@@ -58,6 +58,15 @@ export class FakeCredentialRepository implements ICredentialRepository {
     return this.credentials.get(email.value) ?? null;
   }
 
+  public async findByUserId(userId: string): Promise<Credential | null> {
+    for (const credential of this.credentials.values()) {
+      if (credential.userId === userId) {
+        return credential;
+      }
+    }
+    return null;
+  }
+
   public async existsByEmail(email: Email): Promise<boolean> {
     return this.credentials.has(email.value);
   }

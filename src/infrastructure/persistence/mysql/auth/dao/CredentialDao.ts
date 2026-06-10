@@ -53,6 +53,15 @@ export class CredentialDao {
     return rows[0] ?? null;
   }
 
+  public async findByUserId(userId: string): Promise<CredentialRow | null> {
+    const [rows] = await this.executor.execute<CredentialRow[]>(
+      `SELECT id, user_id, email, password_hash, created_at, failed_attempts, locked_until
+       FROM credentials WHERE user_id = ? LIMIT 1`,
+      [userId],
+    );
+    return rows[0] ?? null;
+  }
+
   public async existsByEmail(email: string): Promise<boolean> {
     const [rows] = await this.executor.execute<RowDataPacket[]>(
       "SELECT 1 FROM credentials WHERE email = ? LIMIT 1",
