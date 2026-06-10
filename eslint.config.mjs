@@ -12,7 +12,7 @@ import localRules from "./eslint-rules/lib/index.js";
 export default tseslint.config(
   {
     // Fichiers/dosssiers exclus de l'analyse.
-    ignores: ["dist/**", "node_modules/**", "coverage/**"],
+    ignores: ["dist/**", "node_modules/**", "coverage/**", "eslint-rules/**"],
   },
   {
     // Plugin local: règles de qualité et d'architecture

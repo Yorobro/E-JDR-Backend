@@ -16,7 +16,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "build:eslint-rules": "node ./node_modules/typescript/bin/tsc -p eslint-rules/tsconfig.build.json",
-    "lint": "npm run build:eslint-rules && eslint . --max-warnings 0",
+    "lint": "npm run build:eslint-rules && eslint . --ignore-pattern 'eslint-rules/**' --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
