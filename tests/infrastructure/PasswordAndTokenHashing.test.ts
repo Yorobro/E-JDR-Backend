@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { BcryptPasswordHasher } from "@infrastructure/security/BcryptPasswordHasher";
-import { Sha256TokenHasher } from "@infrastructure/security/Sha256TokenHasher";
+import { PasswordHasherServiceImpl } from "@infrastructure/security/PasswordHasherServiceImpl";
+import { TokenHasherServiceImpl } from "@infrastructure/security/TokenHasherServiceImpl";
 
 /**
  * Tests des adapters de hachage réels (bcrypt et SHA-256).
@@ -9,9 +9,9 @@ import { Sha256TokenHasher } from "@infrastructure/security/Sha256TokenHasher";
  * différentes pour la même entrée) et vérifie correctement ; SHA-256 est déterministe
  * (même entrée → même empreinte) et de longueur fixe (64 hex).
  */
-describe("BcryptPasswordHasher (adapter réel)", () => {
+describe("PasswordHasherServiceImpl (adapter réel)", () => {
   // Coût réduit pour des tests rapides ; la valeur de prod (12) est testée implicitement.
-  const hasher = new BcryptPasswordHasher(4);
+  const hasher = new PasswordHasherServiceImpl(4);
 
   it("hache puis valide un mot de passe correct", async () => {
     const hash = await hasher.hash("password123");
@@ -31,8 +31,8 @@ describe("BcryptPasswordHasher (adapter réel)", () => {
   });
 });
 
-describe("Sha256TokenHasher (adapter réel)", () => {
-  const hasher = new Sha256TokenHasher();
+describe("TokenHasherServiceImpl (adapter réel)", () => {
+  const hasher = new TokenHasherServiceImpl();
 
   it("est déterministe : même entrée → même empreinte", () => {
     expect(hasher.hash("token-abc")).toBe(hasher.hash("token-abc"));

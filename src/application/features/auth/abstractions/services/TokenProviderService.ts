@@ -25,7 +25,7 @@ export interface SignedToken {
  * Distingue explicitement les tokens d'accès (courts) et de rafraîchissement (longs),
  * qui utilisent des secrets différents. L'implémentation concrète vit dans l'infrastructure.
  */
-export interface ITokenProvider {
+export interface TokenProviderService {
   /**
    * Signe un **access token** (durée de vie courte).
    *

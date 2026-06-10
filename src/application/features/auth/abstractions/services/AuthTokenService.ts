@@ -27,7 +27,7 @@ export interface AuthTokens {
  *
  * Utilisé par `RegisterUserUseCase`, `LoginUserUseCase` et `RefreshAccessTokenUseCase`.
  */
-export interface IAuthTokenService {
+export interface AuthTokenService {
   /**
    * Émet une nouvelle paire de jetons pour une identité authentifiée et persiste le refresh token.
    *

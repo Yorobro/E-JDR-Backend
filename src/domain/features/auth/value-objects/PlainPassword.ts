@@ -6,7 +6,7 @@ import { WeakPasswordError } from "@domain/features/auth/errors/WeakPasswordErro
  *
  * Il garantit l'invariant « ce mot de passe respecte la politique » avant tout hachage.
  * Il ne doit jamais être persisté : il sert uniquement de point de validation en entrée,
- * puis sa valeur est transmise au `IPasswordHasher` pour produire un `HashedPassword`.
+ * puis sa valeur est transmise au `PasswordHasherService` pour produire un `HashedPassword`.
  */
 export class PlainPassword {
   /** Longueur minimale exigée pour un mot de passe. */

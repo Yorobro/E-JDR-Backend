@@ -5,7 +5,7 @@ import { HashedPassword } from "@domain/features/auth/value-objects/HashedPasswo
  * Fonction de comparaison de mot de passe injectée dans {@link Credential.verifyPassword}.
  *
  * Délègue la cryptographie (bcrypt) à l'appelant pour que l'entité reste indépendante
- * de toute librairie. Typiquement fournie par le port `IPasswordHasher`.
+ * de toute librairie. Typiquement fournie par le port `PasswordHasherService`.
  */
 export type PasswordCompareFn = (plain: string, hash: string) => Promise<boolean>;
 
@@ -134,7 +134,7 @@ export class Credential {
    *
    * @param plainPassword - Le mot de passe en clair à vérifier.
    * @param compare - Fonction de comparaison ({@link PasswordCompareFn}),
-   *                  typiquement fournie par le port `IPasswordHasher`.
+   *                  typiquement fournie par le port `PasswordHasherService`.
    */
   public async verifyPassword(plainPassword: string, compare: PasswordCompareFn): Promise<boolean> {
     return compare(plainPassword, this.props.password.value);

@@ -8,9 +8,9 @@ import {
 } from "@application/features/auth/abstractions/usecases/IRefreshAccessTokenUseCase";
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
 import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
-import { ITokenProvider } from "@application/features/auth/abstractions/services/ITokenProvider";
-import { ITokenHasher } from "@application/features/auth/abstractions/services/ITokenHasher";
-import { IAuthTokenService } from "@application/features/auth/abstractions/services/IAuthTokenService";
+import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
+import { TokenHasherService } from "@application/features/auth/abstractions/services/TokenHasherService";
+import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
 import { IUnitOfWork } from "@application/shared/IUnitOfWork";
 
 /**
@@ -37,9 +37,9 @@ export class RefreshAccessTokenUseCase implements IRefreshAccessTokenUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly refreshTokenRepository: RefreshTokenRepository,
-    private readonly tokenProvider: ITokenProvider,
-    private readonly tokenHasher: ITokenHasher,
-    private readonly authTokenService: IAuthTokenService,
+    private readonly tokenProvider: TokenProviderService,
+    private readonly tokenHasher: TokenHasherService,
+    private readonly authTokenService: AuthTokenService,
     private readonly unitOfWork: IUnitOfWork,
   ) {}
 

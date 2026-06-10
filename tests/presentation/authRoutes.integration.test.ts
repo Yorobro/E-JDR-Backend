@@ -8,7 +8,7 @@ import { buildAuthRoutes } from "@presentation/http/routes/authRoutes";
 import { buildErrorHandler } from "@presentation/http/middlewares/errorHandler";
 import { buildHttpApp } from "../../src/main";
 
-import { AuthTokenService } from "@application/features/auth/services/AuthTokenService";
+import { AuthTokenServiceImpl } from "@application/features/auth/services/AuthTokenServiceImpl";
 import { RegisterUserUseCase } from "@application/features/auth/usecases/RegisterUserUseCase";
 import { LoginUserUseCase } from "@application/features/auth/usecases/LoginUserUseCase";
 import { LogoutUserUseCase } from "@application/features/auth/usecases/LogoutUserUseCase";
@@ -52,7 +52,7 @@ describe("Auth routes (intégration HTTP)", () => {
     const tokenHasher = new FakeTokenHasher();
     const tokenProvider = new FakeTokenProvider();
 
-    const authTokenService = new AuthTokenService(
+    const authTokenService = new AuthTokenServiceImpl(
       tokenProvider,
       tokenHasher,
       idGenerator,

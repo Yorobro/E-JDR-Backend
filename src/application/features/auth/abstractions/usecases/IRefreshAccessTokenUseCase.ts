@@ -1,7 +1,7 @@
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { RefreshAccessTokenCommand } from "@application/features/auth/commands/RefreshAccessTokenCommand";
-import { AuthTokens } from "@application/features/auth/abstractions/services/IAuthTokenService";
+import { AuthTokens } from "@application/features/auth/abstractions/services/AuthTokenService";
 
 /**
  * Résultat de succès d'un rafraîchissement : une nouvelle paire de jetons (rotation).

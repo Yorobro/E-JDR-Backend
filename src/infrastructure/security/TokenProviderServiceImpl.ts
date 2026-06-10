@@ -1,9 +1,9 @@
 import jwt, { Algorithm, JwtPayload, SignOptions } from "jsonwebtoken";
 import {
-  ITokenProvider,
+  TokenProviderService,
   SignedToken,
   TokenPayload,
-} from "@application/features/auth/abstractions/services/ITokenProvider";
+} from "@application/features/auth/abstractions/services/TokenProviderService";
 
 /**
  * Algorithme de signature/vérification épinglé.
@@ -30,12 +30,12 @@ export interface JwtConfig {
 }
 
 /**
- * Implémentation du port `ITokenProvider` basée sur **jsonwebtoken**.
+ * Implémentation du port `TokenProviderService` basée sur **jsonwebtoken**.
  *
  * Seul endroit de l'application qui dépend de la librairie JWT et des secrets. Gère la
  * signature et la vérification des deux types de tokens avec des secrets distincts.
  */
-export class JwtTokenProvider implements ITokenProvider {
+export class TokenProviderServiceImpl implements TokenProviderService {
   /**
    * @param config - Secrets et durées de vie des tokens.
    */

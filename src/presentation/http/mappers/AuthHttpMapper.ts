@@ -4,7 +4,7 @@ import { AccountLockedError } from "@application/features/auth/errors/AccountLoc
 import { EmailAlreadyUsedError } from "@application/features/auth/errors/EmailAlreadyUsedError";
 import { InvalidCredentialsError } from "@application/features/auth/errors/InvalidCredentialsError";
 import { InvalidRefreshTokenError } from "@application/features/auth/errors/InvalidRefreshTokenError";
-import { AuthTokens } from "@application/features/auth/abstractions/services/IAuthTokenService";
+import { AuthTokens } from "@application/features/auth/abstractions/services/AuthTokenService";
 
 /** Nom du cookie portant l'access token. */
 export const ACCESS_TOKEN_COOKIE = "access_token";

@@ -8,7 +8,7 @@
  *
  * L'implémentation concrète vit dans l'infrastructure.
  */
-export interface ITokenHasher {
+export interface TokenHasherService {
   /**
    * Calcule l'empreinte déterministe d'un jeton.
    *

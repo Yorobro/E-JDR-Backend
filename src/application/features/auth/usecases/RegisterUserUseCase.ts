@@ -16,9 +16,9 @@ import {
   RegisterUserResult,
 } from "@application/features/auth/abstractions/usecases/IRegisterUserUseCase";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
-import { IPasswordHasher } from "@application/features/auth/abstractions/services/IPasswordHasher";
-import { IIdGenerator } from "@application/features/auth/abstractions/services/IIdGenerator";
-import { IAuthTokenService } from "@application/features/auth/abstractions/services/IAuthTokenService";
+import { PasswordHasherService } from "@application/features/auth/abstractions/services/PasswordHasherService";
+import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
+import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
 import { IUnitOfWork } from "@application/shared/IUnitOfWork";
 
 /**
@@ -27,14 +27,14 @@ import { IUnitOfWork } from "@application/shared/IUnitOfWork";
  * Orchestration pure : valide les entrées via le domaine, vérifie l'unicité de l'e-mail,
  * crée l'**identité métier** (`User`) puis l'**identifiant d'authentification** (`Credential`)
  * qui lui est rattaché, persiste les deux, et connecte directement en déléguant l'émission
- * des jetons au service partagé `IAuthTokenService`.
+ * des jetons au service partagé `AuthTokenService`.
  */
 export class RegisterUserUseCase implements IRegisterUserUseCase {
   constructor(
     private readonly credentialRepository: CredentialRepository,
-    private readonly passwordHasher: IPasswordHasher,
-    private readonly idGenerator: IIdGenerator,
-    private readonly authTokenService: IAuthTokenService,
+    private readonly passwordHasher: PasswordHasherService,
+    private readonly idGenerator: IdGeneratorService,
+    private readonly authTokenService: AuthTokenService,
     private readonly unitOfWork: IUnitOfWork,
     private readonly logger: ILogger,
   ) {}

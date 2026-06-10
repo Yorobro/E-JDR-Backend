@@ -4,7 +4,7 @@
  * Abstrait l'algorithme de hachage (bcrypt, argon2...) afin que la couche application
  * et le domaine n'en dépendent pas. L'implémentation concrète vit dans l'infrastructure.
  */
-export interface IPasswordHasher {
+export interface PasswordHasherService {
   /**
    * Hache un mot de passe en clair.
    *

@@ -1,7 +1,7 @@
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { LoginUserCommand } from "@application/features/auth/commands/LoginUserCommand";
-import { AuthTokens } from "@application/features/auth/abstractions/services/IAuthTokenService";
+import { AuthTokens } from "@application/features/auth/abstractions/services/AuthTokenService";
 
 /**
  * Résultat de succès d'une connexion : informations publiques de l'utilisateur

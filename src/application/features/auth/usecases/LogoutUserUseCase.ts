@@ -2,7 +2,7 @@ import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { LogoutUserCommand } from "@application/features/auth/commands/LogoutUserCommand";
 import { ILogoutUserUseCase } from "@application/features/auth/abstractions/usecases/ILogoutUserUseCase";
-import { ITokenHasher } from "@application/features/auth/abstractions/services/ITokenHasher";
+import { TokenHasherService } from "@application/features/auth/abstractions/services/TokenHasherService";
 import { IUnitOfWork } from "@application/shared/IUnitOfWork";
 
 /**
@@ -13,7 +13,7 @@ import { IUnitOfWork } from "@application/shared/IUnitOfWork";
  */
 export class LogoutUserUseCase implements ILogoutUserUseCase {
   constructor(
-    private readonly tokenHasher: ITokenHasher,
+    private readonly tokenHasher: TokenHasherService,
     private readonly unitOfWork: IUnitOfWork,
   ) {}
 

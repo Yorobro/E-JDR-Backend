@@ -30,7 +30,7 @@ export class User {
    * Crée un **nouvel** utilisateur métier (inscription).
    *
    * @param params - Identité du nouvel utilisateur.
-   * @param params.id - Identifiant unique (généré en amont par un `IIdGenerator`).
+   * @param params.id - Identifiant unique (généré en amont par un `IdGeneratorService`).
    * @param params.createdAt - Horodatage de création (injecté pour rester testable/déterministe).
    * @returns Une nouvelle instance de `User`.
    */

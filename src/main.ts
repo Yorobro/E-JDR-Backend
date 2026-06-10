@@ -7,15 +7,15 @@ import { AppConfig, loadConfig } from "@config/env";
 import { MysqlConnection } from "@infrastructure/persistence/mysql/MysqlConnection";
 import { createAuthRepositories } from "@infrastructure/persistence/mysql/features/auth/createAuthRepositories";
 import { MysqlUnitOfWork } from "@infrastructure/persistence/mysql/MysqlUnitOfWork";
-import { BcryptPasswordHasher } from "@infrastructure/security/BcryptPasswordHasher";
-import { JwtTokenProvider } from "@infrastructure/security/JwtTokenProvider";
-import { Sha256TokenHasher } from "@infrastructure/security/Sha256TokenHasher";
-import { UuidGenerator } from "@infrastructure/id/UuidGenerator";
+import { PasswordHasherServiceImpl } from "@infrastructure/security/PasswordHasherServiceImpl";
+import { TokenProviderServiceImpl } from "@infrastructure/security/TokenProviderServiceImpl";
+import { TokenHasherServiceImpl } from "@infrastructure/security/TokenHasherServiceImpl";
+import { IdGeneratorServiceImpl } from "@infrastructure/id/IdGeneratorServiceImpl";
 import { PinoLogger } from "@infrastructure/logging/PinoLogger";
 
 // Application
 import { ILogger } from "@application/shared/ILogger";
-import { AuthTokenService } from "@application/features/auth/services/AuthTokenService";
+import { AuthTokenServiceImpl } from "@application/features/auth/services/AuthTokenServiceImpl";
 import { RegisterUserUseCase } from "@application/features/auth/usecases/RegisterUserUseCase";
 import { LoginUserUseCase } from "@application/features/auth/usecases/LoginUserUseCase";
 import { LogoutUserUseCase } from "@application/features/auth/usecases/LogoutUserUseCase";
@@ -43,15 +43,15 @@ import { buildAuthMiddleware } from "@presentation/http/middlewares/authMiddlewa
 
 function buildSecurityAdapters(config: AppConfig) {
   return {
-    passwordHasher: new BcryptPasswordHasher(),
-    tokenProvider: new JwtTokenProvider({
+    passwordHasher: new PasswordHasherServiceImpl(),
+    tokenProvider: new TokenProviderServiceImpl({
       accessSecret: config.jwt.accessSecret,
       refreshSecret: config.jwt.refreshSecret,
       accessExpiresIn: config.jwt.accessExpiresIn,
       refreshExpiresIn: config.jwt.refreshExpiresIn,
     }),
-    tokenHasher: new Sha256TokenHasher(),
-    idGenerator: new UuidGenerator(),
+    tokenHasher: new TokenHasherServiceImpl(),
+    idGenerator: new IdGeneratorServiceImpl(),
   };
 }
 
@@ -72,7 +72,7 @@ function buildAuthController(
   const unitOfWork = new MysqlUnitOfWork(connection);
   const { passwordHasher, tokenProvider, tokenHasher, idGenerator } = buildSecurityAdapters(config);
 
-  const authTokenService = new AuthTokenService(
+  const authTokenService = new AuthTokenServiceImpl(
     tokenProvider,
     tokenHasher,
     idGenerator,

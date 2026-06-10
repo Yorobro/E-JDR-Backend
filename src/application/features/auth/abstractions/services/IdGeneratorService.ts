@@ -5,7 +5,7 @@
  * ne dépende pas d'une implémentation concrète. Utile aussi pour les tests (générateur
  * déterministe). L'implémentation réelle vit dans l'infrastructure.
  */
-export interface IIdGenerator {
+export interface IdGeneratorService {
   /**
    * Génère un nouvel identifiant unique.
    *

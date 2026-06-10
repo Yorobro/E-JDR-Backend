@@ -1,10 +1,10 @@
 import {
   AuthTokens,
-  IAuthTokenService,
-} from "@application/features/auth/abstractions/services/IAuthTokenService";
-import { ITokenProvider } from "@application/features/auth/abstractions/services/ITokenProvider";
-import { ITokenHasher } from "@application/features/auth/abstractions/services/ITokenHasher";
-import { IIdGenerator } from "@application/features/auth/abstractions/services/IIdGenerator";
+  AuthTokenService,
+} from "@application/features/auth/abstractions/services/AuthTokenService";
+import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
+import { TokenHasherService } from "@application/features/auth/abstractions/services/TokenHasherService";
+import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 
 /**
@@ -17,7 +17,7 @@ import { RefreshTokenRepository } from "@application/features/auth/abstractions/
  * En tant que **service**, il a le droit d'être appelé par plusieurs use cases (ce qu'un
  * use case ne pourrait pas faire vis-à-vis d'un autre use case).
  */
-export class AuthTokenService implements IAuthTokenService {
+export class AuthTokenServiceImpl implements AuthTokenService {
   /**
    * @param tokenProvider - Port de signature/vérification des JWT.
    * @param tokenHasher - Port de hachage déterministe pour l'empreinte du refresh token.
@@ -25,9 +25,9 @@ export class AuthTokenService implements IAuthTokenService {
    * @param refreshTokenRepository - Port de persistance des refresh tokens.
    */
   constructor(
-    private readonly tokenProvider: ITokenProvider,
-    private readonly tokenHasher: ITokenHasher,
-    private readonly idGenerator: IIdGenerator,
+    private readonly tokenProvider: TokenProviderService,
+    private readonly tokenHasher: TokenHasherService,
+    private readonly idGenerator: IdGeneratorService,
     private readonly refreshTokenRepository: RefreshTokenRepository,
   ) {}
 

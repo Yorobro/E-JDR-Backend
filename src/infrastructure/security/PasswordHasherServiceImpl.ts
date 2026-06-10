@@ -1,14 +1,14 @@
 import bcrypt from "bcrypt";
-import { IPasswordHasher } from "@application/features/auth/abstractions/services/IPasswordHasher";
+import { PasswordHasherService } from "@application/features/auth/abstractions/services/PasswordHasherService";
 
 /**
- * Implémentation du port `IPasswordHasher` basée sur **bcrypt**.
+ * Implémentation du port `PasswordHasherService` basée sur **bcrypt**.
  *
  * bcrypt applique un sel aléatoire et un facteur de coût, ce qui rend chaque empreinte
  * unique et la vérification résistante à la force brute. C'est le seul endroit de
  * l'application qui dépend de la librairie bcrypt.
  */
-export class BcryptPasswordHasher implements IPasswordHasher {
+export class PasswordHasherServiceImpl implements PasswordHasherService {
   /**
    * @param saltRounds - Facteur de coût bcrypt (nombre de tours de sel). Plus il est élevé,
    *                      plus le hachage est lent (donc sûr). 12 est une valeur usuelle.

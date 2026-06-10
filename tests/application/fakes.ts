@@ -10,18 +10,18 @@ import {
   RefreshTokenRepository,
   StoredRefreshToken,
 } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
-import { IPasswordHasher } from "@application/features/auth/abstractions/services/IPasswordHasher";
-import { IIdGenerator } from "@application/features/auth/abstractions/services/IIdGenerator";
-import { ITokenHasher } from "@application/features/auth/abstractions/services/ITokenHasher";
+import { PasswordHasherService } from "@application/features/auth/abstractions/services/PasswordHasherService";
+import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
+import { TokenHasherService } from "@application/features/auth/abstractions/services/TokenHasherService";
 import {
-  ITokenProvider,
+  TokenProviderService,
   SignedToken,
   TokenPayload,
-} from "@application/features/auth/abstractions/services/ITokenProvider";
+} from "@application/features/auth/abstractions/services/TokenProviderService";
 import {
   AuthTokens,
-  IAuthTokenService,
-} from "@application/features/auth/abstractions/services/IAuthTokenService";
+  AuthTokenService,
+} from "@application/features/auth/abstractions/services/AuthTokenService";
 import { IUnitOfWork, TransactionalRepositories } from "@application/shared/IUnitOfWork";
 
 /**
@@ -119,7 +119,7 @@ export class FakeRefreshTokenRepository implements RefreshTokenRepository {
 }
 
 /** Hasher de mot de passe factice : préfixe "hashed:" et compare en conséquence. */
-export class FakePasswordHasher implements IPasswordHasher {
+export class FakePasswordHasher implements PasswordHasherService {
   public async hash(plainPassword: string): Promise<string> {
     return `hashed:${plainPassword}`;
   }
@@ -130,7 +130,7 @@ export class FakePasswordHasher implements IPasswordHasher {
 }
 
 /** Générateur d'identifiants déterministe (incrémental). */
-export class FakeIdGenerator implements IIdGenerator {
+export class FakeIdGenerator implements IdGeneratorService {
   private counter = 0;
 
   public generate(): string {
@@ -140,14 +140,14 @@ export class FakeIdGenerator implements IIdGenerator {
 }
 
 /** Hasher de token déterministe factice. */
-export class FakeTokenHasher implements ITokenHasher {
+export class FakeTokenHasher implements TokenHasherService {
   public hash(token: string): string {
     return `thash:${token}`;
   }
 }
 
 /** Provider de tokens factice : encode le payload en JSON, validité contrôlable. */
-export class FakeTokenProvider implements ITokenProvider {
+export class FakeTokenProvider implements TokenProviderService {
   /** Permet de simuler un refresh token invalide dans les tests. */
   public refreshTokenValid = true;
 
@@ -179,7 +179,7 @@ export class FakeTokenProvider implements ITokenProvider {
 }
 
 /** Service de tokens factice : produit une paire fixe et trace les identités servies. */
-export class FakeAuthTokenService implements IAuthTokenService {
+export class FakeAuthTokenService implements AuthTokenService {
   public readonly issuedFor: string[] = [];
 
   public async issueTokens(

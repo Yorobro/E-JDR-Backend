@@ -1,15 +1,15 @@
 import { createHash } from "node:crypto";
-import { ITokenHasher } from "@application/features/auth/abstractions/services/ITokenHasher";
+import { TokenHasherService } from "@application/features/auth/abstractions/services/TokenHasherService";
 
 /**
- * Implémentation du port `ITokenHasher` basée sur **SHA-256** (module `node:crypto`).
+ * Implémentation du port `TokenHasherService` basée sur **SHA-256** (module `node:crypto`).
  *
  * Le hachage est déterministe : la même entrée produit toujours la même empreinte, ce qui
  * permet de retrouver un refresh token stocké à partir de son empreinte. SHA-256 sans sel
  * est adapté ici car le refresh token est déjà un JWT à forte entropie (contrairement à un
  * mot de passe, qui exige bcrypt).
  */
-export class Sha256TokenHasher implements ITokenHasher {
+export class TokenHasherServiceImpl implements TokenHasherService {
   /**
    * @inheritdoc
    */

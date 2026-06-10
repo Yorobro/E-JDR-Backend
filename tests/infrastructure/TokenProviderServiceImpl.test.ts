@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import jwt from "jsonwebtoken";
-import { JwtTokenProvider } from "@infrastructure/security/JwtTokenProvider";
+import { TokenProviderServiceImpl } from "@infrastructure/security/TokenProviderServiceImpl";
 
 /**
  * Tests du véritable adapter JWT (signature/vérification réelles avec `jsonwebtoken`).
@@ -9,8 +9,8 @@ import { JwtTokenProvider } from "@infrastructure/security/JwtTokenProvider";
  * access/refresh, rejet d'un token falsifié/expiré, et surtout l'épinglage de
  * l'algorithme (un token signé avec un autre `alg` doit être rejeté).
  */
-describe("JwtTokenProvider (adapter réel)", () => {
-  const provider = new JwtTokenProvider({
+describe("TokenProviderServiceImpl (adapter réel)", () => {
+  const provider = new TokenProviderServiceImpl({
     accessSecret: "access-secret-aaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     refreshSecret: "refresh-secret-bbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     accessExpiresIn: "15m",
@@ -43,7 +43,7 @@ describe("JwtTokenProvider (adapter réel)", () => {
   });
 
   it("renvoie null pour un token expiré", () => {
-    const shortLived = new JwtTokenProvider({
+    const shortLived = new TokenProviderServiceImpl({
       accessSecret: "access-secret-aaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       refreshSecret: "refresh-secret-bbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       accessExpiresIn: "-1s", // déjà expiré

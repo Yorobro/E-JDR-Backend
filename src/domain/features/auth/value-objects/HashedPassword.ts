@@ -6,7 +6,7 @@ import { InvalidHashError } from "@domain/features/auth/errors/InvalidHashError"
  * Son unique raison d'être est la sûreté de typage : tant qu'une fonction attend un
  * `HashedPassword` (et non une `string`), il est impossible d'y glisser par erreur un
  * mot de passe en clair. Le domaine ne sait PAS hacher (cela dépendrait de bcrypt) :
- * le hachage est délégué à un port `IPasswordHasher` côté application, qui produit ensuite
+ * le hachage est délégué à un port `PasswordHasherService` côté application, qui produit ensuite
  * ce value object.
  *
  * Le VO est immuable.
