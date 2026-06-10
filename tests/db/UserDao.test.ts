@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { Pool } from "mysql2/promise";
 
 import { UserDao } from "@infrastructure/persistence/mysql/auth/dao/UserDao";
-import { createTestPool, truncateAllTables } from "./dbTestUtils";
+import { createTestPool, clearAllTables } from "./dbTestUtils";
 
 /**
  * Tests d'intégration du `UserDao` contre un MySQL réel (Testcontainers).
@@ -24,7 +24,7 @@ describe("UserDao (intégration MySQL)", () => {
   });
 
   beforeEach(async () => {
-    await truncateAllTables(pool);
+    await clearAllTables(pool);
   });
 
   it("insert puis findById renvoie la ligne insérée", async () => {

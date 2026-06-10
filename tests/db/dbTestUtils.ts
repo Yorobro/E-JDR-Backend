@@ -23,11 +23,11 @@ export function createTestPool(): Pool {
 }
 
 /**
- * Vide toutes les tables métier, enfants d'abord (contraintes FK).
+ * Vide toutes les tables métier via DELETE (TRUNCATE échouerait sur les FK), enfants d'abord.
  *
  * @param pool - Le pool de test.
  */
-export async function truncateAllTables(pool: Pool): Promise<void> {
+export async function clearAllTables(pool: Pool): Promise<void> {
   await pool.execute("DELETE FROM refresh_tokens");
   await pool.execute("DELETE FROM credentials");
   await pool.execute("DELETE FROM users");

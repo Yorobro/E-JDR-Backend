@@ -49,8 +49,12 @@ export default async function setup(project: TestProject): Promise<() => Promise
   const pool = mysql.createPool({ ...info, multipleStatements: true });
   try {
     await runMigrations(pool);
+  } catch (error) {
+    // Échec de migration : sans teardown retourné à Vitest, le conteneur fuirait.
+    await container.stop().catch(() => {});
+    throw error;
   } finally {
-    await pool.end();
+    await pool.end().catch(() => {});
   }
 
   project.provide("db", info);
