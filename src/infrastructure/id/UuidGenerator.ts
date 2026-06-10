@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { IIdGenerator } from "@application/auth/abstractions/services/IIdGenerator";
+import { IIdGenerator } from "@application/features/auth/abstractions/services/IIdGenerator";
 
 /**
  * Implémentation du port `IIdGenerator` basée sur les **UUID v4** (`node:crypto`).
@@ -14,3 +14,5 @@ export class UuidGenerator implements IIdGenerator {
     return randomUUID();
   }
 }
+
+

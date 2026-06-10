@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { Credential } from "@domain/auth/entities/Credential";
-import { Email } from "@domain/auth/value-objects/Email";
-import { HashedPassword } from "@domain/auth/value-objects/HashedPassword";
+import { Credential } from "@domain/features/auth/entities/Credential";
+import { Email } from "@domain/features/auth/value-objects/Email";
+import { HashedPassword } from "@domain/features/auth/value-objects/HashedPassword";
 
 describe("Credential (entité d'authentification)", () => {
   const buildCredential = (): Credential =>
@@ -36,3 +36,5 @@ describe("Credential (entité d'authentification)", () => {
     expect(await credential.verifyPassword("wrong", compare)).toBe(false);
   });
 });
+
+

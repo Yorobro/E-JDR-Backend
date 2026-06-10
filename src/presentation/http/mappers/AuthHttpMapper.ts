@@ -1,10 +1,10 @@
 import { CookieOptions, Request, Response } from "express";
 import { AppError } from "@application/errors/AppError";
-import { AccountLockedError } from "@application/auth/errors/AccountLockedError";
-import { EmailAlreadyUsedError } from "@application/auth/errors/EmailAlreadyUsedError";
-import { InvalidCredentialsError } from "@application/auth/errors/InvalidCredentialsError";
-import { InvalidRefreshTokenError } from "@application/auth/errors/InvalidRefreshTokenError";
-import { AuthTokens } from "@application/auth/abstractions/services/IAuthTokenService";
+import { AccountLockedError } from "@application/features/auth/errors/AccountLockedError";
+import { EmailAlreadyUsedError } from "@application/features/auth/errors/EmailAlreadyUsedError";
+import { InvalidCredentialsError } from "@application/features/auth/errors/InvalidCredentialsError";
+import { InvalidRefreshTokenError } from "@application/features/auth/errors/InvalidRefreshTokenError";
+import { AuthTokens } from "@application/features/auth/abstractions/services/IAuthTokenService";
 
 /** Nom du cookie portant l'access token. */
 export const ACCESS_TOKEN_COOKIE = "access_token";
@@ -90,3 +90,5 @@ export class AuthHttpMapper {
     return 400;
   }
 }
+
+

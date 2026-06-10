@@ -1,5 +1,5 @@
 import { MysqlConnection } from "@infrastructure/persistence/mysql/MysqlConnection";
-import { createAuthRepositories } from "@infrastructure/persistence/mysql/auth/createAuthRepositories";
+import { createAuthRepositories } from "@infrastructure/persistence/mysql/features/auth/createAuthRepositories";
 import { IUnitOfWork, TransactionalRepositories } from "@application/shared/IUnitOfWork";
 
 /**
@@ -27,3 +27,5 @@ export class MysqlUnitOfWork implements IUnitOfWork {
     }
   }
 }
+
+

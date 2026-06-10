@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { RefreshAccessTokenUseCase } from "@application/auth/usecases/RefreshAccessTokenUseCase";
-import { InvalidRefreshTokenError } from "@application/auth/errors/InvalidRefreshTokenError";
+import { RefreshAccessTokenUseCase } from "@application/features/auth/usecases/RefreshAccessTokenUseCase";
+import { InvalidRefreshTokenError } from "@application/features/auth/errors/InvalidRefreshTokenError";
 import {
   FakeUserRepository,
   FakeRefreshTokenRepository,
@@ -116,3 +116,5 @@ describe("RefreshAccessTokenUseCase", () => {
     expect(refreshTokenRepository.tokens.has("thash:expired")).toBe(false);
   });
 });
+
+

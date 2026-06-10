@@ -81,3 +81,5 @@ export class Result<T, E> {
     return this._error as E;
   }
 }
+
+

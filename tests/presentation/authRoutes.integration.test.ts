@@ -8,11 +8,11 @@ import { buildAuthRoutes } from "@presentation/http/routes/authRoutes";
 import { buildErrorHandler } from "@presentation/http/middlewares/errorHandler";
 import { buildHttpApp } from "../../src/main";
 
-import { AuthTokenService } from "@application/auth/services/AuthTokenService";
-import { RegisterUserUseCase } from "@application/auth/usecases/RegisterUserUseCase";
-import { LoginUserUseCase } from "@application/auth/usecases/LoginUserUseCase";
-import { LogoutUserUseCase } from "@application/auth/usecases/LogoutUserUseCase";
-import { RefreshAccessTokenUseCase } from "@application/auth/usecases/RefreshAccessTokenUseCase";
+import { AuthTokenService } from "@application/features/auth/services/AuthTokenService";
+import { RegisterUserUseCase } from "@application/features/auth/usecases/RegisterUserUseCase";
+import { LoginUserUseCase } from "@application/features/auth/usecases/LoginUserUseCase";
+import { LogoutUserUseCase } from "@application/features/auth/usecases/LogoutUserUseCase";
+import { RefreshAccessTokenUseCase } from "@application/features/auth/usecases/RefreshAccessTokenUseCase";
 
 import {
   buildFakeTransactionalRepositories,
@@ -201,3 +201,5 @@ describe("Auth routes (intégration HTTP)", () => {
     expect(typeof buildErrorHandler).toBe("function");
   });
 });
+
+

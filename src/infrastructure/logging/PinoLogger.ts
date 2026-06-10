@@ -38,3 +38,5 @@ export class PinoLogger implements ILogger {
     return new PinoLogger(this.logger.child(bindings));
   }
 }
+
+

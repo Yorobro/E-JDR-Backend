@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { Email } from "@domain/auth/value-objects/Email";
-import { RegisterUserUseCase } from "@application/auth/usecases/RegisterUserUseCase";
-import { EmailAlreadyUsedError } from "@application/auth/errors/EmailAlreadyUsedError";
+import { Email } from "@domain/features/auth/value-objects/Email";
+import { RegisterUserUseCase } from "@application/features/auth/usecases/RegisterUserUseCase";
+import { EmailAlreadyUsedError } from "@application/features/auth/errors/EmailAlreadyUsedError";
 import {
   FakeLogger,
   FakePasswordHasher,
@@ -63,3 +63,5 @@ describe("RegisterUserUseCase", () => {
     expect(authTokenService.issuedFor).toHaveLength(0);
   });
 });
+
+

@@ -47,3 +47,5 @@ describe("Sha256TokenHasher (adapter réel)", () => {
     expect(hash).toMatch(/^[a-f0-9]{64}$/);
   });
 });
+
+

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { ITokenHasher } from "@application/auth/abstractions/services/ITokenHasher";
+import { ITokenHasher } from "@application/features/auth/abstractions/services/ITokenHasher";
 
 /**
  * Implémentation du port `ITokenHasher` basée sur **SHA-256** (module `node:crypto`).
@@ -17,3 +17,5 @@ export class Sha256TokenHasher implements ITokenHasher {
     return createHash("sha256").update(token).digest("hex");
   }
 }
+
+

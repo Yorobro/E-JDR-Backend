@@ -1,6 +1,6 @@
 {
   "name": "e-jdr-backend",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Backend E-JDR — Node.js + TypeScript en Clean Architecture",
   "type": "commonjs",
   "main": "dist/main.js",
@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint . --max-warnings 0",
+    "build:eslint-rules": "node ./node_modules/typescript/bin/tsc -p eslint-rules/tsconfig.build.json",
+    "lint": "npm run build:eslint-rules && eslint . --ignore-pattern 'eslint-rules/**' --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { IPasswordHasher } from "@application/auth/abstractions/services/IPasswordHasher";
+import { IPasswordHasher } from "@application/features/auth/abstractions/services/IPasswordHasher";
 
 /**
  * Implémentation du port `IPasswordHasher` basée sur **bcrypt**.
@@ -29,3 +29,5 @@ export class BcryptPasswordHasher implements IPasswordHasher {
     return bcrypt.compare(plainPassword, hash);
   }
 }
+
+

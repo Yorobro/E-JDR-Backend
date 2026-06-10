@@ -85,3 +85,5 @@ export function loadConfig(): AppConfig {
     logLevel: optionalEnv("LOG_LEVEL", "info"),
   };
 }
+
+

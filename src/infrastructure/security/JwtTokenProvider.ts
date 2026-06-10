@@ -3,7 +3,7 @@ import {
   ITokenProvider,
   SignedToken,
   TokenPayload,
-} from "@application/auth/abstractions/services/ITokenProvider";
+} from "@application/features/auth/abstractions/services/ITokenProvider";
 
 /**
  * Algorithme de signature/vérification épinglé.
@@ -138,3 +138,5 @@ export class JwtTokenProvider implements ITokenProvider {
     return new Date(expSeconds * 1000);
   }
 }
+
+

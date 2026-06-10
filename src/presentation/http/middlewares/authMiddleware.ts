@@ -1,5 +1,5 @@
 import { NextFunction, Request, RequestHandler, Response } from "express";
-import { ITokenProvider } from "@application/auth/abstractions/services/ITokenProvider";
+import { ITokenProvider } from "@application/features/auth/abstractions/services/ITokenProvider";
 import { ACCESS_TOKEN_COOKIE } from "@presentation/http/mappers/AuthHttpMapper";
 
 /**
@@ -51,3 +51,5 @@ export function buildAuthMiddleware(tokenProvider: ITokenProvider): RequestHandl
     next();
   };
 }
+
+

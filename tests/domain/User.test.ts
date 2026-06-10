@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { User } from "@domain/auth/entities/User";
+import { User } from "@domain/features/auth/entities/User";
 
 describe("User (entité métier)", () => {
   it("expose son identité en lecture seule (id, createdAt)", () => {
@@ -18,3 +18,5 @@ describe("User (entité métier)", () => {
     expect(user.createdAt).toEqual(snapshot.createdAt);
   });
 });
+
+
