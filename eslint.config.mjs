@@ -7,11 +7,19 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import prettier from "eslint-config-prettier";
+import localRules from "./eslint-rules/lib/index.js";
 
 export default tseslint.config(
   {
     // Fichiers/dosssiers exclus de l'analyse.
     ignores: ["dist/**", "node_modules/**", "coverage/**"],
+  },
+  {
+    // Plugin local: règles de qualité et d'architecture
+    plugins: { "ejdr": localRules },
+    rules: {
+      "ejdr/clean-architecture": "error",
+    },
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

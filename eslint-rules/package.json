@@ -1,0 +1,17 @@
+{
+  "name": "@local/eslint-rules",
+  "version": "0.1.0",
+  "private": true,
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rimraf lib",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.0.0"
+  }
+}
