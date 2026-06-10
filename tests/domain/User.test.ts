@@ -18,3 +18,4 @@ describe("User (entité métier)", () => {
     expect(user.createdAt).toEqual(snapshot.createdAt);
   });
 });
+

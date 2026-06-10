@@ -27,3 +27,4 @@ describe("FakeUnitOfWork", () => {
     ).rejects.toThrow("boom");
   });
 });
+

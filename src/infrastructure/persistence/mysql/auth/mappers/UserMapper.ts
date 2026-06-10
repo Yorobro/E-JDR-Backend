@@ -1,5 +1,5 @@
 import { User } from "@domain/auth/entities/User";
-import { UserRow } from "@infrastructure/persistence/mysql/auth/dao/UserDao";
+import { UserRow } from "@infrastructure/persistence/mysql/features/auth/dao/UserDao";
 
 /**
  * Traduit entre la représentation **persistance** (`UserRow`) et l'**entité domaine** (`User`).
@@ -34,3 +34,4 @@ export class UserMapper {
     };
   }
 }
+

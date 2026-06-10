@@ -8,3 +8,4 @@ import { Pool } from "mysql2/promise";
  * ouverte pour une transaction (mode UnitOfWork). Les deux exposent `execute`/`query`.
  */
 export type SqlExecutor = Pick<Pool, "execute" | "query">;
+

@@ -4,24 +4,24 @@ import { Email } from "@domain/auth/value-objects/Email";
 import { HashedPassword } from "@domain/auth/value-objects/HashedPassword";
 
 import { ILogger } from "@application/shared/ILogger";
-import { IUserRepository } from "@application/auth/abstractions/repositories/IUserRepository";
-import { ICredentialRepository } from "@application/auth/abstractions/repositories/ICredentialRepository";
+import { IUserRepository } from "@application/features/auth/abstractions/repositories/IUserRepository";
+import { ICredentialRepository } from "@application/features/auth/abstractions/repositories/ICredentialRepository";
 import {
   IRefreshTokenRepository,
   StoredRefreshToken,
-} from "@application/auth/abstractions/repositories/IRefreshTokenRepository";
-import { IPasswordHasher } from "@application/auth/abstractions/services/IPasswordHasher";
-import { IIdGenerator } from "@application/auth/abstractions/services/IIdGenerator";
-import { ITokenHasher } from "@application/auth/abstractions/services/ITokenHasher";
+} from "@application/features/auth/abstractions/repositories/IRefreshTokenRepository";
+import { IPasswordHasher } from "@application/features/auth/abstractions/services/IPasswordHasher";
+import { IIdGenerator } from "@application/features/auth/abstractions/services/IIdGenerator";
+import { ITokenHasher } from "@application/features/auth/abstractions/services/ITokenHasher";
 import {
   ITokenProvider,
   SignedToken,
   TokenPayload,
-} from "@application/auth/abstractions/services/ITokenProvider";
+} from "@application/features/auth/abstractions/services/ITokenProvider";
 import {
   AuthTokens,
   IAuthTokenService,
-} from "@application/auth/abstractions/services/IAuthTokenService";
+} from "@application/features/auth/abstractions/services/IAuthTokenService";
 import { IUnitOfWork, TransactionalRepositories } from "@application/shared/IUnitOfWork";
 
 /**
@@ -266,3 +266,4 @@ export function buildTestCredential(
     createdAt: new Date("2025-01-01T00:00:00Z"),
   });
 }
+

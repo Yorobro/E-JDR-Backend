@@ -36,3 +36,4 @@ describe("Credential (entité d'authentification)", () => {
     expect(await credential.verifyPassword("wrong", compare)).toBe(false);
   });
 });
+

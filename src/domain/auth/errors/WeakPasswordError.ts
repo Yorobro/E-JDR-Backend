@@ -14,3 +14,4 @@ export class WeakPasswordError extends DomainError {
     super("WEAK_PASSWORD", `Le mot de passe est trop faible : ${reason}`);
   }
 }
+

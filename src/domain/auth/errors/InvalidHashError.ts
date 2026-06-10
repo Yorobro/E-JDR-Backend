@@ -11,3 +11,4 @@ export class InvalidHashError extends DomainError {
     super("INVALID_HASH", "L'empreinte du mot de passe est invalide ou absente.");
   }
 }
+

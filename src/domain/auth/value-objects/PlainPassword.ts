@@ -58,3 +58,4 @@ export class PlainPassword {
     return new PlainPassword(raw);
   }
 }
+

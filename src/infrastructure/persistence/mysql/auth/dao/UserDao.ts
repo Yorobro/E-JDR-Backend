@@ -50,3 +50,4 @@ export class UserDao {
     return rows[0] ?? null;
   }
 }
+

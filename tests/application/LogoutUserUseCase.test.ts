@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { LogoutUserUseCase } from "@application/auth/usecases/LogoutUserUseCase";
+import { LogoutUserUseCase } from "@application/features/auth/usecases/LogoutUserUseCase";
 import { FakeTokenHasher, FakeUnitOfWork, buildFakeTransactionalRepositories } from "./fakes";
 
 describe("LogoutUserUseCase", () => {
@@ -33,3 +33,4 @@ describe("LogoutUserUseCase", () => {
     expect(result.isSuccess).toBe(true);
   });
 });
+

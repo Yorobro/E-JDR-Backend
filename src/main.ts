@@ -5,7 +5,7 @@ import { AppConfig, loadConfig } from "@config/env";
 
 // Infrastructure
 import { MysqlConnection } from "@infrastructure/persistence/mysql/MysqlConnection";
-import { createAuthRepositories } from "@infrastructure/persistence/mysql/auth/createAuthRepositories";
+import { createAuthRepositories } from "@infrastructure/persistence/mysql/features/auth/createAuthRepositories";
 import { MysqlUnitOfWork } from "@infrastructure/persistence/mysql/MysqlUnitOfWork";
 import { BcryptPasswordHasher } from "@infrastructure/security/BcryptPasswordHasher";
 import { JwtTokenProvider } from "@infrastructure/security/JwtTokenProvider";
@@ -15,11 +15,11 @@ import { PinoLogger } from "@infrastructure/logging/PinoLogger";
 
 // Application
 import { ILogger } from "@application/shared/ILogger";
-import { AuthTokenService } from "@application/auth/services/AuthTokenService";
-import { RegisterUserUseCase } from "@application/auth/usecases/RegisterUserUseCase";
-import { LoginUserUseCase } from "@application/auth/usecases/LoginUserUseCase";
-import { LogoutUserUseCase } from "@application/auth/usecases/LogoutUserUseCase";
-import { RefreshAccessTokenUseCase } from "@application/auth/usecases/RefreshAccessTokenUseCase";
+import { AuthTokenService } from "@application/features/auth/services/AuthTokenService";
+import { RegisterUserUseCase } from "@application/features/auth/usecases/RegisterUserUseCase";
+import { LoginUserUseCase } from "@application/features/auth/usecases/LoginUserUseCase";
+import { LogoutUserUseCase } from "@application/features/auth/usecases/LogoutUserUseCase";
+import { RefreshAccessTokenUseCase } from "@application/features/auth/usecases/RefreshAccessTokenUseCase";
 
 // Presentation
 import { AuthController } from "@presentation/http/controllers/AuthController";
@@ -169,3 +169,4 @@ if (require.main === module) {
     process.exit(1);
   });
 }
+

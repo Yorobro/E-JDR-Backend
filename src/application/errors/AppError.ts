@@ -28,3 +28,4 @@ export abstract class AppError {
     this.message = message;
   }
 }
+

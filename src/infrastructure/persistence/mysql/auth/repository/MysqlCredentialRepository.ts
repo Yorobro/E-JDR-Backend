@@ -1,8 +1,8 @@
 import { Credential } from "@domain/auth/entities/Credential";
 import { Email } from "@domain/auth/value-objects/Email";
-import { ICredentialRepository } from "@application/auth/abstractions/repositories/ICredentialRepository";
-import { CredentialDao } from "@infrastructure/persistence/mysql/auth/dao/CredentialDao";
-import { CredentialMapper } from "@infrastructure/persistence/mysql/auth/mappers/CredentialMapper";
+import { ICredentialRepository } from "@application/features/auth/abstractions/repositories/ICredentialRepository";
+import { CredentialDao } from "@infrastructure/persistence/mysql/features/auth/dao/CredentialDao";
+import { CredentialMapper } from "@infrastructure/persistence/mysql/features/auth/mappers/CredentialMapper";
 
 /**
  * Implémentation MySQL du port `ICredentialRepository`.
@@ -48,3 +48,4 @@ export class MysqlCredentialRepository implements ICredentialRepository {
     });
   }
 }
+

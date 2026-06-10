@@ -1,11 +1,11 @@
 import {
   IRefreshTokenRepository,
   StoredRefreshToken,
-} from "@application/auth/abstractions/repositories/IRefreshTokenRepository";
+} from "@application/features/auth/abstractions/repositories/IRefreshTokenRepository";
 import {
   RefreshTokenDao,
   RefreshTokenRow,
-} from "@infrastructure/persistence/mysql/auth/dao/RefreshTokenDao";
+} from "@infrastructure/persistence/mysql/features/auth/dao/RefreshTokenDao";
 
 /**
  * Implémentation MySQL du port `IRefreshTokenRepository`.
@@ -77,3 +77,4 @@ export class MysqlRefreshTokenRepository implements IRefreshTokenRepository {
     };
   }
 }
+

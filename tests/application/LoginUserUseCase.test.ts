@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { LoginUserUseCase } from "@application/auth/usecases/LoginUserUseCase";
-import { InvalidCredentialsError } from "@application/auth/errors/InvalidCredentialsError";
+import { LoginUserUseCase } from "@application/features/auth/usecases/LoginUserUseCase";
+import { InvalidCredentialsError } from "@application/features/auth/errors/InvalidCredentialsError";
 import {
   FakeCredentialRepository,
   FakeLogger,
@@ -58,3 +58,4 @@ describe("LoginUserUseCase", () => {
     expect(result.error).toBeInstanceOf(InvalidCredentialsError);
   });
 });
+

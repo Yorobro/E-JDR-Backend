@@ -1,7 +1,7 @@
 import { User } from "@domain/auth/entities/User";
-import { IUserRepository } from "@application/auth/abstractions/repositories/IUserRepository";
-import { UserDao } from "@infrastructure/persistence/mysql/auth/dao/UserDao";
-import { UserMapper } from "@infrastructure/persistence/mysql/auth/mappers/UserMapper";
+import { IUserRepository } from "@application/features/auth/abstractions/repositories/IUserRepository";
+import { UserDao } from "@infrastructure/persistence/mysql/features/auth/dao/UserDao";
+import { UserMapper } from "@infrastructure/persistence/mysql/features/auth/mappers/UserMapper";
 
 /**
  * Implémentation MySQL du port `IUserRepository`.
@@ -30,3 +30,4 @@ export class MysqlUserRepository implements IUserRepository {
     await this.userDao.insert(UserMapper.toRow(user));
   }
 }
+

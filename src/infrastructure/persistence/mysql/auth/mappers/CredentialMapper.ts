@@ -1,7 +1,7 @@
 import { Credential } from "@domain/auth/entities/Credential";
 import { Email } from "@domain/auth/value-objects/Email";
 import { HashedPassword } from "@domain/auth/value-objects/HashedPassword";
-import { CredentialRow } from "@infrastructure/persistence/mysql/auth/dao/CredentialDao";
+import { CredentialRow } from "@infrastructure/persistence/mysql/features/auth/dao/CredentialDao";
 
 /**
  * Traduit entre la représentation **persistance** (`CredentialRow`) et l'**entité domaine**
@@ -40,3 +40,4 @@ export class CredentialMapper {
     };
   }
 }
+

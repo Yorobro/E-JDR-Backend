@@ -1,11 +1,11 @@
 import { SqlExecutor } from "@infrastructure/persistence/mysql/SqlExecutor";
 import { TransactionalRepositories } from "@application/shared/IUnitOfWork";
-import { UserDao } from "@infrastructure/persistence/mysql/auth/dao/UserDao";
-import { CredentialDao } from "@infrastructure/persistence/mysql/auth/dao/CredentialDao";
-import { RefreshTokenDao } from "@infrastructure/persistence/mysql/auth/dao/RefreshTokenDao";
-import { MysqlUserRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlUserRepository";
-import { MysqlCredentialRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlCredentialRepository";
-import { MysqlRefreshTokenRepository } from "@infrastructure/persistence/mysql/auth/repository/MysqlRefreshTokenRepository";
+import { UserDao } from "@infrastructure/persistence/mysql/features/auth/dao/UserDao";
+import { CredentialDao } from "@infrastructure/persistence/mysql/features/auth/dao/CredentialDao";
+import { RefreshTokenDao } from "@infrastructure/persistence/mysql/features/auth/dao/RefreshTokenDao";
+import { MysqlUserRepository } from "@infrastructure/persistence/mysql/features/auth/repository/MysqlUserRepository";
+import { MysqlCredentialRepository } from "@infrastructure/persistence/mysql/features/auth/repository/MysqlCredentialRepository";
+import { MysqlRefreshTokenRepository } from "@infrastructure/persistence/mysql/features/auth/repository/MysqlRefreshTokenRepository";
 
 /**
  * Construit le jeu de repositories auth sur un `SqlExecutor` donné.
@@ -21,3 +21,4 @@ export function createAuthRepositories(executor: SqlExecutor): TransactionalRepo
     refreshTokens: new MysqlRefreshTokenRepository(new RefreshTokenDao(executor)),
   };
 }
+

@@ -20,3 +20,4 @@ export function buildAuthRoutes(controller: AuthController): Router {
 
   return router;
 }
+

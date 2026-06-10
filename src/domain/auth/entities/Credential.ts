@@ -140,3 +140,4 @@ export class Credential {
     return compare(plainPassword, this.props.password.value);
   }
 }
+

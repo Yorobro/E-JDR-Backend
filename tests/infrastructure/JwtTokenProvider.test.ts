@@ -68,3 +68,4 @@ describe("JwtTokenProvider (adapter réel)", () => {
     expect(provider.verifyAccessToken(tokenSansClaims)).toBeNull();
   });
 });
+
