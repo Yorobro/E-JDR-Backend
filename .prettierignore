@@ -3,5 +3,9 @@ node_modules
 coverage
 package-lock.json
 
+# Plugin ESLint local : déjà exclu d'ESLint (eslint.config.mjs), exclu aussi de Prettier
+# pour éviter que le reformatage casse les directives `@ts-ignore` sensibles au retour à la ligne.
+eslint-rules
+
 # Documentation : mise en forme manuelle (tableaux alignés) préservée.
 *.md

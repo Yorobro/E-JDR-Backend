@@ -53,12 +53,15 @@ const rule: Rule.RuleModule = {
         let name = null;
         if (parent) {
           // variable assignment: const foo = () => {}
-          // @ts-ignore
-          if (parent.type === "VariableDeclarator" && parent.id && parent.id.name)
-            name = parent.id.name;
+          const declarator = parent as { type: string; id?: { name?: string } };
+          if (declarator.type === "VariableDeclarator" && declarator.id && declarator.id.name) {
+            name = declarator.id.name;
+          }
           // property assignment: obj = { foo: () => {} }
-          // @ts-ignore
-          if (parent.type === "Property" && parent.key && parent.key.name) name = parent.key.name;
+          const property = parent as { type: string; key?: { name?: string } };
+          if (property.type === "Property" && property.key && property.key.name) {
+            name = property.key.name;
+          }
         }
         checkNode(node, name);
       },
