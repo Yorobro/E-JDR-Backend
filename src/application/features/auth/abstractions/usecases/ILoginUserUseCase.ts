@@ -32,5 +32,3 @@ export interface ILoginUserUseCase {
    */
   execute(command: LoginUserCommand): Promise<Result<LoginUserResult, AppError>>;
 }
-
-

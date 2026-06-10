@@ -138,5 +138,3 @@ export class JwtTokenProvider implements ITokenProvider {
     return new Date(expSeconds * 1000);
   }
 }
-
-

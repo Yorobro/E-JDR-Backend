@@ -29,7 +29,11 @@ const rule: Rule.RuleModule = {
       if (!node || !node.loc) return;
       const lines = node.loc.end.line - node.loc.start.line + 1;
       if (lines > max) {
-        context.report({ node, messageId: "tooLarge", data: { name: name || "<anonymous>", lines } });
+        context.report({
+          node,
+          messageId: "tooLarge",
+          data: { name: name || "<anonymous>", lines },
+        });
       }
     }
 
@@ -50,7 +54,8 @@ const rule: Rule.RuleModule = {
         if (parent) {
           // variable assignment: const foo = () => {}
           // @ts-ignore
-          if (parent.type === "VariableDeclarator" && parent.id && parent.id.name) name = parent.id.name;
+          if (parent.type === "VariableDeclarator" && parent.id && parent.id.name)
+            name = parent.id.name;
           // property assignment: obj = { foo: () => {} }
           // @ts-ignore
           if (parent.type === "Property" && parent.key && parent.key.name) name = parent.key.name;

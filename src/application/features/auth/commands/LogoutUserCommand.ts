@@ -8,5 +8,3 @@ export interface LogoutUserCommand {
   /** Le refresh token brut (issu du cookie) à révoquer. */
   readonly refreshToken: string;
 }
-
-

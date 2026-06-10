@@ -5,7 +5,7 @@ import {
 import { ITokenProvider } from "@application/features/auth/abstractions/services/ITokenProvider";
 import { ITokenHasher } from "@application/features/auth/abstractions/services/ITokenHasher";
 import { IIdGenerator } from "@application/features/auth/abstractions/services/IIdGenerator";
-import { IRefreshTokenRepository } from "@application/features/auth/abstractions/repositories/IRefreshTokenRepository";
+import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 
 /**
  * Implémentation du service d'émission des jetons d'authentification.
@@ -28,7 +28,7 @@ export class AuthTokenService implements IAuthTokenService {
     private readonly tokenProvider: ITokenProvider,
     private readonly tokenHasher: ITokenHasher,
     private readonly idGenerator: IIdGenerator,
-    private readonly refreshTokenRepository: IRefreshTokenRepository,
+    private readonly refreshTokenRepository: RefreshTokenRepository,
   ) {}
 
   /**
@@ -40,7 +40,7 @@ export class AuthTokenService implements IAuthTokenService {
   public async issueTokens(
     userId: string,
     email: string,
-    refreshTokenRepo?: IRefreshTokenRepository,
+    refreshTokenRepo?: RefreshTokenRepository,
   ): Promise<AuthTokens> {
     const payload = { userId, email };
 
@@ -74,7 +74,7 @@ export class AuthTokenService implements IAuthTokenService {
     userId: string,
     rawRefreshToken: string,
     expiresAt: Date,
-    repo: IRefreshTokenRepository,
+    repo: RefreshTokenRepository,
   ): Promise<void> {
     await repo.save({
       id: this.idGenerator.generate(),
@@ -84,5 +84,3 @@ export class AuthTokenService implements IAuthTokenService {
     });
   }
 }
-
-

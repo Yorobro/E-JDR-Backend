@@ -29,5 +29,3 @@ export class BcryptPasswordHasher implements IPasswordHasher {
     return bcrypt.compare(plainPassword, hash);
   }
 }
-
-

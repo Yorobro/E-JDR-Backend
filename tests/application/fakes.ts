@@ -4,12 +4,12 @@ import { Email } from "@domain/features/auth/value-objects/Email";
 import { HashedPassword } from "@domain/features/auth/value-objects/HashedPassword";
 
 import { ILogger } from "@application/shared/ILogger";
-import { IUserRepository } from "@application/features/auth/abstractions/repositories/IUserRepository";
-import { ICredentialRepository } from "@application/features/auth/abstractions/repositories/ICredentialRepository";
+import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
+import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import {
-  IRefreshTokenRepository,
+  RefreshTokenRepository,
   StoredRefreshToken,
-} from "@application/features/auth/abstractions/repositories/IRefreshTokenRepository";
+} from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 import { IPasswordHasher } from "@application/features/auth/abstractions/services/IPasswordHasher";
 import { IIdGenerator } from "@application/features/auth/abstractions/services/IIdGenerator";
 import { ITokenHasher } from "@application/features/auth/abstractions/services/ITokenHasher";
@@ -33,7 +33,7 @@ import { IUnitOfWork, TransactionalRepositories } from "@application/shared/IUni
  */
 
 /** Repository utilisateur métier en mémoire (indexé par id). */
-export class FakeUserRepository implements IUserRepository {
+export class FakeUserRepository implements UserRepository {
   private readonly users = new Map<string, User>();
 
   public async findById(id: string): Promise<User | null> {
@@ -51,7 +51,7 @@ export class FakeUserRepository implements IUserRepository {
 }
 
 /** Repository d'identifiants d'authentification en mémoire (indexé par e-mail). */
-export class FakeCredentialRepository implements ICredentialRepository {
+export class FakeCredentialRepository implements CredentialRepository {
   private readonly credentials = new Map<string, Credential>();
 
   public async findByEmail(email: Email): Promise<Credential | null> {
@@ -86,7 +86,7 @@ export class FakeCredentialRepository implements ICredentialRepository {
 }
 
 /** Repository de refresh tokens en mémoire. */
-export class FakeRefreshTokenRepository implements IRefreshTokenRepository {
+export class FakeRefreshTokenRepository implements RefreshTokenRepository {
   public readonly tokens = new Map<string, StoredRefreshToken>();
 
   public async save(token: StoredRefreshToken): Promise<void> {
@@ -185,7 +185,7 @@ export class FakeAuthTokenService implements IAuthTokenService {
   public async issueTokens(
     userId: string,
     _email: string,
-    _refreshTokenRepo?: IRefreshTokenRepository,
+    _refreshTokenRepo?: RefreshTokenRepository,
   ): Promise<AuthTokens> {
     this.issuedFor.push(userId);
     return {
@@ -275,5 +275,3 @@ export function buildTestCredential(
     createdAt: new Date("2025-01-01T00:00:00Z"),
   });
 }
-
-

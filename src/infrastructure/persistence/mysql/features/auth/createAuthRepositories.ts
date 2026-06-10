@@ -21,5 +21,3 @@ export function createAuthRepositories(executor: SqlExecutor): TransactionalRepo
     refreshTokens: new MysqlRefreshTokenRepository(new RefreshTokenDao(executor)),
   };
 }
-
-

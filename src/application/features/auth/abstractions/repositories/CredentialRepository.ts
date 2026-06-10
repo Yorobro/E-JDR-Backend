@@ -5,10 +5,10 @@ import { Email } from "@domain/features/auth/value-objects/Email";
  * Port de persistance des identifiants d'authentification (port « out »).
  *
  * Sépare le stockage des données d'auth (e-mail + empreinte du mot de passe) de celui de
- * l'identité métier (`IUserRepository`). L'implémentation concrète (MySQL) vit dans
+ * l'identité métier (`UserRepository`). L'implémentation concrète (MySQL) vit dans
  * l'infrastructure et est injectée aux use cases.
  */
-export interface ICredentialRepository {
+export interface CredentialRepository {
   /**
    * Recherche un identifiant par son adresse e-mail.
    *
@@ -47,5 +47,3 @@ export interface ICredentialRepository {
    */
   update(credential: Credential): Promise<void>;
 }
-
-

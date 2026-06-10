@@ -12,7 +12,7 @@ import {
   ILoginUserUseCase,
   LoginUserResult,
 } from "@application/features/auth/abstractions/usecases/ILoginUserUseCase";
-import { ICredentialRepository } from "@application/features/auth/abstractions/repositories/ICredentialRepository";
+import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import { IPasswordHasher } from "@application/features/auth/abstractions/services/IPasswordHasher";
 import { IAuthTokenService } from "@application/features/auth/abstractions/services/IAuthTokenService";
 import { IUnitOfWork } from "@application/shared/IUnitOfWork";
@@ -30,7 +30,7 @@ import { IUnitOfWork } from "@application/shared/IUnitOfWork";
  */
 export class LoginUserUseCase implements ILoginUserUseCase {
   constructor(
-    private readonly credentialRepository: ICredentialRepository,
+    private readonly credentialRepository: CredentialRepository,
     private readonly passwordHasher: IPasswordHasher,
     private readonly authTokenService: IAuthTokenService,
     private readonly unitOfWork: IUnitOfWork,
@@ -95,5 +95,3 @@ export class LoginUserUseCase implements ILoginUserUseCase {
     });
   }
 }
-
-

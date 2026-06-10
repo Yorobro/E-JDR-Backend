@@ -36,5 +36,3 @@ export class MysqlConnection {
     await this.pool.end();
   }
 }
-
-

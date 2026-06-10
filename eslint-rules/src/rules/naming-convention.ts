@@ -7,7 +7,8 @@ const rule: Rule.RuleModule = {
   meta: {
     type: "suggestion",
     docs: {
-      description: "Enforce simple naming conventions (camelCase for variables/functions, PascalCase for types/classes)",
+      description:
+        "Enforce simple naming conventions (camelCase for variables/functions, PascalCase for types/classes)",
       recommended: false,
     },
     messages: {
@@ -25,12 +26,14 @@ const rule: Rule.RuleModule = {
 
     function checkCamel(name: string, node: any) {
       if (skip(name)) return;
-      if (!CAMEL_CASE.test(name)) context.report({ node, messageId: "shouldBeCamel", data: { name } });
+      if (!CAMEL_CASE.test(name))
+        context.report({ node, messageId: "shouldBeCamel", data: { name } });
     }
 
     function checkPascal(name: string, node: any) {
       if (skip(name)) return;
-      if (!PASCAL_CASE.test(name)) context.report({ node, messageId: "shouldBePascal", data: { name } });
+      if (!PASCAL_CASE.test(name))
+        context.report({ node, messageId: "shouldBePascal", data: { name } });
     }
 
     return {
@@ -52,7 +55,8 @@ const rule: Rule.RuleModule = {
         if (node.id && node.id.name) checkPascal(node.id.name, node);
       },
       MethodDefinition(node: any) {
-        if (!node.computed && node.key && node.key.type === "Identifier") checkCamel(node.key.name, node);
+        if (!node.computed && node.key && node.key.type === "Identifier")
+          checkCamel(node.key.name, node);
       },
     };
   },

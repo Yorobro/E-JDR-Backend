@@ -14,5 +14,3 @@ export class InvalidCredentialsError extends AppError {
     super("INVALID_CREDENTIALS", "Adresse e-mail ou mot de passe incorrect.");
   }
 }
-
-

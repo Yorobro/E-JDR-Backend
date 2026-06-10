@@ -58,5 +58,3 @@ export interface ITokenProvider {
    */
   verifyRefreshToken(token: string): TokenPayload | null;
 }
-
-

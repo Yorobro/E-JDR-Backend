@@ -33,5 +33,3 @@ describe("LogoutUserUseCase", () => {
     expect(result.isSuccess).toBe(true);
   });
 });
-
-

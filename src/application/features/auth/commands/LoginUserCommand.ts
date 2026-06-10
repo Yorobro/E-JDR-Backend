@@ -9,5 +9,3 @@ export interface LoginUserCommand {
   /** Mot de passe en clair saisi (brut). */
   readonly password: string;
 }
-
-

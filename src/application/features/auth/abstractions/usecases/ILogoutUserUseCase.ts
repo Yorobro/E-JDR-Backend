@@ -20,5 +20,3 @@ export interface ILogoutUserUseCase {
    */
   execute(command: LogoutUserCommand): Promise<Result<void, AppError>>;
 }
-
-

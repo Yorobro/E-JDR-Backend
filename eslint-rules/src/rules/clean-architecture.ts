@@ -6,7 +6,6 @@ import path from "path";
 
 type MessageIds = "forbiddenDependency";
 
-
 const rule: Rule.RuleModule = {
   meta: {
     type: "problem",

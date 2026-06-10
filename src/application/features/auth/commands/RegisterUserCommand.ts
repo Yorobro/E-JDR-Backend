@@ -11,5 +11,3 @@ export interface RegisterUserCommand {
   /** Mot de passe en clair saisi par l'utilisateur (brut). */
   readonly password: string;
 }
-
-

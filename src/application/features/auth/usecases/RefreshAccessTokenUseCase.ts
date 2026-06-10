@@ -6,8 +6,8 @@ import {
   IRefreshAccessTokenUseCase,
   RefreshAccessTokenResult,
 } from "@application/features/auth/abstractions/usecases/IRefreshAccessTokenUseCase";
-import { IUserRepository } from "@application/features/auth/abstractions/repositories/IUserRepository";
-import { IRefreshTokenRepository } from "@application/features/auth/abstractions/repositories/IRefreshTokenRepository";
+import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
+import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 import { ITokenProvider } from "@application/features/auth/abstractions/services/ITokenProvider";
 import { ITokenHasher } from "@application/features/auth/abstractions/services/ITokenHasher";
 import { IAuthTokenService } from "@application/features/auth/abstractions/services/IAuthTokenService";
@@ -35,8 +35,8 @@ export class RefreshAccessTokenUseCase implements IRefreshAccessTokenUseCase {
    * @param unitOfWork - Unité de travail : rend la rotation (révocation + réémission) atomique.
    */
   constructor(
-    private readonly userRepository: IUserRepository,
-    private readonly refreshTokenRepository: IRefreshTokenRepository,
+    private readonly userRepository: UserRepository,
+    private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly tokenProvider: ITokenProvider,
     private readonly tokenHasher: ITokenHasher,
     private readonly authTokenService: IAuthTokenService,
@@ -106,5 +106,3 @@ export class RefreshAccessTokenUseCase implements IRefreshAccessTokenUseCase {
     return stored !== null;
   }
 }
-
-

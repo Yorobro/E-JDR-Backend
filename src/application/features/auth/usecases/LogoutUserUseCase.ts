@@ -24,5 +24,3 @@ export class LogoutUserUseCase implements ILogoutUserUseCase {
     return Result.success(undefined);
   }
 }
-
-

@@ -90,5 +90,3 @@ export class AuthHttpMapper {
     return 400;
   }
 }
-
-

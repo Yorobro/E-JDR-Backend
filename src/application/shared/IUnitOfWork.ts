@@ -1,6 +1,6 @@
-import { IUserRepository } from "@application/features/auth/abstractions/repositories/IUserRepository";
-import { ICredentialRepository } from "@application/features/auth/abstractions/repositories/ICredentialRepository";
-import { IRefreshTokenRepository } from "@application/features/auth/abstractions/repositories/IRefreshTokenRepository";
+import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
+import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
+import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 
 /**
  * Jeu de repositories liés à une même transaction, fournis au callback d'un `UnitOfWork`.
@@ -9,9 +9,9 @@ import { IRefreshTokenRepository } from "@application/features/auth/abstractions
  * transactionnelles figurent ici. Un nouveau domaine (ex. campaign) ajoutera ses repos.
  */
 export interface TransactionalRepositories {
-  readonly users: IUserRepository;
-  readonly credentials: ICredentialRepository;
-  readonly refreshTokens: IRefreshTokenRepository;
+  readonly users: UserRepository;
+  readonly credentials: CredentialRepository;
+  readonly refreshTokens: RefreshTokenRepository;
 }
 
 /**
@@ -24,5 +24,3 @@ export interface TransactionalRepositories {
 export interface IUnitOfWork {
   execute<T>(work: (repos: TransactionalRepositories) => Promise<T>): Promise<T>;
 }
-
-

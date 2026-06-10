@@ -23,7 +23,7 @@ export interface StoredRefreshToken {
  * déconnexion effective et de supporter la rotation des tokens. L'implémentation
  * concrète (MySQL) vit dans l'infrastructure.
  */
-export interface IRefreshTokenRepository {
+export interface RefreshTokenRepository {
   /**
    * Persiste un nouveau refresh token (son empreinte).
    *
@@ -66,5 +66,3 @@ export interface IRefreshTokenRepository {
    */
   deleteExpired(now: Date): Promise<void>;
 }
-
-

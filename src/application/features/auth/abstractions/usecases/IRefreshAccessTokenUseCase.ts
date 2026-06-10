@@ -28,5 +28,3 @@ export interface IRefreshAccessTokenUseCase {
    */
   execute(command: RefreshAccessTokenCommand): Promise<Result<RefreshAccessTokenResult, AppError>>;
 }
-
-

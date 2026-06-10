@@ -4,10 +4,10 @@ import { User } from "@domain/features/auth/entities/User";
  * Port de persistance des utilisateurs métier (port « out »).
  *
  * Ne gère que l'identité applicative (`User`) ; les données d'authentification (e-mail,
- * mot de passe) relèvent d'`ICredentialRepository`. L'implémentation vit dans l'infrastructure
+ * mot de passe) relèvent de `CredentialRepository`. L'implémentation vit dans l'infrastructure
  * et est injectée au use case.
  */
-export interface IUserRepository {
+export interface UserRepository {
   /**
    * Recherche un utilisateur par son identifiant.
    *
@@ -24,5 +24,3 @@ export interface IUserRepository {
    */
   save(user: User): Promise<void>;
 }
-
-

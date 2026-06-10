@@ -6,8 +6,8 @@ import {
   CurrentUserResult,
   IGetCurrentUserUseCase,
 } from "@application/features/auth/abstractions/usecases/IGetCurrentUserUseCase";
-import { IUserRepository } from "@application/features/auth/abstractions/repositories/IUserRepository";
-import { ICredentialRepository } from "@application/features/auth/abstractions/repositories/ICredentialRepository";
+import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
+import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 
 /**
  * Use case de consultation du profil de l'utilisateur courant.
@@ -18,8 +18,8 @@ import { ICredentialRepository } from "@application/features/auth/abstractions/r
  */
 export class GetCurrentUserUseCase implements IGetCurrentUserUseCase {
   constructor(
-    private readonly userRepository: IUserRepository,
-    private readonly credentialRepository: ICredentialRepository,
+    private readonly userRepository: UserRepository,
+    private readonly credentialRepository: CredentialRepository,
   ) {}
 
   public async execute(query: GetCurrentUserQuery): Promise<Result<CurrentUserResult, AppError>> {

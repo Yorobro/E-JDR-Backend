@@ -16,7 +16,7 @@ export default tseslint.config(
   },
   {
     // Plugin local: règles de qualité et d'architecture
-    plugins: { "ejdr": localRules },
+    plugins: { ejdr: localRules },
     rules: {
       "ejdr/clean-architecture": "error",
     },

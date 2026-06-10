@@ -1,16 +1,16 @@
 import { Credential } from "@domain/features/auth/entities/Credential";
 import { Email } from "@domain/features/auth/value-objects/Email";
-import { ICredentialRepository } from "@application/features/auth/abstractions/repositories/ICredentialRepository";
+import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import { CredentialDao } from "@infrastructure/persistence/mysql/features/auth/dao/CredentialDao";
 import { CredentialMapper } from "@infrastructure/persistence/mysql/features/auth/mappers/CredentialMapper";
 
 /**
- * Implémentation MySQL du port `ICredentialRepository`.
+ * Implémentation MySQL du port `CredentialRepository`.
  *
  * Rôle d'**assemblage** : délègue le SQL au `CredentialDao`, puis traduit les lignes brutes en
  * entités domaine via le `CredentialMapper`. Aucune requête SQL n'est écrite ici.
  */
-export class MysqlCredentialRepository implements ICredentialRepository {
+export class MysqlCredentialRepository implements CredentialRepository {
   /**
    * @param credentialDao - DAO de la table `credentials` (SQL pur).
    */
@@ -56,5 +56,3 @@ export class MysqlCredentialRepository implements ICredentialRepository {
     });
   }
 }
-
-

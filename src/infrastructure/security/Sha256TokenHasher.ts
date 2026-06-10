@@ -17,5 +17,3 @@ export class Sha256TokenHasher implements ITokenHasher {
     return createHash("sha256").update(token).digest("hex");
   }
 }
-
-

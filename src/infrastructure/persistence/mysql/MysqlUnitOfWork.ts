@@ -27,5 +27,3 @@ export class MysqlUnitOfWork implements IUnitOfWork {
     }
   }
 }
-
-

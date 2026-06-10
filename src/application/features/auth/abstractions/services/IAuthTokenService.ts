@@ -1,4 +1,4 @@
-import { IRefreshTokenRepository } from "@application/features/auth/abstractions/repositories/IRefreshTokenRepository";
+import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 
 /**
  * Paire de jetons émise pour une session authentifiée, avec leurs expirations.
@@ -45,8 +45,6 @@ export interface IAuthTokenService {
   issueTokens(
     userId: string,
     email: string,
-    refreshTokenRepo?: IRefreshTokenRepository,
+    refreshTokenRepo?: RefreshTokenRepository,
   ): Promise<AuthTokens>;
 }
-
-

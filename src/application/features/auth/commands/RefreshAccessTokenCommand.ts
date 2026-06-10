@@ -8,5 +8,3 @@ export interface RefreshAccessTokenCommand {
   /** Le refresh token brut courant (issu du cookie). */
   readonly refreshToken: string;
 }
-
-

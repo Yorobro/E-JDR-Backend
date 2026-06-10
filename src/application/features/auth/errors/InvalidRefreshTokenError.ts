@@ -11,5 +11,3 @@ export class InvalidRefreshTokenError extends AppError {
     super("INVALID_REFRESH_TOKEN", "Le jeton de rafraîchissement est invalide ou expiré.");
   }
 }
-
-

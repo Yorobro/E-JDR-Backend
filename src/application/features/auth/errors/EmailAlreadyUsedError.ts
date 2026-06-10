@@ -11,5 +11,3 @@ export class EmailAlreadyUsedError extends AppError {
     super("EMAIL_ALREADY_USED", "Un compte existe déjà avec cette adresse e-mail.");
   }
 }
-
-

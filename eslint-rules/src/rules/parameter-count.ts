@@ -28,7 +28,11 @@ const rule: Rule.RuleModule = {
       const params = node.params || [];
       const count = params.length;
       if (count > max) {
-        context.report({ node, messageId: "tooMany", data: { name: name || "<anonymous>", count, max } });
+        context.report({
+          node,
+          messageId: "tooMany",
+          data: { name: name || "<anonymous>", count, max },
+        });
       }
     }
 
@@ -42,7 +46,8 @@ const rule: Rule.RuleModule = {
       ArrowFunctionExpression(node: any) {
         const parent = node.parent;
         let name: string | null = null;
-        if (parent && parent.type === "VariableDeclarator" && parent.id && parent.id.name) name = parent.id.name;
+        if (parent && parent.type === "VariableDeclarator" && parent.id && parent.id.name)
+          name = parent.id.name;
         check(node, name);
       },
       MethodDefinition(node: any) {

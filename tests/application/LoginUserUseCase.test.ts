@@ -58,5 +58,3 @@ describe("LoginUserUseCase", () => {
     expect(result.error).toBeInstanceOf(InvalidCredentialsError);
   });
 });
-
-

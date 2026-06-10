@@ -1,15 +1,15 @@
 import { User } from "@domain/features/auth/entities/User";
-import { IUserRepository } from "@application/features/auth/abstractions/repositories/IUserRepository";
+import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
 import { UserDao } from "@infrastructure/persistence/mysql/features/auth/dao/UserDao";
 import { UserMapper } from "@infrastructure/persistence/mysql/features/auth/mappers/UserMapper";
 
 /**
- * Implémentation MySQL du port `IUserRepository`.
+ * Implémentation MySQL du port `UserRepository`.
  *
  * Rôle d'**assemblage** : délègue le SQL au `UserDao`, puis traduit les lignes brutes en
  * entités domaine via le `UserMapper`. Aucune requête SQL n'est écrite ici.
  */
-export class MysqlUserRepository implements IUserRepository {
+export class MysqlUserRepository implements UserRepository {
   /**
    * @param userDao - DAO de la table `users` (SQL pur).
    */
@@ -30,5 +30,3 @@ export class MysqlUserRepository implements IUserRepository {
     await this.userDao.insert(UserMapper.toRow(user));
   }
 }
-
-

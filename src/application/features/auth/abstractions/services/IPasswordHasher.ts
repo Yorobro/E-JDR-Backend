@@ -22,5 +22,3 @@ export interface IPasswordHasher {
    */
   compare(plainPassword: string, hash: string): Promise<boolean>;
 }
-
-

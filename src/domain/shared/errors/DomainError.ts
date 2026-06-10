@@ -30,5 +30,3 @@ export abstract class DomainError extends Error {
     Object.setPrototypeOf(this, new.target.prototype);
   }
 }
-
-

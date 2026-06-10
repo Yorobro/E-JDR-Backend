@@ -13,5 +13,3 @@ export class InvalidEmailError extends DomainError {
     super("INVALID_EMAIL", `L'adresse e-mail fournie est invalide : "${value}".`);
   }
 }
-
-

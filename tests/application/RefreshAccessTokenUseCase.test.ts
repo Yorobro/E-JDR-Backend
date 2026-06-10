@@ -116,5 +116,3 @@ describe("RefreshAccessTokenUseCase", () => {
     expect(refreshTokenRepository.tokens.has("thash:expired")).toBe(false);
   });
 });
-
-

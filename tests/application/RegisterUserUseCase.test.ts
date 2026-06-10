@@ -63,5 +63,3 @@ describe("RegisterUserUseCase", () => {
     expect(authTokenService.issuedFor).toHaveLength(0);
   });
 });
-
-

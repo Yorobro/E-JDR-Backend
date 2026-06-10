@@ -30,5 +30,3 @@ describe("PlainPassword (value object)", () => {
     },
   );
 });
-
-

@@ -250,5 +250,3 @@ describe("Auth routes (intégration HTTP)", () => {
     });
   });
 });
-
-

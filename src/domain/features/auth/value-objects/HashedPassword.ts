@@ -43,5 +43,3 @@ export class HashedPassword {
     return this.value;
   }
 }
-
-

@@ -15,7 +15,7 @@ import {
   IRegisterUserUseCase,
   RegisterUserResult,
 } from "@application/features/auth/abstractions/usecases/IRegisterUserUseCase";
-import { ICredentialRepository } from "@application/features/auth/abstractions/repositories/ICredentialRepository";
+import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import { IPasswordHasher } from "@application/features/auth/abstractions/services/IPasswordHasher";
 import { IIdGenerator } from "@application/features/auth/abstractions/services/IIdGenerator";
 import { IAuthTokenService } from "@application/features/auth/abstractions/services/IAuthTokenService";
@@ -31,7 +31,7 @@ import { IUnitOfWork } from "@application/shared/IUnitOfWork";
  */
 export class RegisterUserUseCase implements IRegisterUserUseCase {
   constructor(
-    private readonly credentialRepository: ICredentialRepository,
+    private readonly credentialRepository: CredentialRepository,
     private readonly passwordHasher: IPasswordHasher,
     private readonly idGenerator: IIdGenerator,
     private readonly authTokenService: IAuthTokenService,
@@ -97,5 +97,3 @@ export class RegisterUserUseCase implements IRegisterUserUseCase {
     });
   }
 }
-
-

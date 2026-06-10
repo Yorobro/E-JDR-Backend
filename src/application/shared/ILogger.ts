@@ -15,5 +15,3 @@ export interface ILogger {
   debug(message: string, context?: Record<string, unknown>): void;
   child(bindings: Record<string, unknown>): ILogger;
 }
-
-

@@ -1,20 +1,20 @@
 import {
-  IRefreshTokenRepository,
+  RefreshTokenRepository,
   StoredRefreshToken,
-} from "@application/features/auth/abstractions/repositories/IRefreshTokenRepository";
+} from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 import {
   RefreshTokenDao,
   RefreshTokenRow,
 } from "@infrastructure/persistence/mysql/features/auth/dao/RefreshTokenDao";
 
 /**
- * Implémentation MySQL du port `IRefreshTokenRepository`.
+ * Implémentation MySQL du port `RefreshTokenRepository`.
  *
  * Rôle d'**assemblage** : délègue le SQL au `RefreshTokenDao` et traduit les lignes brutes
  * vers le modèle applicatif `StoredRefreshToken`. La date de création est gérée ici, au
  * moment de la persistance.
  */
-export class MysqlRefreshTokenRepository implements IRefreshTokenRepository {
+export class MysqlRefreshTokenRepository implements RefreshTokenRepository {
   /**
    * @param refreshTokenDao - DAO de la table `refresh_tokens` (SQL pur).
    */
@@ -77,5 +77,3 @@ export class MysqlRefreshTokenRepository implements IRefreshTokenRepository {
     };
   }
 }
-
-

@@ -10,5 +10,3 @@ export class InvalidInputError extends AppError {
     super(code, message);
   }
 }
-
-
