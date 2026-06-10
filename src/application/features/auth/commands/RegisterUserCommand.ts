@@ -12,3 +12,4 @@ export interface RegisterUserCommand {
   readonly password: string;
 }
 
+

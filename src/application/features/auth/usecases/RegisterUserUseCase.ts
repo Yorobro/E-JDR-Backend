@@ -1,8 +1,8 @@
-import { User } from "@domain/auth/entities/User";
-import { Credential } from "@domain/auth/entities/Credential";
-import { Email } from "@domain/auth/value-objects/Email";
-import { PlainPassword } from "@domain/auth/value-objects/PlainPassword";
-import { HashedPassword } from "@domain/auth/value-objects/HashedPassword";
+import { User } from "@domain/features/auth/entities/User";
+import { Credential } from "@domain/features/auth/entities/Credential";
+import { Email } from "@domain/features/auth/value-objects/Email";
+import { PlainPassword } from "@domain/features/auth/value-objects/PlainPassword";
+import { HashedPassword } from "@domain/features/auth/value-objects/HashedPassword";
 import { DomainError } from "@domain/shared/errors/DomainError";
 
 import { Result } from "@application/shared/Result";
@@ -97,4 +97,5 @@ export class RegisterUserUseCase implements IRegisterUserUseCase {
     });
   }
 }
+
 

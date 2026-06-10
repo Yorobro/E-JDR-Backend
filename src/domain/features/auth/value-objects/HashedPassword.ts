@@ -1,4 +1,4 @@
-import { InvalidHashError } from "@domain/auth/errors/InvalidHashError";
+import { InvalidHashError } from "@domain/features/auth/errors/InvalidHashError";
 
 /**
  * Value Object représentant un mot de passe **déjà haché**.
@@ -43,4 +43,5 @@ export class HashedPassword {
     return this.value;
   }
 }
+
 

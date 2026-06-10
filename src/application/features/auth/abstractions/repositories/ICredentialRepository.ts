@@ -1,5 +1,5 @@
-import { Credential } from "@domain/auth/entities/Credential";
-import { Email } from "@domain/auth/value-objects/Email";
+import { Credential } from "@domain/features/auth/entities/Credential";
+import { Email } from "@domain/features/auth/value-objects/Email";
 
 /**
  * Port de persistance des identifiants d'authentification (port « out »).
@@ -39,4 +39,5 @@ export interface ICredentialRepository {
    */
   update(credential: Credential): Promise<void>;
 }
+
 

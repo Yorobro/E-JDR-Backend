@@ -33,3 +33,4 @@ export interface IRegisterUserUseCase {
   execute(command: RegisterUserCommand): Promise<Result<RegisterUserResult, AppError>>;
 }
 
+

@@ -1,4 +1,4 @@
-import { User } from "@domain/auth/entities/User";
+import { User } from "@domain/features/auth/entities/User";
 import { IUserRepository } from "@application/features/auth/abstractions/repositories/IUserRepository";
 import { UserDao } from "@infrastructure/persistence/mysql/features/auth/dao/UserDao";
 import { UserMapper } from "@infrastructure/persistence/mysql/features/auth/mappers/UserMapper";
@@ -30,4 +30,5 @@ export class MysqlUserRepository implements IUserRepository {
     await this.userDao.insert(UserMapper.toRow(user));
   }
 }
+
 

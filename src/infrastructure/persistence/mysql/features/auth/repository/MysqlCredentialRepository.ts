@@ -1,5 +1,5 @@
-import { Credential } from "@domain/auth/entities/Credential";
-import { Email } from "@domain/auth/value-objects/Email";
+import { Credential } from "@domain/features/auth/entities/Credential";
+import { Email } from "@domain/features/auth/value-objects/Email";
 import { ICredentialRepository } from "@application/features/auth/abstractions/repositories/ICredentialRepository";
 import { CredentialDao } from "@infrastructure/persistence/mysql/features/auth/dao/CredentialDao";
 import { CredentialMapper } from "@infrastructure/persistence/mysql/features/auth/mappers/CredentialMapper";
@@ -48,4 +48,5 @@ export class MysqlCredentialRepository implements ICredentialRepository {
     });
   }
 }
+
 

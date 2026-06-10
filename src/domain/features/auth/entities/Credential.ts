@@ -1,5 +1,5 @@
-import { Email } from "@domain/auth/value-objects/Email";
-import { HashedPassword } from "@domain/auth/value-objects/HashedPassword";
+import { Email } from "@domain/features/auth/value-objects/Email";
+import { HashedPassword } from "@domain/features/auth/value-objects/HashedPassword";
 
 /**
  * Fonction de comparaison de mot de passe injectée dans {@link Credential.verifyPassword}.
@@ -140,4 +140,5 @@ export class Credential {
     return compare(plainPassword, this.props.password.value);
   }
 }
+
 

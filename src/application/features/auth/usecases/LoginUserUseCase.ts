@@ -1,4 +1,4 @@
-import { Email } from "@domain/auth/value-objects/Email";
+import { Email } from "@domain/features/auth/value-objects/Email";
 import { DomainError } from "@domain/shared/errors/DomainError";
 
 import { Result } from "@application/shared/Result";
@@ -95,4 +95,5 @@ export class LoginUserUseCase implements ILoginUserUseCase {
     });
   }
 }
+
 

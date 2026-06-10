@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { PlainPassword } from "@domain/auth/value-objects/PlainPassword";
-import { WeakPasswordError } from "@domain/auth/errors/WeakPasswordError";
+import { PlainPassword } from "@domain/features/auth/value-objects/PlainPassword";
+import { WeakPasswordError } from "@domain/features/auth/errors/WeakPasswordError";
 
 describe("PlainPassword (value object)", () => {
   it("accepte un mot de passe respectant la politique (8–72 caractères)", () => {
@@ -30,4 +30,5 @@ describe("PlainPassword (value object)", () => {
     },
   );
 });
+
 

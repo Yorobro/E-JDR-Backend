@@ -1,7 +1,7 @@
-import { User } from "@domain/auth/entities/User";
-import { Credential } from "@domain/auth/entities/Credential";
-import { Email } from "@domain/auth/value-objects/Email";
-import { HashedPassword } from "@domain/auth/value-objects/HashedPassword";
+import { User } from "@domain/features/auth/entities/User";
+import { Credential } from "@domain/features/auth/entities/Credential";
+import { Email } from "@domain/features/auth/value-objects/Email";
+import { HashedPassword } from "@domain/features/auth/value-objects/HashedPassword";
 
 import { ILogger } from "@application/shared/ILogger";
 import { IUserRepository } from "@application/features/auth/abstractions/repositories/IUserRepository";
@@ -266,4 +266,5 @@ export function buildTestCredential(
     createdAt: new Date("2025-01-01T00:00:00Z"),
   });
 }
+
 

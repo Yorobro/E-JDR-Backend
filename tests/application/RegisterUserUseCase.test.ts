@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { Email } from "@domain/auth/value-objects/Email";
+import { Email } from "@domain/features/auth/value-objects/Email";
 import { RegisterUserUseCase } from "@application/features/auth/usecases/RegisterUserUseCase";
 import { EmailAlreadyUsedError } from "@application/features/auth/errors/EmailAlreadyUsedError";
 import {
@@ -63,4 +63,5 @@ describe("RegisterUserUseCase", () => {
     expect(authTokenService.issuedFor).toHaveLength(0);
   });
 });
+
 

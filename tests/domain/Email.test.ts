@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { Email } from "@domain/auth/value-objects/Email";
-import { InvalidEmailError } from "@domain/auth/errors/InvalidEmailError";
+import { Email } from "@domain/features/auth/value-objects/Email";
+import { InvalidEmailError } from "@domain/features/auth/errors/InvalidEmailError";
 
 describe("Email (value object)", () => {
   it("accepte une adresse valide et la normalise (trim + minuscules)", () => {
@@ -29,4 +29,5 @@ describe("Email (value object)", () => {
     },
   );
 });
+
 

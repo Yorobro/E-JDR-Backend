@@ -1,4 +1,4 @@
-import { WeakPasswordError } from "@domain/auth/errors/WeakPasswordError";
+import { WeakPasswordError } from "@domain/features/auth/errors/WeakPasswordError";
 
 /**
  * Value Object représentant un mot de passe **en clair valide** vis-à-vis de la politique
@@ -58,4 +58,5 @@ export class PlainPassword {
     return new PlainPassword(raw);
   }
 }
+
 

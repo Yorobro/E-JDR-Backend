@@ -1,4 +1,4 @@
-import { InvalidEmailError } from "@domain/auth/errors/InvalidEmailError";
+import { InvalidEmailError } from "@domain/features/auth/errors/InvalidEmailError";
 
 /**
  * Value Object représentant une adresse e-mail **valide et normalisée**.
@@ -81,4 +81,5 @@ export class Email {
     return this.value;
   }
 }
+
 

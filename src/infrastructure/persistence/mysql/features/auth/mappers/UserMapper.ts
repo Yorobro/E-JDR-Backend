@@ -1,4 +1,4 @@
-import { User } from "@domain/auth/entities/User";
+import { User } from "@domain/features/auth/entities/User";
 import { UserRow } from "@infrastructure/persistence/mysql/features/auth/dao/UserDao";
 
 /**
@@ -34,4 +34,5 @@ export class UserMapper {
     };
   }
 }
+
 

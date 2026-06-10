@@ -1,4 +1,4 @@
-import { User } from "@domain/auth/entities/User";
+import { User } from "@domain/features/auth/entities/User";
 
 /**
  * Port de persistance des utilisateurs métier (port « out »).
@@ -24,4 +24,5 @@ export interface IUserRepository {
    */
   save(user: User): Promise<void>;
 }
+
 

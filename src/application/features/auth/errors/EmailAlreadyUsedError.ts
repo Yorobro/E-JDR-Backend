@@ -12,3 +12,4 @@ export class EmailAlreadyUsedError extends AppError {
   }
 }
 
+
