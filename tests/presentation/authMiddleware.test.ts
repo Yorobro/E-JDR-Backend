@@ -43,6 +43,13 @@ describe("buildAuthMiddleware", () => {
     expect(res.body.code).toBe("UNAUTHENTICATED");
   });
 
+  it("renvoie 401 UNAUTHENTICATED avec un cookie access_token vide", async () => {
+    const res = await request(buildApp()).get("/").set("Cookie", "access_token=");
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("UNAUTHENTICATED");
+  });
+
   it("attache req.user et laisse passer avec un token valide", async () => {
     const res = await request(buildApp())
       .get("/")
