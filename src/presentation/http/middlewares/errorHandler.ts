@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { ILogger } from "@application/shared/ILogger";
+import { Logger } from "@application/shared/Logger";
 
 /**
  * Factory produisant le middleware de gestion centralisée des erreurs **techniques** non gérées.
@@ -10,7 +10,7 @@ import { ILogger } from "@application/shared/ILogger";
  *
  * @param logger - Le logger applicatif (injecté depuis `main.ts`).
  */
-export function buildErrorHandler(logger: ILogger) {
+export function buildErrorHandler(logger: Logger) {
   return (error: unknown, req: Request, res: Response, _next: NextFunction): void => {
     logger.error("Erreur technique non gérée", {
       requestId: req.requestId,

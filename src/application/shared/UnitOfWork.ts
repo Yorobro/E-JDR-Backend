@@ -21,6 +21,6 @@ export interface TransactionalRepositories {
  * reçoit des repos liés à la transaction ; s'il lève, tout est annulé (rollback global),
  * sinon tout est validé (commit). Les lectures pures n'ont pas besoin du UnitOfWork.
  */
-export interface IUnitOfWork {
+export interface UnitOfWork {
   execute<T>(work: (repos: TransactionalRepositories) => Promise<T>): Promise<T>;
 }

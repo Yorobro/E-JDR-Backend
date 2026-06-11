@@ -1,6 +1,6 @@
 import { MysqlConnection } from "@infrastructure/persistence/mysql/MysqlConnection";
 import { createAuthRepositories } from "@infrastructure/persistence/mysql/features/auth/createAuthRepositories";
-import { IUnitOfWork, TransactionalRepositories } from "@application/shared/IUnitOfWork";
+import { UnitOfWork, TransactionalRepositories } from "@application/shared/UnitOfWork";
 
 /**
  * Implémentation MySQL du `UnitOfWork`.
@@ -9,7 +9,7 @@ import { IUnitOfWork, TransactionalRepositories } from "@application/shared/IUni
  * liés à cette connexion, exécute le callback, puis valide (commit) ou annule (rollback)
  * selon que le callback réussit ou lève. La connexion est toujours rendue au pool (finally).
  */
-export class MysqlUnitOfWork implements IUnitOfWork {
+export class MysqlUnitOfWork implements UnitOfWork {
   constructor(private readonly connection: MysqlConnection) {}
 
   public async execute<T>(work: (repos: TransactionalRepositories) => Promise<T>): Promise<T> {

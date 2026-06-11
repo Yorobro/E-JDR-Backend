@@ -7,7 +7,7 @@ import { DomainError } from "@domain/shared/errors/DomainError";
 
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
-import { ILogger } from "@application/shared/ILogger";
+import { Logger } from "@application/shared/Logger";
 import { EmailAlreadyUsedError } from "@application/features/auth/errors/EmailAlreadyUsedError";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { RegisterUserCommand } from "@application/features/auth/commands/RegisterUserCommand";
@@ -19,7 +19,7 @@ import { CredentialRepository } from "@application/features/auth/abstractions/re
 import { PasswordHasherService } from "@application/features/auth/abstractions/services/PasswordHasherService";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
-import { IUnitOfWork } from "@application/shared/IUnitOfWork";
+import { UnitOfWork } from "@application/shared/UnitOfWork";
 
 /**
  * Use case d'inscription d'un nouvel utilisateur.
@@ -35,8 +35,8 @@ export class RegisterUserUseCaseImpl implements RegisterUserUseCase {
     private readonly passwordHasher: PasswordHasherService,
     private readonly idGenerator: IdGeneratorService,
     private readonly authTokenService: AuthTokenService,
-    private readonly unitOfWork: IUnitOfWork,
-    private readonly logger: ILogger,
+    private readonly unitOfWork: UnitOfWork,
+    private readonly logger: Logger,
   ) {}
 
   public async execute(

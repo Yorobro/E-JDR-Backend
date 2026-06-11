@@ -3,7 +3,7 @@ import { AppError } from "@application/errors/AppError";
 import { LogoutUserCommand } from "@application/features/auth/commands/LogoutUserCommand";
 import { LogoutUserUseCase } from "@application/features/auth/abstractions/usecases/LogoutUserUseCase";
 import { TokenHasherService } from "@application/features/auth/abstractions/services/TokenHasherService";
-import { IUnitOfWork } from "@application/shared/IUnitOfWork";
+import { UnitOfWork } from "@application/shared/UnitOfWork";
 
 /**
  * Use case de déconnexion.
@@ -14,7 +14,7 @@ import { IUnitOfWork } from "@application/shared/IUnitOfWork";
 export class LogoutUserUseCaseImpl implements LogoutUserUseCase {
   constructor(
     private readonly tokenHasher: TokenHasherService,
-    private readonly unitOfWork: IUnitOfWork,
+    private readonly unitOfWork: UnitOfWork,
   ) {}
 
   public async execute(command: LogoutUserCommand): Promise<Result<void, AppError>> {

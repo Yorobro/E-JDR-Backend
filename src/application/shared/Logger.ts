@@ -8,10 +8,10 @@
  * `child()` crée un logger enfant pré-rempli avec des champs fixes (ex : `requestId`) :
  * tous les appels sur l'enfant incluront automatiquement ces champs.
  */
-export interface ILogger {
+export interface Logger {
   info(message: string, context?: Record<string, unknown>): void;
   warn(message: string, context?: Record<string, unknown>): void;
   error(message: string, context?: Record<string, unknown>): void;
   debug(message: string, context?: Record<string, unknown>): void;
-  child(bindings: Record<string, unknown>): ILogger;
+  child(bindings: Record<string, unknown>): Logger;
 }

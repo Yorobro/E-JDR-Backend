@@ -3,7 +3,7 @@ import { DomainError } from "@domain/shared/errors/DomainError";
 
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
-import { ILogger } from "@application/shared/ILogger";
+import { Logger } from "@application/shared/Logger";
 import { AccountLockedError } from "@application/features/auth/errors/AccountLockedError";
 import { InvalidCredentialsError } from "@application/features/auth/errors/InvalidCredentialsError";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
@@ -15,7 +15,7 @@ import {
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import { PasswordHasherService } from "@application/features/auth/abstractions/services/PasswordHasherService";
 import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
-import { IUnitOfWork } from "@application/shared/IUnitOfWork";
+import { UnitOfWork } from "@application/shared/UnitOfWork";
 
 /**
  * Use case de connexion d'un utilisateur existant.
@@ -33,8 +33,8 @@ export class LoginUserUseCaseImpl implements LoginUserUseCase {
     private readonly credentialRepository: CredentialRepository,
     private readonly passwordHasher: PasswordHasherService,
     private readonly authTokenService: AuthTokenService,
-    private readonly unitOfWork: IUnitOfWork,
-    private readonly logger: ILogger,
+    private readonly unitOfWork: UnitOfWork,
+    private readonly logger: Logger,
   ) {}
 
   public async execute(command: LoginUserCommand): Promise<Result<LoginUserResult, AppError>> {

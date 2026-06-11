@@ -1,16 +1,16 @@
-import pino, { Logger } from "pino";
-import { ILogger } from "@application/shared/ILogger";
+import pino, { Logger as PinoLoggerInstance } from "pino";
+import { Logger } from "@application/shared/Logger";
 
 /**
- * Adaptateur Pino pour le port `ILogger`.
+ * Adaptateur Pino pour le port `Logger`.
  *
  * Utilise un constructeur privé + factory statique pour s'assurer que l'instance racine
  * est toujours correctement initialisée. `child()` retourne un `PinoLogger` qui encapsule
  * un `pino.child(...)` : tous les champs passés à `child()` sont automatiquement inclus
  * dans chaque ligne de log émise depuis l'instance enfant.
  */
-export class PinoLogger implements ILogger {
-  private constructor(private readonly logger: Logger) {}
+export class PinoLogger implements Logger {
+  private constructor(private readonly logger: PinoLoggerInstance) {}
 
   public static create(level: string): PinoLogger {
     const transport = process.env.NODE_ENV !== "production" ? { target: "pino-pretty" } : undefined;
@@ -34,7 +34,7 @@ export class PinoLogger implements ILogger {
     this.logger.debug(context ?? {}, message);
   }
 
-  public child(bindings: Record<string, unknown>): ILogger {
+  public child(bindings: Record<string, unknown>): Logger {
     return new PinoLogger(this.logger.child(bindings));
   }
 }

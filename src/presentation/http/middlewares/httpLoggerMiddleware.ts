@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { ILogger } from "@application/shared/ILogger";
+import { Logger } from "@application/shared/Logger";
 
 /**
  * Middleware de journalisation des accès HTTP.
@@ -14,7 +14,7 @@ import { ILogger } from "@application/shared/ILogger";
  *
  * @param logger - Le logger racine de l'application (injecté depuis `main.ts`).
  */
-export function buildHttpLoggerMiddleware(logger: ILogger) {
+export function buildHttpLoggerMiddleware(logger: Logger) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const start = Date.now();
     const requestLogger = logger.child({ requestId: req.requestId });

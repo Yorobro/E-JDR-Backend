@@ -3,7 +3,7 @@ import { Credential } from "@domain/features/auth/entities/Credential";
 import { Email } from "@domain/features/auth/value-objects/Email";
 import { HashedPassword } from "@domain/features/auth/value-objects/HashedPassword";
 
-import { ILogger } from "@application/shared/ILogger";
+import { Logger } from "@application/shared/Logger";
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import {
@@ -22,7 +22,7 @@ import {
   AuthTokens,
   AuthTokenService,
 } from "@application/features/auth/abstractions/services/AuthTokenService";
-import { IUnitOfWork, TransactionalRepositories } from "@application/shared/IUnitOfWork";
+import { UnitOfWork, TransactionalRepositories } from "@application/shared/UnitOfWork";
 
 /**
  * Fabriques de doublures de test (fakes) pour les ports applicatifs.
@@ -198,12 +198,12 @@ export class FakeAuthTokenService implements AuthTokenService {
 }
 
 /** Logger no-op pour les tests : absorbe silencieusement tous les appels. */
-export class FakeLogger implements ILogger {
+export class FakeLogger implements Logger {
   public info(): void {}
   public warn(): void {}
   public error(): void {}
   public debug(): void {}
-  public child(): ILogger {
+  public child(): Logger {
     return this;
   }
 }
@@ -213,7 +213,7 @@ export class FakeLogger implements ILogger {
  * vraie transaction. Si le callback lève, l'erreur remonte telle quelle (les fakes ne
  * « rollback » pas, mais le test peut vérifier la propagation de l'erreur).
  */
-export class FakeUnitOfWork implements IUnitOfWork {
+export class FakeUnitOfWork implements UnitOfWork {
   constructor(private readonly repos: TransactionalRepositories) {}
 
   public execute<T>(work: (repos: TransactionalRepositories) => Promise<T>): Promise<T> {

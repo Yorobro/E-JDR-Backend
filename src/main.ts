@@ -14,7 +14,7 @@ import { IdGeneratorServiceImpl } from "@infrastructure/id/IdGeneratorServiceImp
 import { PinoLogger } from "@infrastructure/logging/PinoLogger";
 
 // Application
-import { ILogger } from "@application/shared/ILogger";
+import { Logger } from "@application/shared/Logger";
 import { AuthTokenServiceImpl } from "@application/features/auth/services/AuthTokenServiceImpl";
 import { RegisterUserUseCaseImpl } from "@application/features/auth/usecases/RegisterUserUseCaseImpl";
 import { LoginUserUseCaseImpl } from "@application/features/auth/usecases/LoginUserUseCaseImpl";
@@ -62,7 +62,7 @@ function buildSecurityAdapters(config: AppConfig) {
 function buildAuthController(
   connection: MysqlConnection,
   config: AppConfig,
-  logger: ILogger,
+  logger: Logger,
 ): AuthController {
   const {
     users: userRepository,
@@ -124,7 +124,7 @@ export function buildHttpApp(
   authController: AuthController,
   userController: UserController,
   authMiddleware: RequestHandler,
-  logger: ILogger,
+  logger: Logger,
 ): Application {
   const app = express();
 

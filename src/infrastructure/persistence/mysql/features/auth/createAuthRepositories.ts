@@ -1,5 +1,5 @@
 import { SqlExecutor } from "@infrastructure/persistence/mysql/SqlExecutor";
-import { TransactionalRepositories } from "@application/shared/IUnitOfWork";
+import { TransactionalRepositories } from "@application/shared/UnitOfWork";
 import { UserDao } from "@infrastructure/persistence/mysql/features/auth/dao/UserDao";
 import { CredentialDao } from "@infrastructure/persistence/mysql/features/auth/dao/CredentialDao";
 import { RefreshTokenDao } from "@infrastructure/persistence/mysql/features/auth/dao/RefreshTokenDao";
