@@ -1,6 +1,6 @@
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
-import { GetCurrentUserQuery } from "@application/features/auth/commands/GetCurrentUserQuery";
+import { GetCurrentUserQuery } from "@application/features/auth/query/GetCurrentUserQuery";
 
 /**
  * Profil de l'utilisateur courant renvoyé par le use case.
