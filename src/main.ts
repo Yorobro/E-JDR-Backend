@@ -127,7 +127,11 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
  * @param logger - Le logger applicatif.
  * @returns Le controller d'authentification câblé.
  */
-function buildAuthController(services: AuthServices, config: AppConfig, logger: Logger): AuthController {
+function buildAuthController(
+  services: AuthServices,
+  config: AppConfig,
+  logger: Logger,
+): AuthController {
   const registerUser = new RegisterUserUseCaseImpl(
     services.credentialRepository,
     services.passwordHasher,
