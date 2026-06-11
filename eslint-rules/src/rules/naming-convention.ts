@@ -2,6 +2,8 @@ import { Rule } from "eslint";
 
 const CAMEL_CASE = /^[a-z][a-zA-Z0-9]*$/;
 const PASCAL_CASE = /^[A-Z][a-zA-Z0-9]*$/;
+// UPPER_SNAKE_CASE is a valid convention for immutable module-level constants (e.g. JWT_ALGORITHM).
+const UPPER_SNAKE_CASE = /^[A-Z][A-Z0-9_]*$/;
 
 const rule: Rule.RuleModule = {
   meta: {
@@ -40,7 +42,13 @@ const rule: Rule.RuleModule = {
       VariableDeclarator(node: any) {
         const id = node.id;
         if (!id) return;
-        if (id.type === "Identifier") checkCamel(id.name, node);
+        if (id.type === "Identifier") {
+          const name: string = id.name;
+          // Allow UPPER_SNAKE_CASE for `const` declarations (module-level constants).
+          const parent = node.parent;
+          if (parent && parent.kind === "const" && UPPER_SNAKE_CASE.test(name)) return;
+          checkCamel(name, node);
+        }
       },
       FunctionDeclaration(node: any) {
         if (node.id && node.id.name) checkCamel(node.id.name, node);
