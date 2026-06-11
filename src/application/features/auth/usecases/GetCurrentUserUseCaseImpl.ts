@@ -1,7 +1,7 @@
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { UserNotFoundError } from "@application/features/auth/errors/UserNotFoundError";
-import { GetCurrentUserQuery } from "@application/features/auth/commands/GetCurrentUserQuery";
+import { GetCurrentUserQuery } from "@application/features/auth/query/GetCurrentUserQuery";
 import {
   CurrentUserResult,
   GetCurrentUserUseCase,

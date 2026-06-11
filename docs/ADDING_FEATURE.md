@@ -101,7 +101,7 @@ export interface XxxUseCase {
 }
 ```
 
-### 2d. Commands / Queries — `commands/`
+### 2d. Commands / Queries — `commands/` (écritures) et `query/` (lectures)
 
 ```ts
 // CreateXxxCommand.ts  (objet de transfert simple, aucune logique)
@@ -109,6 +109,8 @@ export interface CreateXxxCommand {
   readonly name: string;
 }
 ```
+
+Remarque : pour séparer clairement les DTO de lecture, placez-les dans `query/` (ex: `GetCurrentUserQuery.ts`) tandis que les commandes d'écriture restent dans `commands/`.
 
 ### 2e. Erreurs applicatives — `errors/`
 
