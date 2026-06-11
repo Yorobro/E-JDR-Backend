@@ -3,9 +3,9 @@ import request from "supertest";
 import type { Application } from "express";
 
 import { AppConfig } from "@config/env";
-import { AuthController } from "@presentation/http/controllers/AuthController";
-import { buildAuthRoutes } from "@presentation/http/routes/authRoutes";
-import { buildErrorHandler } from "@presentation/http/middlewares/errorHandler";
+import { AuthController } from "@presentation/http/features/auth/controllers/AuthController";
+import { buildAuthRoutes } from "@presentation/http/features/auth/routes/authRoutes";
+import { buildErrorHandler } from "@presentation/http/shared/middlewares/errorHandler";
 import { buildHttpApp } from "../../src/main";
 
 import { AuthTokenServiceImpl } from "@application/features/auth/services/AuthTokenServiceImpl";
@@ -14,8 +14,8 @@ import { LoginUserUseCaseImpl } from "@application/features/auth/usecases/LoginU
 import { LogoutUserUseCaseImpl } from "@application/features/auth/usecases/LogoutUserUseCaseImpl";
 import { RefreshAccessTokenUseCaseImpl } from "@application/features/auth/usecases/RefreshAccessTokenUseCaseImpl";
 import { GetCurrentUserUseCaseImpl } from "@application/features/auth/usecases/GetCurrentUserUseCaseImpl";
-import { UserController } from "@presentation/http/controllers/UserController";
-import { buildAuthMiddleware } from "@presentation/http/middlewares/authMiddleware";
+import { UserController } from "@presentation/http/features/auth/controllers/UserController";
+import { buildAuthMiddleware } from "@presentation/http/shared/middlewares/authMiddleware";
 
 import {
   buildFakeTransactionalRepositories,

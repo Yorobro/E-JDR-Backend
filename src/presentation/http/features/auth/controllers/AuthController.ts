@@ -8,7 +8,7 @@ import { LoginUserUseCase } from "@application/features/auth/abstractions/usecas
 import { LogoutUserUseCase } from "@application/features/auth/abstractions/usecases/LogoutUserUseCase";
 import { RefreshAccessTokenUseCase } from "@application/features/auth/abstractions/usecases/RefreshAccessTokenUseCase";
 
-import { AuthHttpMapper } from "@presentation/http/mappers/AuthHttpMapper";
+import { AuthHttpMapper } from "@presentation/http/features/auth/mappers/AuthHttpMapper";
 
 /**
  * Controller HTTP des routes d'authentification.

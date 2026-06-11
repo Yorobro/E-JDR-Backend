@@ -22,15 +22,16 @@ import { LogoutUserUseCaseImpl } from "@application/features/auth/usecases/Logou
 import { RefreshAccessTokenUseCaseImpl } from "@application/features/auth/usecases/RefreshAccessTokenUseCaseImpl";
 import { GetCurrentUserUseCaseImpl } from "@application/features/auth/usecases/GetCurrentUserUseCaseImpl";
 
-// Presentation
-import { AuthController } from "@presentation/http/controllers/AuthController";
-import { UserController } from "@presentation/http/controllers/UserController";
-import { buildAuthRoutes } from "@presentation/http/routes/authRoutes";
-import { buildUserRoutes } from "@presentation/http/routes/userRoutes";
-import { requestIdMiddleware } from "@presentation/http/middlewares/requestIdMiddleware";
-import { buildHttpLoggerMiddleware } from "@presentation/http/middlewares/httpLoggerMiddleware";
-import { buildErrorHandler } from "@presentation/http/middlewares/errorHandler";
-import { buildAuthMiddleware } from "@presentation/http/middlewares/authMiddleware";
+// Presentation — feature auth
+import { AuthController } from "@presentation/http/features/auth/controllers/AuthController";
+import { UserController } from "@presentation/http/features/auth/controllers/UserController";
+import { buildAuthRoutes } from "@presentation/http/features/auth/routes/authRoutes";
+import { buildUserRoutes } from "@presentation/http/features/auth/routes/userRoutes";
+// Presentation — shared middlewares
+import { requestIdMiddleware } from "@presentation/http/shared/middlewares/requestIdMiddleware";
+import { buildHttpLoggerMiddleware } from "@presentation/http/shared/middlewares/httpLoggerMiddleware";
+import { buildErrorHandler } from "@presentation/http/shared/middlewares/errorHandler";
+import { buildAuthMiddleware } from "@presentation/http/shared/middlewares/authMiddleware";
 
 /**
  * **Composition root** de l'application : seul endroit qui instancie les classes concrètes

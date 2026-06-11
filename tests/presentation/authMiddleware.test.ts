@@ -3,7 +3,7 @@ import express, { Application } from "express";
 import cookieParser from "cookie-parser";
 import request from "supertest";
 
-import { buildAuthMiddleware } from "@presentation/http/middlewares/authMiddleware";
+import { buildAuthMiddleware } from "@presentation/http/shared/middlewares/authMiddleware";
 import { FakeTokenProvider } from "../application/fakes";
 
 /**
