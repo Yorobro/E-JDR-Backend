@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { AuthController } from "@presentation/http/controllers/AuthController";
+import { AuthController } from "@presentation/http/features/auth/controllers/AuthController";
 
 /**
  * Construit le routeur Express des endpoints d'authentification.

@@ -1,6 +1,6 @@
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
-import { ACCESS_TOKEN_COOKIE } from "@presentation/http/mappers/AuthHttpMapper";
+import { ACCESS_TOKEN_COOKIE } from "@presentation/http/features/auth/mappers/AuthHttpMapper";
 
 /**
  * Factory produisant le middleware d'authentification des routes protégées.

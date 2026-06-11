@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { UserController } from "@presentation/http/controllers/UserController";
+import { UserController } from "@presentation/http/features/auth/controllers/UserController";
 
 /**
  * Construit le routeur Express des endpoints utilisateur protégés.
