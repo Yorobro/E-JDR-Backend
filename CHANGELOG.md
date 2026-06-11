@@ -1,3 +1,11 @@
+## <small>1.2.1 (2026-06-11)</small>
+
+* Merge branch 'fix/audit-lot1-blocking' ([a62bd14](https://github.com/Yorobro/E-JDR-Backend/commit/a62bd14))
+* chore(lint): enable file-size, function-size, parameter-count and naming-convention rules ([4f3a17f](https://github.com/Yorobro/E-JDR-Backend/commit/4f3a17f))
+* ci: run Testcontainers DB tests in release workflow ([bf9dc2d](https://github.com/Yorobro/E-JDR-Backend/commit/bf9dc2d))
+* docs(db): document migration conventions and idempotency pattern ([ab39e2c](https://github.com/Yorobro/E-JDR-Backend/commit/ab39e2c))
+* fix(db): make V002 and V003 migrations idempotent ([b48d16f](https://github.com/Yorobro/E-JDR-Backend/commit/b48d16f))
+
 ## 1.2.0 (2026-06-11)
 
 * refactor(application): drop I prefix from Logger and UnitOfWork interfaces ([15902b1](https://github.com/Yorobro/E-JDR-Backend/commit/15902b1))
