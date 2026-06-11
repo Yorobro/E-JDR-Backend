@@ -13,7 +13,14 @@ import { TokenHasherServiceImpl } from "@infrastructure/security/TokenHasherServ
 import { IdGeneratorServiceImpl } from "@infrastructure/id/IdGeneratorServiceImpl";
 import { PinoLogger } from "@infrastructure/logging/PinoLogger";
 
-// Application
+// Application — ports repositories
+import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
+import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
+import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
+// Application — ports services
+import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
+import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
+// Application — implémentations
 import { Logger } from "@application/shared/Logger";
 import { AuthTokenServiceImpl } from "@application/features/auth/services/AuthTokenServiceImpl";
 import { RegisterUserUseCaseImpl } from "@application/features/auth/usecases/RegisterUserUseCaseImpl";
@@ -42,36 +49,52 @@ import { buildAuthMiddleware } from "@presentation/http/shared/middlewares/authM
  * → controller/routes (présentation) → application Express.
  */
 
-function buildSecurityAdapters(config: AppConfig) {
-  return {
-    passwordHasher: new PasswordHasherServiceImpl(),
-    tokenProvider: new TokenProviderServiceImpl({
-      accessSecret: config.jwt.accessSecret,
-      refreshSecret: config.jwt.refreshSecret,
-      accessExpiresIn: config.jwt.accessExpiresIn,
-      refreshExpiresIn: config.jwt.refreshExpiresIn,
-    }),
-    tokenHasher: new TokenHasherServiceImpl(),
-    idGenerator: new IdGeneratorServiceImpl(),
-  };
+/**
+ * Regroupe les services partagés construits **une seule fois** dans le composition root.
+ *
+ * Typer avec les ports applicatifs (interfaces) plutôt que les implémentations concrètes
+ * garantit que cette structure reste indépendante de la couche infrastructure.
+ */
+interface AuthServices {
+  userRepository: UserRepository;
+  credentialRepository: CredentialRepository;
+  refreshTokenRepository: RefreshTokenRepository;
+  unitOfWork: MysqlUnitOfWork;
+  passwordHasher: PasswordHasherServiceImpl;
+  tokenProvider: TokenProviderService;
+  tokenHasher: TokenHasherServiceImpl;
+  idGenerator: IdGeneratorServiceImpl;
+  authTokenService: AuthTokenService;
 }
 
 /**
- * **Composition root** du module auth : assemble repositories, adapters de sécurité,
- * services et use cases, puis retourne le controller câblé.
+ * Construit **une seule fois** les repositories, adapters de sécurité et services partagés.
+ *
+ * Centraliser ici évite de recréer des instances identiques pour câbler le middleware
+ * d'authentification et `UserController` séparément des use cases du module auth.
+ *
+ * @param connection - La connexion MySQL active.
+ * @param config - La configuration applicative (secrets JWT, environnement).
+ * @returns L'ensemble des services prêts à être consommés par les controllers et middlewares.
  */
-function buildAuthController(
-  connection: MysqlConnection,
-  config: AppConfig,
-  logger: Logger,
-): AuthController {
+function buildServices(connection: MysqlConnection, config: AppConfig): AuthServices {
   const {
     users: userRepository,
     credentials: credentialRepository,
     refreshTokens: refreshTokenRepository,
   } = createAuthRepositories(connection.getPool());
+
   const unitOfWork = new MysqlUnitOfWork(connection);
-  const { passwordHasher, tokenProvider, tokenHasher, idGenerator } = buildSecurityAdapters(config);
+
+  const passwordHasher = new PasswordHasherServiceImpl();
+  const tokenProvider = new TokenProviderServiceImpl({
+    accessSecret: config.jwt.accessSecret,
+    refreshSecret: config.jwt.refreshSecret,
+    accessExpiresIn: config.jwt.accessExpiresIn,
+    refreshExpiresIn: config.jwt.refreshExpiresIn,
+  });
+  const tokenHasher = new TokenHasherServiceImpl();
+  const idGenerator = new IdGeneratorServiceImpl();
 
   const authTokenService = new AuthTokenServiceImpl(
     tokenProvider,
@@ -80,29 +103,54 @@ function buildAuthController(
     refreshTokenRepository,
   );
 
-  const registerUser = new RegisterUserUseCaseImpl(
+  return {
+    userRepository,
     credentialRepository,
+    refreshTokenRepository,
+    unitOfWork,
     passwordHasher,
+    tokenProvider,
+    tokenHasher,
     idGenerator,
     authTokenService,
-    unitOfWork,
+  };
+}
+
+/**
+ * Assemble le controller d'authentification à partir des services déjà construits.
+ *
+ * Reçoit les services pré-construits par {@link buildServices} — aucune instanciation
+ * supplémentaire n'est effectuée ici.
+ *
+ * @param services - Les services partagés produits par {@link buildServices}.
+ * @param config - La configuration applicative (flag `isProduction` pour les cookies).
+ * @param logger - Le logger applicatif.
+ * @returns Le controller d'authentification câblé.
+ */
+function buildAuthController(services: AuthServices, config: AppConfig, logger: Logger): AuthController {
+  const registerUser = new RegisterUserUseCaseImpl(
+    services.credentialRepository,
+    services.passwordHasher,
+    services.idGenerator,
+    services.authTokenService,
+    services.unitOfWork,
     logger,
   );
   const loginUser = new LoginUserUseCaseImpl(
-    credentialRepository,
-    passwordHasher,
-    authTokenService,
-    unitOfWork,
+    services.credentialRepository,
+    services.passwordHasher,
+    services.authTokenService,
+    services.unitOfWork,
     logger,
   );
-  const logoutUser = new LogoutUserUseCaseImpl(tokenHasher, unitOfWork);
+  const logoutUser = new LogoutUserUseCaseImpl(services.tokenHasher, services.unitOfWork);
   const refreshAccessToken = new RefreshAccessTokenUseCaseImpl(
-    userRepository,
-    refreshTokenRepository,
-    tokenProvider,
-    tokenHasher,
-    authTokenService,
-    unitOfWork,
+    services.userRepository,
+    services.refreshTokenRepository,
+    services.tokenProvider,
+    services.tokenHasher,
+    services.authTokenService,
+    services.unitOfWork,
   );
 
   return new AuthController(registerUser, loginUser, logoutUser, refreshAccessToken, config);
@@ -165,14 +213,14 @@ async function bootstrap(): Promise<void> {
     connectionLimit: 10,
   });
 
-  const authController = buildAuthController(connection, config, logger);
+  // Construction unique de tous les services partagés (repos, adapters de sécurité, authTokenService).
+  const services = buildServices(connection, config);
 
-  // buildSecurityAdapters et createAuthRepositories sont sans état — les rappeler ici
-  // est sans effet de bord et évite de changer la signature de buildAuthController.
-  const { tokenProvider } = buildSecurityAdapters(config);
-  const { users, credentials } = createAuthRepositories(connection.getPool());
-  const userController = new UserController(new GetCurrentUserUseCaseImpl(users, credentials));
-  const authMiddleware = buildAuthMiddleware(tokenProvider);
+  const authController = buildAuthController(services, config, logger);
+  const userController = new UserController(
+    new GetCurrentUserUseCaseImpl(services.userRepository, services.credentialRepository),
+  );
+  const authMiddleware = buildAuthMiddleware(services.tokenProvider);
 
   const app = buildHttpApp(authController, userController, authMiddleware, logger);
 
