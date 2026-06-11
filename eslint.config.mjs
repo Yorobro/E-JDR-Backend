@@ -19,6 +19,13 @@ export default tseslint.config(
     plugins: { ejdr: localRules },
     rules: {
       "ejdr/clean-architecture": "error",
+      "ejdr/file-size": ["error", { max: 500 }],
+      "ejdr/function-size": ["error", { max: 100 }],
+      // Seuil à 6 (au lieu du défaut 4) : les constructeurs de use cases utilisent
+      // l'injection manuelle de dépendances (repo, services, hasher…) ce qui génère
+      // légitimement 5-6 paramètres. Ce n'est pas un code smell, c'est de la DI.
+      "ejdr/parameter-count": ["error", { max: 6 }],
+      "ejdr/naming-convention": "error",
     },
   },
   js.configs.recommended,
@@ -40,9 +47,11 @@ export default tseslint.config(
   },
   {
     // Les tests peuvent utiliser des assertions de type souples et des doublures.
+    // La taille des callbacks describe/it n'est pas un indicateur pertinent dans les suites de test.
     files: ["tests/**/*.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
+      "ejdr/function-size": "off",
     },
   },
   {
