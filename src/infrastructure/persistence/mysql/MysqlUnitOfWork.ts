@@ -1,5 +1,7 @@
 import { MysqlConnection } from "@infrastructure/persistence/mysql/MysqlConnection";
 import { createAuthRepositories } from "@infrastructure/persistence/mysql/features/auth/createAuthRepositories";
+import { createCampaignRepositories } from "@infrastructure/persistence/mysql/features/campaign/createCampaignRepositories";
+import { createCharacterSheetRepositories } from "@infrastructure/persistence/mysql/features/character-sheet/createCharacterSheetRepositories";
 import { UnitOfWork, TransactionalRepositories } from "@application/shared/UnitOfWork";
 
 /**
@@ -16,7 +18,12 @@ export class MysqlUnitOfWork implements UnitOfWork {
     const conn = await this.connection.getPool().getConnection();
     await conn.beginTransaction();
     try {
-      const result = await work(createAuthRepositories(conn));
+      const repos: TransactionalRepositories = {
+        ...createAuthRepositories(conn),
+        ...createCampaignRepositories(conn),
+        ...createCharacterSheetRepositories(conn),
+      };
+      const result = await work(repos);
       await conn.commit();
       return result;
     } catch (error) {

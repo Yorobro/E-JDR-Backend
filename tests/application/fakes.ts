@@ -2,6 +2,13 @@ import { User } from "@domain/features/auth/entities/User";
 import { Credential } from "@domain/features/auth/entities/Credential";
 import { Email } from "@domain/features/auth/value-objects/Email";
 import { HashedPassword } from "@domain/features/auth/value-objects/HashedPassword";
+import { Campaign } from "@domain/features/campaign/entities/Campaign";
+import { CampaignName } from "@domain/features/campaign/value-objects/CampaignName";
+import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
+import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
+import { CharacterSheetName } from "@domain/features/character-sheet/value-objects/CharacterSheetName";
+import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
+import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 
 import { Logger } from "@application/shared/Logger";
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
@@ -118,6 +125,104 @@ export class FakeRefreshTokenRepository implements RefreshTokenRepository {
   }
 }
 
+/** Repository de campagnes en mémoire (indexé par id). */
+export class FakeCampaignRepository implements CampaignRepository {
+  private readonly campaigns = new Map<string, Campaign>();
+
+  public async save(campaign: Campaign): Promise<void> {
+    this.campaigns.set(campaign.id, campaign);
+  }
+
+  public async findByGameMasterId(gameMasterId: string): Promise<Campaign[]> {
+    return [...this.campaigns.values()].filter((campaign) => campaign.isGameMaster(gameMasterId));
+  }
+
+  public async findById(id: string): Promise<Campaign | null> {
+    return this.campaigns.get(id) ?? null;
+  }
+
+  public async deleteById(id: string): Promise<void> {
+    this.campaigns.delete(id);
+  }
+
+  /** Aide de test : pré-remplit le repository avec une campagne. */
+  public seed(campaign: Campaign): void {
+    this.campaigns.set(campaign.id, campaign);
+  }
+}
+
+/** Repository de fiches de personnage en mémoire (indexé par id). */
+export class FakeCharacterSheetRepository implements CharacterSheetRepository {
+  private readonly sheets = new Map<string, CharacterSheet>();
+
+  public async save(sheet: CharacterSheet): Promise<void> {
+    this.sheets.set(sheet.id, sheet);
+  }
+
+  public async findByOwnerId(ownerId: string): Promise<CharacterSheet[]> {
+    return [...this.sheets.values()].filter((sheet) => sheet.isOwnedBy(ownerId));
+  }
+
+  public async findById(id: string): Promise<CharacterSheet | null> {
+    return this.sheets.get(id) ?? null;
+  }
+
+  public async deleteById(id: string): Promise<void> {
+    this.sheets.delete(id);
+  }
+
+  /** Aide de test : pré-remplit le repository avec une fiche. */
+  public seed(sheet: CharacterSheet): void {
+    this.sheets.set(sheet.id, sheet);
+  }
+}
+
+/**
+ * Repository de liaison campagne↔fiches en mémoire.
+ *
+ * Stocke les paires `campaignId::sheetId` et résout les fiches via le repository de fiches
+ * fourni (pour `findSheetsByCampaignId`), reproduisant le JOIN de l'implémentation MySQL.
+ */
+export class FakeCampaignCharacterRepository implements CampaignCharacterRepository {
+  private readonly links = new Set<string>();
+
+  constructor(private readonly sheetRepository: FakeCharacterSheetRepository) {}
+
+  private key(campaignId: string, sheetId: string): string {
+    return `${campaignId}::${sheetId}`;
+  }
+
+  public async link(campaignId: string, characterSheetId: string): Promise<void> {
+    this.links.add(this.key(campaignId, characterSheetId));
+  }
+
+  public async unlink(campaignId: string, characterSheetId: string): Promise<void> {
+    this.links.delete(this.key(campaignId, characterSheetId));
+  }
+
+  public async existsByCampaignAndSheet(
+    campaignId: string,
+    characterSheetId: string,
+  ): Promise<boolean> {
+    return this.links.has(this.key(campaignId, characterSheetId));
+  }
+
+  public async findSheetsByCampaignId(campaignId: string): Promise<CharacterSheet[]> {
+    const prefix = `${campaignId}::`;
+    const sheetIds = [...this.links]
+      .filter((k) => k.startsWith(prefix))
+      .map((k) => k.slice(prefix.length));
+    const sheets: CharacterSheet[] = [];
+    for (const id of sheetIds) {
+      const sheet = await this.sheetRepository.findById(id);
+      if (sheet !== null) {
+        sheets.push(sheet);
+      }
+    }
+    return sheets;
+  }
+}
+
 /** Hasher de mot de passe factice : préfixe "hashed:" et compare en conséquence. */
 export class FakePasswordHasher implements PasswordHasherService {
   public async hash(plainPassword: string): Promise<string> {
@@ -229,16 +334,68 @@ export function buildFakeTransactionalRepositories(overrides?: {
   users?: FakeUserRepository;
   credentials?: FakeCredentialRepository;
   refreshTokens?: FakeRefreshTokenRepository;
+  campaigns?: FakeCampaignRepository;
+  characterSheets?: FakeCharacterSheetRepository;
 }): TransactionalRepositories & {
   users: FakeUserRepository;
   credentials: FakeCredentialRepository;
   refreshTokens: FakeRefreshTokenRepository;
+  campaigns: FakeCampaignRepository;
+  characterSheets: FakeCharacterSheetRepository;
+  campaignCharacters: FakeCampaignCharacterRepository;
 } {
+  const characterSheets = overrides?.characterSheets ?? new FakeCharacterSheetRepository();
   return {
     users: overrides?.users ?? new FakeUserRepository(),
     credentials: overrides?.credentials ?? new FakeCredentialRepository(),
     refreshTokens: overrides?.refreshTokens ?? new FakeRefreshTokenRepository(),
+    campaigns: overrides?.campaigns ?? new FakeCampaignRepository(),
+    characterSheets,
+    // La liaison résout les fiches via le repo de fiches (reproduit le JOIN MySQL).
+    campaignCharacters: new FakeCampaignCharacterRepository(characterSheets),
   };
+}
+
+/**
+ * Aide de test : construit une fiche de personnage.
+ *
+ * @param id - L'identifiant de la fiche (par défaut "sheet-1").
+ * @param ownerId - L'identifiant du propriétaire (par défaut "user-1").
+ * @param name - Le nom de la fiche (par défaut "Aragorn").
+ * @returns Une entité `CharacterSheet` prête pour les tests.
+ */
+export function buildTestCharacterSheet(
+  id = "sheet-1",
+  ownerId = "user-1",
+  name = "Aragorn",
+): CharacterSheet {
+  return CharacterSheet.create({
+    id,
+    ownerId,
+    name: CharacterSheetName.create(name),
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+  });
+}
+
+/**
+ * Aide de test : construit une campagne.
+ *
+ * @param id - L'identifiant de la campagne (par défaut "campaign-1").
+ * @param gameMasterId - L'identifiant du MJ propriétaire (par défaut "user-1").
+ * @param name - Le nom de la campagne (par défaut "Ma campagne").
+ * @returns Une entité `Campaign` prête pour les tests.
+ */
+export function buildTestCampaign(
+  id = "campaign-1",
+  gameMasterId = "user-1",
+  name = "Ma campagne",
+): Campaign {
+  return Campaign.create({
+    id,
+    gameMasterId,
+    name: CampaignName.create(name),
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+  });
 }
 
 /**

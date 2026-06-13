@@ -132,6 +132,138 @@ Retourne le profil de l'utilisateur authentifié. Endpoint **protégé** : requi
 
 ---
 
+## Endpoints campagnes
+
+Toutes les routes campagne sont **protégées** : elles requièrent un cookie `access_token` valide.
+Le **maître du jeu** (`gameMasterId`) est toujours déduit de la session — jamais transmis dans le corps.
+
+### POST /campaigns
+
+Crée une campagne dont l'utilisateur authentifié est le maître du jeu. Un même utilisateur peut
+posséder plusieurs campagnes.
+
+**Corps de la requête**
+
+```json
+{ "name": "La Quête du Dragon" }
+```
+
+**Réponse 201 Created**
+
+```json
+{ "id": "uuid-v4", "name": "La Quête du Dragon", "createdAt": "2026-06-13T10:30:00.000Z" }
+```
+
+**Codes d'erreur**
+
+| Code applicatif | Statut HTTP | Sens |
+|---|---|---|
+| `INVALID_CAMPAIGN_NAME` | 400 | Nom absent, vide après normalisation, ou de plus de 120 caractères |
+| `UNAUTHENTICATED` | 401 | Cookie `access_token` absent ou JWT invalide/expiré |
+
+---
+
+### GET /campaigns
+
+Liste les campagnes dont l'utilisateur authentifié est le maître du jeu (des plus récentes aux
+plus anciennes).
+
+**Corps de la requête** : aucun.
+
+**Réponse 200 OK**
+
+```json
+{
+  "campaigns": [
+    { "id": "uuid-v4", "name": "La Quête du Dragon", "createdAt": "2026-06-13T10:30:00.000Z" }
+  ]
+}
+```
+
+La liste est vide (`{ "campaigns": [] }`) si l'utilisateur n'a aucune campagne.
+
+**Codes d'erreur**
+
+| Code applicatif | Statut HTTP | Sens |
+|---|---|---|
+| `UNAUTHENTICATED` | 401 | Cookie `access_token` absent ou JWT invalide/expiré |
+
+---
+
+### DELETE /campaigns/:id
+
+Supprime une campagne. **Seul le maître du jeu propriétaire** peut la supprimer.
+
+**Corps de la requête** : aucun (`:id` est l'identifiant de la campagne dans l'URL).
+
+**Réponse 204 No Content** : suppression réussie, aucun corps.
+
+**Codes d'erreur**
+
+| Code applicatif | Statut HTTP | Sens |
+|---|---|---|
+| `CAMPAIGN_NOT_FOUND` | 404 | Aucune campagne ne correspond à cet identifiant |
+| `CAMPAIGN_ACCESS_DENIED` | 403 | L'utilisateur n'est pas le maître du jeu de cette campagne |
+| `UNAUTHENTICATED` | 401 | Cookie `access_token` absent ou JWT invalide/expiré |
+
+---
+
+## Endpoints fiches de personnage
+
+Toutes les routes sont **protégées** (cookie `access_token`). Le propriétaire (`ownerId`) est
+toujours déduit de la session.
+
+### POST /character-sheets
+
+Crée une fiche appartenant à l'utilisateur authentifié.
+
+**Corps** : `{ "name": "Aragorn" }` — **Réponse 201** : `{ "id": "uuid", "name": "Aragorn", "createdAt": "..." }`
+
+| Code | HTTP | Sens |
+|---|---|---|
+| `INVALID_CHARACTER_SHEET_NAME` | 400 | Nom absent, vide, ou > 120 caractères |
+| `UNAUTHENTICATED` | 401 | Non authentifié |
+
+### GET /character-sheets
+
+Liste les fiches de l'utilisateur authentifié. **Réponse 200** : `{ "characterSheets": [ { "id", "ownerId", "name", "createdAt" } ] }`.
+
+### DELETE /character-sheets/:id
+
+Supprime une fiche (seul le propriétaire). **Réponse 204**. Erreurs : `CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403), `UNAUTHENTICATED` (401).
+
+---
+
+## Endpoints liaison campagne ↔ fiches
+
+Routes protégées sous `/campaigns/:campaignId/characters`. Modèle N-N : une fiche peut être
+rattachée à plusieurs campagnes.
+
+### POST /campaigns/:campaignId/characters
+
+Rattache une fiche (du demandeur) à la campagne.
+
+**Corps** : `{ "characterSheetId": "uuid" }` — **Réponse 201** (aucun corps).
+
+| Code | HTTP | Sens |
+|---|---|---|
+| `CAMPAIGN_NOT_FOUND` | 404 | Campagne inconnue |
+| `CHARACTER_SHEET_NOT_FOUND` | 404 | Fiche inconnue |
+| `CHARACTER_SHEET_ACCESS_DENIED` | 403 | La fiche n'appartient pas au demandeur |
+| `GM_CANNOT_JOIN_OWN_CAMPAIGN` | 409 | Le MJ ne peut pas rattacher une de ses fiches à sa propre campagne |
+| `SHEET_ALREADY_IN_CAMPAIGN` | 409 | Fiche déjà rattachée à cette campagne |
+| `UNAUTHENTICATED` | 401 | Non authentifié |
+
+### GET /campaigns/:campaignId/characters
+
+Liste les fiches rattachées à la campagne. **Réponse 200** : `{ "characters": [ { "id", "ownerId", "name", "createdAt" } ] }`. Erreur `CAMPAIGN_NOT_FOUND` (404).
+
+### DELETE /campaigns/:campaignId/characters/:characterSheetId
+
+Détache une fiche (autorisé au MJ de la campagne **ou** au propriétaire de la fiche). **Réponse 204** (idempotent). Erreurs : `CAMPAIGN_NOT_FOUND`/`CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403).
+
+---
+
 ## Décisions de contrat
 
 ### USER_NOT_FOUND renvoyé en 401, pas 404

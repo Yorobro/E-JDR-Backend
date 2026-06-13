@@ -14,7 +14,9 @@ import { MysqlRefreshTokenRepository } from "@infrastructure/persistence/mysql/f
  * sur le pool) ET par le `MysqlUnitOfWork` (sur une connexion transactionnelle). Garantit
  * que les deux modes produisent exactement les mêmes repos, sans duplication de câblage.
  */
-export function createAuthRepositories(executor: SqlExecutor): TransactionalRepositories {
+export function createAuthRepositories(
+  executor: SqlExecutor,
+): Pick<TransactionalRepositories, "users" | "credentials" | "refreshTokens"> {
   return {
     users: new MysqlUserRepository(new UserDao(executor)),
     credentials: new MysqlCredentialRepository(new CredentialDao(executor)),

@@ -1,0 +1,20 @@
+import { Router } from "express";
+import { CharacterSheetController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetController";
+
+/**
+ * Construit le routeur Express des endpoints fiches (protégés).
+ *
+ * Le middleware d'authentification est monté en amont (dans `buildHttpApp`).
+ *
+ * @param controller - Le controller fiches.
+ * @returns Le routeur à monter sous `/character-sheets`.
+ */
+export function buildCharacterSheetRoutes(controller: CharacterSheetController): Router {
+  const router = Router();
+
+  router.post("/", controller.create);
+  router.get("/", controller.list);
+  router.delete("/:id", controller.remove);
+
+  return router;
+}

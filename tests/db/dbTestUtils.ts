@@ -28,8 +28,12 @@ export function createTestPool(): Pool {
  * @param pool - Le pool de test.
  */
 export async function clearAllTables(pool: Pool): Promise<void> {
+  // Ordre FK : enfants d'abord (les liaisons et les fiches référencent campaigns/users).
+  await pool.execute("DELETE FROM campaign_characters");
+  await pool.execute("DELETE FROM character_sheets");
   await pool.execute("DELETE FROM refresh_tokens");
   await pool.execute("DELETE FROM credentials");
+  await pool.execute("DELETE FROM campaigns");
   await pool.execute("DELETE FROM users");
 }
 

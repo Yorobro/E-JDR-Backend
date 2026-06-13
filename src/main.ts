@@ -6,6 +6,8 @@ import { AppConfig, loadConfig } from "@config/env";
 // Infrastructure
 import { MysqlConnection } from "@infrastructure/persistence/mysql/MysqlConnection";
 import { createAuthRepositories } from "@infrastructure/persistence/mysql/features/auth/createAuthRepositories";
+import { createCampaignRepositories } from "@infrastructure/persistence/mysql/features/campaign/createCampaignRepositories";
+import { createCharacterSheetRepositories } from "@infrastructure/persistence/mysql/features/character-sheet/createCharacterSheetRepositories";
 import { MysqlUnitOfWork } from "@infrastructure/persistence/mysql/MysqlUnitOfWork";
 import { PasswordHasherServiceImpl } from "@infrastructure/security/PasswordHasherServiceImpl";
 import { TokenProviderServiceImpl } from "@infrastructure/security/TokenProviderServiceImpl";
@@ -17,6 +19,9 @@ import { PinoLogger } from "@infrastructure/logging/PinoLogger";
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
+import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
+import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
+import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 // Application — ports services
 import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
 import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
@@ -28,12 +33,28 @@ import { LoginUserUseCaseImpl } from "@application/features/auth/usecases/LoginU
 import { LogoutUserUseCaseImpl } from "@application/features/auth/usecases/LogoutUserUseCaseImpl";
 import { RefreshAccessTokenUseCaseImpl } from "@application/features/auth/usecases/RefreshAccessTokenUseCaseImpl";
 import { GetCurrentUserUseCaseImpl } from "@application/features/auth/usecases/GetCurrentUserUseCaseImpl";
+import { CreateCampaignUseCaseImpl } from "@application/features/campaign/usecases/CreateCampaignUseCaseImpl";
+import { ListMyCampaignsUseCaseImpl } from "@application/features/campaign/usecases/ListMyCampaignsUseCaseImpl";
+import { DeleteCampaignUseCaseImpl } from "@application/features/campaign/usecases/DeleteCampaignUseCaseImpl";
+import { CreateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CreateCharacterSheetUseCaseImpl";
+import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/character-sheet/usecases/ListMyCharacterSheetsUseCaseImpl";
+import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/DeleteCharacterSheetUseCaseImpl";
+import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/LinkCharacterToCampaignUseCaseImpl";
+import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
+import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
 
 // Presentation — feature auth
 import { AuthController } from "@presentation/http/features/auth/controllers/AuthController";
 import { UserController } from "@presentation/http/features/auth/controllers/UserController";
 import { buildAuthRoutes } from "@presentation/http/features/auth/routes/authRoutes";
 import { buildUserRoutes } from "@presentation/http/features/auth/routes/userRoutes";
+// Presentation — feature campaign
+import { CampaignController } from "@presentation/http/features/campaign/controllers/CampaignController";
+import { CampaignCharacterController } from "@presentation/http/features/campaign/controllers/CampaignCharacterController";
+import { buildCampaignRoutes } from "@presentation/http/features/campaign/routes/campaignRoutes";
+// Presentation — feature character-sheet
+import { CharacterSheetController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetController";
+import { buildCharacterSheetRoutes } from "@presentation/http/features/character-sheet/routes/characterSheetRoutes";
 // Presentation — shared middlewares
 import { requestIdMiddleware } from "@presentation/http/shared/middlewares/requestIdMiddleware";
 import { buildHttpLoggerMiddleware } from "@presentation/http/shared/middlewares/httpLoggerMiddleware";
@@ -59,6 +80,9 @@ interface AuthServices {
   userRepository: UserRepository;
   credentialRepository: CredentialRepository;
   refreshTokenRepository: RefreshTokenRepository;
+  campaignRepository: CampaignRepository;
+  characterSheetRepository: CharacterSheetRepository;
+  campaignCharacterRepository: CampaignCharacterRepository;
   unitOfWork: MysqlUnitOfWork;
   passwordHasher: PasswordHasherServiceImpl;
   tokenProvider: TokenProviderService;
@@ -84,6 +108,13 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     refreshTokens: refreshTokenRepository,
   } = createAuthRepositories(connection.getPool());
 
+  const { campaigns: campaignRepository } = createCampaignRepositories(connection.getPool());
+
+  const {
+    characterSheets: characterSheetRepository,
+    campaignCharacters: campaignCharacterRepository,
+  } = createCharacterSheetRepositories(connection.getPool());
+
   const unitOfWork = new MysqlUnitOfWork(connection);
 
   const passwordHasher = new PasswordHasherServiceImpl();
@@ -107,6 +138,9 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     userRepository,
     credentialRepository,
     refreshTokenRepository,
+    campaignRepository,
+    characterSheetRepository,
+    campaignCharacterRepository,
     unitOfWork,
     passwordHasher,
     tokenProvider,
@@ -114,6 +148,93 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     idGenerator,
     authTokenService,
   };
+}
+
+/**
+ * Assemble le controller campaign à partir des services déjà construits.
+ *
+ * @param services - Les services partagés produits par {@link buildServices}.
+ * @param logger - Le logger applicatif.
+ * @returns Le controller campaign câblé.
+ */
+function buildCampaignController(services: AuthServices, logger: Logger): CampaignController {
+  const createCampaign = new CreateCampaignUseCaseImpl(
+    services.idGenerator,
+    services.unitOfWork,
+    logger,
+  );
+  const listMyCampaigns = new ListMyCampaignsUseCaseImpl(services.campaignRepository);
+  const deleteCampaign = new DeleteCampaignUseCaseImpl(
+    services.campaignRepository,
+    services.unitOfWork,
+    logger,
+  );
+
+  return new CampaignController(createCampaign, listMyCampaigns, deleteCampaign);
+}
+
+/**
+ * Assemble le controller des fiches de personnage (CRUD des fiches).
+ *
+ * @param services - Les services partagés produits par {@link buildServices}.
+ * @param logger - Le logger applicatif.
+ * @returns Le controller fiches câblé.
+ */
+function buildCharacterSheetController(
+  services: AuthServices,
+  logger: Logger,
+): CharacterSheetController {
+  const createCharacterSheet = new CreateCharacterSheetUseCaseImpl(
+    services.idGenerator,
+    services.unitOfWork,
+    logger,
+  );
+  const listMyCharacterSheets = new ListMyCharacterSheetsUseCaseImpl(
+    services.characterSheetRepository,
+  );
+  const deleteCharacterSheet = new DeleteCharacterSheetUseCaseImpl(
+    services.characterSheetRepository,
+    services.unitOfWork,
+    logger,
+  );
+
+  return new CharacterSheetController(
+    createCharacterSheet,
+    listMyCharacterSheets,
+    deleteCharacterSheet,
+  );
+}
+
+/**
+ * Assemble le controller de la liaison campagne↔fiches (rattacher/détacher/lister).
+ *
+ * @param services - Les services partagés produits par {@link buildServices}.
+ * @param logger - Le logger applicatif.
+ * @returns Le controller de liaison câblé.
+ */
+function buildCampaignCharacterController(
+  services: AuthServices,
+  logger: Logger,
+): CampaignCharacterController {
+  const linkCharacter = new LinkCharacterToCampaignUseCaseImpl(
+    services.campaignRepository,
+    services.characterSheetRepository,
+    services.campaignCharacterRepository,
+    services.unitOfWork,
+    logger,
+  );
+  const unlinkCharacter = new UnlinkCharacterFromCampaignUseCaseImpl(
+    services.campaignRepository,
+    services.characterSheetRepository,
+    services.unitOfWork,
+    logger,
+  );
+  const listCampaignCharacters = new ListCampaignCharactersUseCaseImpl(
+    services.campaignRepository,
+    services.campaignCharacterRepository,
+  );
+
+  return new CampaignCharacterController(linkCharacter, unlinkCharacter, listCampaignCharacters);
 }
 
 /**
@@ -161,21 +282,33 @@ function buildAuthController(
 }
 
 /**
+ * Regroupe les controllers HTTP montés par {@link buildHttpApp}.
+ *
+ * Les passer en un seul objet (plutôt qu'en paramètres séparés) garde la signature lisible
+ * à mesure que de nouvelles features ajoutent leur controller.
+ */
+export interface HttpControllers {
+  readonly auth: AuthController;
+  readonly user: UserController;
+  readonly campaign: CampaignController;
+  readonly campaignCharacter: CampaignCharacterController;
+  readonly characterSheet: CharacterSheetController;
+}
+
+/**
  * Construit l'application Express : middlewares globaux, routes, gestion d'erreurs.
  *
  * Exportée pour permettre des tests d'intégration HTTP (via supertest) qui montent la
  * pile Express réelle — routage, parsing JSON, cookies, controllers, gestion d'erreurs —
  * en injectant les controllers câblés sur des doublures, sans base de données.
  *
- * @param authController - Le controller d'authentification câblé.
- * @param userController - Le controller des routes utilisateur protégées.
+ * @param controllers - L'ensemble des controllers HTTP câblés.
  * @param authMiddleware - Le middleware de vérification du jeton d'accès.
  * @param logger - Le logger applicatif (injecté pour structurer les logs et les erreurs).
  * @returns L'application Express prête à écouter.
  */
 export function buildHttpApp(
-  authController: AuthController,
-  userController: UserController,
+  controllers: HttpControllers,
   authMiddleware: RequestHandler,
   logger: Logger,
 ): Application {
@@ -188,9 +321,19 @@ export function buildHttpApp(
   app.use(cookieParser());
   app.use(buildHttpLoggerMiddleware(logger));
 
-  app.use("/auth", buildAuthRoutes(authController));
+  app.use("/auth", buildAuthRoutes(controllers.auth));
   // Routes protégées : le middleware d'auth s'applique à tout ce qui est monté derrière.
-  app.use("/me", authMiddleware, buildUserRoutes(userController));
+  app.use("/me", authMiddleware, buildUserRoutes(controllers.user));
+  app.use(
+    "/campaigns",
+    authMiddleware,
+    buildCampaignRoutes(controllers.campaign, controllers.campaignCharacter),
+  );
+  app.use(
+    "/character-sheets",
+    authMiddleware,
+    buildCharacterSheetRoutes(controllers.characterSheet),
+  );
 
   // Le middleware d'erreurs doit être enregistré en dernier.
   app.use(buildErrorHandler(logger));
@@ -224,9 +367,22 @@ async function bootstrap(): Promise<void> {
   const userController = new UserController(
     new GetCurrentUserUseCaseImpl(services.userRepository, services.credentialRepository),
   );
+  const campaignController = buildCampaignController(services, logger);
+  const campaignCharacterController = buildCampaignCharacterController(services, logger);
+  const characterSheetController = buildCharacterSheetController(services, logger);
   const authMiddleware = buildAuthMiddleware(services.tokenProvider);
 
-  const app = buildHttpApp(authController, userController, authMiddleware, logger);
+  const app = buildHttpApp(
+    {
+      auth: authController,
+      user: userController,
+      campaign: campaignController,
+      campaignCharacter: campaignCharacterController,
+      characterSheet: characterSheetController,
+    },
+    authMiddleware,
+    logger,
+  );
 
   app.listen(config.port, () => {
     logger.info("Serveur démarré", { port: config.port });
