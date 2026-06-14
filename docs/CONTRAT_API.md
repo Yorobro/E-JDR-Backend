@@ -234,19 +234,25 @@ Liste les fiches de l'utilisateur authentifié. Projection **légère** (nom seu
 Détail **complet** d'une fiche (seul le propriétaire). **Réponse 200** : tous les champs —
 `{ "id", "ownerId", "name", "createdAt", "formation", "niveau", "peuple", "sexe",
 "tailleEtPoids", "age", "apparence", "dexterite", "intelligence", "perception", "social",
-"vigueur", "pointsDeVie", "pointsDeMagie", "protection", "monnaie", "armes", "armures",
-"equipement", "sortsEtMiracles", "notes" }`. Champs détaillés `null` si non renseignés.
-Erreurs : `CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403),
-`UNAUTHENTICATED` (401).
+"vigueur", "pointsDeVie", "pointsDeMagie", "protection", "purse", "competences", "armes",
+"armures", "equipement", "sortsEtMiracles", "notes" }`. Précisions de types :
+- `niveau`, `age` : entiers (`number`) ou `null`.
+- `sexe` : `"M"` | `"F"` | `"NB"` | `null`.
+- `purse` : `{ "gold", "silver", "copper" }` (entiers bruts) ou `null` si aucune bourse.
+- les autres champs détaillés : texte ou `null`.
+
+Champs détaillés `null` si non renseignés. Erreurs : `CHARACTER_SHEET_NOT_FOUND` (404),
+`CHARACTER_SHEET_ACCESS_DENIED` (403), `UNAUTHENTICATED` (401).
 
 ### PUT /character-sheets/:id
 
 Met à jour une fiche (seul le propriétaire). Saisie **souple** : seul `name` est requis (revalidé,
 max 120) ; les champs détaillés sont optionnels (texte borné, nombres entiers ≥ 0, normalisés
-côté serveur). **Corps** : `{ "name", + champs détaillés optionnels }`. **Réponse 200** : la fiche
-complète (même forme que `GET /character-sheets/:id`). Erreurs : `INVALID_CHARACTER_SHEET_NAME`
-(400), `CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403),
-`UNAUTHENTICATED` (401).
+côté serveur). **Corps** : `{ "name", + champs détaillés optionnels }` — dont `sexe` ∈ {M,F,NB},
+`niveau`/`age` entiers, et `purse: { gold, silver, copper }` (entiers ≥ 0). **Réponse 200** : la
+fiche complète (même forme que `GET /character-sheets/:id`). Erreurs : `INVALID_CHARACTER_SHEET_NAME`
+(400), `INVALID_SEX` (400), `INVALID_PURSE` (400), `CHARACTER_SHEET_NOT_FOUND` (404),
+`CHARACTER_SHEET_ACCESS_DENIED` (403), `UNAUTHENTICATED` (401).
 
 ### DELETE /character-sheets/:id
 
