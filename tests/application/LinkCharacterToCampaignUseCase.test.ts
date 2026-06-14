@@ -28,14 +28,14 @@ describe("LinkCharacterToCampaignUseCaseImpl", () => {
     );
   });
 
-  it("rattache la fiche du joueur à une campagne dont il n'est pas le MJ", async () => {
+  it("réussit quand le MJ rattache la fiche d'un autre joueur", async () => {
     txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1"));
     txRepos.characterSheets.seed(buildTestCharacterSheet("sheet-1", "player-1"));
 
     const result = await useCase.execute({
       campaignId: "camp-1",
       characterSheetId: "sheet-1",
-      actorUserId: "player-1",
+      actorUserId: "mj-1",
     });
 
     expect(result.isSuccess).toBe(true);
@@ -64,7 +64,7 @@ describe("LinkCharacterToCampaignUseCaseImpl", () => {
     expect(result.error).toBeInstanceOf(CharacterSheetNotFoundError);
   });
 
-  it("échoue (403) si le demandeur n'est pas le propriétaire de la fiche", async () => {
+  it("échoue (403) si le demandeur n'est pas le MJ de la campagne", async () => {
     txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1"));
     txRepos.characterSheets.seed(buildTestCharacterSheet("sheet-1", "player-1"));
     const result = await useCase.execute({
@@ -75,7 +75,7 @@ describe("LinkCharacterToCampaignUseCaseImpl", () => {
     expect(result.error).toBeInstanceOf(CharacterSheetAccessDeniedError);
   });
 
-  it("échoue (règle MJ≠joueur) si le MJ rattache une de ses fiches à SA campagne", async () => {
+  it("refuse (409) si le MJ tente de rattacher SA propre fiche (règle MJ≠joueur)", async () => {
     txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1"));
     txRepos.characterSheets.seed(buildTestCharacterSheet("sheet-1", "mj-1"));
 
@@ -100,7 +100,7 @@ describe("LinkCharacterToCampaignUseCaseImpl", () => {
     const result = await useCase.execute({
       campaignId: "camp-1",
       characterSheetId: "sheet-1",
-      actorUserId: "player-1",
+      actorUserId: "mj-1",
     });
 
     expect(result.error).toBeInstanceOf(SheetAlreadyInCampaignError);

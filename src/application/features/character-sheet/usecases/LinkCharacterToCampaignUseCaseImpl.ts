@@ -19,7 +19,7 @@ import { SheetAlreadyInCampaignError } from "@application/features/character-she
  * Porte les règles métier du rattachement (orchestration de plusieurs repos en lecture, écriture
  * de la liaison via le `UnitOfWork`) :
  * 1. la campagne et la fiche doivent exister ;
- * 2. le demandeur doit être le **propriétaire** de la fiche rattachée ;
+ * 2. le demandeur doit être le **maître du jeu** de la campagne ;
  * 3. **le maître du jeu ne peut pas rattacher une de ses fiches à sa propre campagne** ;
  * 4. la fiche ne doit pas être déjà rattachée à cette campagne.
  */
@@ -43,8 +43,8 @@ export class LinkCharacterToCampaignUseCaseImpl implements LinkCharacterToCampai
       return Result.failure(new CharacterSheetNotFoundError());
     }
 
-    // On ne rattache que SES propres fiches.
-    if (!sheet.isOwnedBy(command.actorUserId)) {
+    // Seul le MJ de la campagne rattache des fiches (à n'importe quel autre joueur).
+    if (!campaign.isGameMaster(command.actorUserId)) {
       return Result.failure(new CharacterSheetAccessDeniedError());
     }
 
