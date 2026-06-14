@@ -147,6 +147,35 @@ describe("Character sheet routes (intégration HTTP)", () => {
       expect(res.status).toBe(401);
     });
 
+    it("un non-MJ ne peut pas rattacher une fiche (403)", async () => {
+      const mj = await authenticate("mj@test.com");
+      const campaign = await mj.post("/campaigns").send({ name: "C" });
+      const player = await authenticate("player@test.com");
+      const sheet = await player.post("/character-sheets").send({ name: "S" });
+
+      const res = await player
+        .post(`/campaigns/${campaign.body.id}/characters`)
+        .send({ characterSheetId: sheet.body.id });
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");
+    });
+
+    it("le propriétaire (non-MJ) ne peut pas détacher sa fiche (403)", async () => {
+      const mj = await authenticate("mj@test.com");
+      const campaign = await mj.post("/campaigns").send({ name: "C" });
+      const player = await authenticate("player@test.com");
+      const sheet = await player.post("/character-sheets").send({ name: "S" });
+      await mj
+        .post(`/campaigns/${campaign.body.id}/characters`)
+        .send({ characterSheetId: sheet.body.id });
+
+      const res = await player.delete(`/campaigns/${campaign.body.id}/characters/${sheet.body.id}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");
+    });
+
     it("GET linkable-characters (MJ) liste les fiches des autres, exclut les siennes et les déjà liées", async () => {
       const mj = await authenticate("mj@test.com");
       const campaign = await mj.post("/campaigns").send({ name: "C" });
