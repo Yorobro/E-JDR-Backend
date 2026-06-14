@@ -83,7 +83,7 @@ describe("Character sheet routes (intégration HTTP)", () => {
       const player = await authenticate("player@test.com");
       const sheet = await player.post("/character-sheets").send({ name: "Legolas" });
 
-      const link = await player
+      const link = await mj
         .post(`/campaigns/${campaign.body.id}/characters`)
         .send({ characterSheetId: sheet.body.id });
       expect(link.status).toBe(201);
@@ -113,10 +113,10 @@ describe("Character sheet routes (intégration HTTP)", () => {
       const player = await authenticate("player@test.com");
       const sheet = await player.post("/character-sheets").send({ name: "S" });
 
-      await player
+      await mj
         .post(`/campaigns/${campaign.body.id}/characters`)
         .send({ characterSheetId: sheet.body.id });
-      const dup = await player
+      const dup = await mj
         .post(`/campaigns/${campaign.body.id}/characters`)
         .send({ characterSheetId: sheet.body.id });
 
@@ -129,11 +129,11 @@ describe("Character sheet routes (intégration HTTP)", () => {
       const campaign = await mj.post("/campaigns").send({ name: "C" });
       const player = await authenticate("player@test.com");
       const sheet = await player.post("/character-sheets").send({ name: "S" });
-      await player
+      await mj
         .post(`/campaigns/${campaign.body.id}/characters`)
         .send({ characterSheetId: sheet.body.id });
 
-      const res = await player.delete(`/campaigns/${campaign.body.id}/characters/${sheet.body.id}`);
+      const res = await mj.delete(`/campaigns/${campaign.body.id}/characters/${sheet.body.id}`);
       expect(res.status).toBe(204);
       expect(
         (await mj.get(`/campaigns/${campaign.body.id}/characters`)).body.characters,
