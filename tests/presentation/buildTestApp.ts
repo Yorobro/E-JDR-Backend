@@ -23,6 +23,7 @@ import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character
 import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/LinkCharacterToCampaignUseCaseImpl";
 import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
 import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
+import { ListLinkableCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListLinkableCharactersUseCaseImpl";
 import { CharacterSheetController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetController";
 
 import {
@@ -117,6 +118,7 @@ export function buildTestApp(): {
       logger,
     ),
     new ListCampaignCharactersUseCaseImpl(repos.campaigns, repos.campaignCharacters),
+    new ListLinkableCharactersUseCaseImpl(repos.campaigns, repos.characterSheets),
   );
 
   const characterSheetController = new CharacterSheetController(

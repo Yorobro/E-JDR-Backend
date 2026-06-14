@@ -42,6 +42,7 @@ import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character
 import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/LinkCharacterToCampaignUseCaseImpl";
 import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
 import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
+import { ListLinkableCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListLinkableCharactersUseCaseImpl";
 
 // Presentation — feature auth
 import { AuthController } from "@presentation/http/features/auth/controllers/AuthController";
@@ -233,8 +234,17 @@ function buildCampaignCharacterController(
     services.campaignRepository,
     services.campaignCharacterRepository,
   );
+  const listLinkableCharacters = new ListLinkableCharactersUseCaseImpl(
+    services.campaignRepository,
+    services.characterSheetRepository,
+  );
 
-  return new CampaignCharacterController(linkCharacter, unlinkCharacter, listCampaignCharacters);
+  return new CampaignCharacterController(
+    linkCharacter,
+    unlinkCharacter,
+    listCampaignCharacters,
+    listLinkableCharacters,
+  );
 }
 
 /**

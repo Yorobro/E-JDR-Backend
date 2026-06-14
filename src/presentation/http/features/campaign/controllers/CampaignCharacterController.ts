@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { LinkCharacterToCampaignUseCase } from "@application/features/character-sheet/abstractions/usecases/LinkCharacterToCampaignUseCase";
 import { UnlinkCharacterFromCampaignUseCase } from "@application/features/character-sheet/abstractions/usecases/UnlinkCharacterFromCampaignUseCase";
 import { ListCampaignCharactersUseCase } from "@application/features/character-sheet/abstractions/usecases/ListCampaignCharactersUseCase";
+import { ListLinkableCharactersUseCase } from "@application/features/character-sheet/abstractions/usecases/ListLinkableCharactersUseCase";
 import { CharacterSheetHttpMapper } from "@presentation/http/features/character-sheet/mappers/CharacterSheetHttpMapper";
 
 /**
@@ -15,6 +16,7 @@ export class CampaignCharacterController {
     private readonly linkCharacter: LinkCharacterToCampaignUseCase,
     private readonly unlinkCharacter: UnlinkCharacterFromCampaignUseCase,
     private readonly listCampaignCharacters: ListCampaignCharactersUseCase,
+    private readonly listLinkableCharacters: ListLinkableCharactersUseCase,
   ) {}
 
   /** `POST /campaigns/:campaignId/characters` — rattache une fiche à la campagne. */
@@ -66,6 +68,33 @@ export class CampaignCharacterController {
   public list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await this.listCampaignCharacters.execute({
+        campaignId: req.params.campaignId ?? "",
+        actorUserId: req.user!.userId,
+      });
+
+      if (result.isFailure) {
+        res
+          .status(CharacterSheetHttpMapper.statusFor(result.error))
+          .json({ code: result.error.code, message: result.error.message });
+        return;
+      }
+
+      const characters = result.value.map((sheet) => ({
+        id: sheet.id,
+        ownerId: sheet.ownerId,
+        name: sheet.name,
+        createdAt: sheet.createdAt.toISOString(),
+      }));
+      res.status(200).json({ characters });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /** `GET /campaigns/:campaignId/linkable-characters` — fiches rattachables (MJ uniquement). */
+  public listLinkable = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.listLinkableCharacters.execute({
         campaignId: req.params.campaignId ?? "",
         actorUserId: req.user!.userId,
       });

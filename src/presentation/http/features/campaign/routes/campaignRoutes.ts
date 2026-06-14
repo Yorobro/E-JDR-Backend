@@ -27,6 +27,7 @@ export function buildCampaignRoutes(
   router.post("/:campaignId/characters", characterController.link);
   router.get("/:campaignId/characters", characterController.list);
   router.delete("/:campaignId/characters/:characterSheetId", characterController.unlink);
+  router.get("/:campaignId/linkable-characters", characterController.listLinkable);
 
   return router;
 }
