@@ -1,5 +1,7 @@
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CharacterSheetName } from "@domain/features/character-sheet/value-objects/CharacterSheetName";
+import { Sex } from "@domain/features/character-sheet/value-objects/Sex";
+import { Purse } from "@domain/features/character-sheet/value-objects/Purse";
 import {
   CharacterSheetRow,
   CharacterSheetWriteRow,
@@ -29,7 +31,7 @@ export class CharacterSheetMapper {
       formation: row.formation ?? null,
       niveau: row.niveau ?? null,
       peuple: row.peuple ?? null,
-      sexe: row.sexe ?? null,
+      sexe: row.sexe != null ? Sex.create(row.sexe) : null,
       tailleEtPoids: row.taille_et_poids ?? null,
       age: row.age ?? null,
       apparence: row.apparence ?? null,
@@ -41,7 +43,8 @@ export class CharacterSheetMapper {
       pointsDeVie: row.points_de_vie ?? null,
       pointsDeMagie: row.points_de_magie ?? null,
       protection: row.protection ?? null,
-      monnaie: row.monnaie ?? null,
+      purse: buildPurse(row),
+      competences: row.competences ?? null,
       armes: row.armes ?? null,
       armures: row.armures ?? null,
       equipement: row.equipement ?? null,
@@ -66,7 +69,7 @@ export class CharacterSheetMapper {
       formation: d.formation,
       niveau: d.niveau,
       peuple: d.peuple,
-      sexe: d.sexe,
+      sexe: d.sexe?.value ?? null,
       taille_et_poids: d.tailleEtPoids,
       age: d.age,
       apparence: d.apparence,
@@ -78,7 +81,10 @@ export class CharacterSheetMapper {
       points_de_vie: d.pointsDeVie,
       points_de_magie: d.pointsDeMagie,
       protection: d.protection,
-      monnaie: d.monnaie,
+      purse_gold: d.purse?.gold ?? null,
+      purse_silver: d.purse?.silver ?? null,
+      purse_copper: d.purse?.copper ?? null,
+      competences: d.competences,
       armes: d.armes,
       armures: d.armures,
       equipement: d.equipement,
@@ -86,4 +92,16 @@ export class CharacterSheetMapper {
       notes: d.notes,
     };
   }
+}
+
+/** Reconstruit la bourse : null si les 3 colonnes sont absentes, sinon Purse (null → 0). */
+function buildPurse(row: CharacterSheetRow): Purse | null {
+  if (row.purse_gold == null && row.purse_silver == null && row.purse_copper == null) {
+    return null;
+  }
+  return Purse.create({
+    gold: row.purse_gold ?? 0,
+    silver: row.purse_silver ?? 0,
+    copper: row.purse_copper ?? 0,
+  });
 }

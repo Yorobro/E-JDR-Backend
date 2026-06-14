@@ -13,13 +13,13 @@ export interface CharacterSheetRow extends RowDataPacket {
   owner_id: string;
   name: string;
   created_at: Date;
-  // Identité (texte court)
+  // Identité (texte court, niveau/âge entiers)
   formation?: string | null;
-  niveau?: string | null;
+  niveau?: number | null;
   peuple?: string | null;
   sexe?: string | null;
   taille_et_poids?: string | null;
-  age?: string | null;
+  age?: number | null;
   apparence?: string | null;
   // Caractéristiques (entiers)
   dexterite?: number | null;
@@ -31,8 +31,12 @@ export interface CharacterSheetRow extends RowDataPacket {
   points_de_vie?: number | null;
   points_de_magie?: number | null;
   protection?: number | null;
-  monnaie?: number | null;
+  // Bourse (pièces brutes)
+  purse_gold?: number | null;
+  purse_silver?: number | null;
+  purse_copper?: number | null;
   // Zones de texte long
+  competences?: string | null;
   armes?: string | null;
   armures?: string | null;
   equipement?: string | null;
@@ -47,11 +51,11 @@ export interface CharacterSheetWriteRow {
   name: string;
   created_at: Date;
   formation: string | null;
-  niveau: string | null;
+  niveau: number | null;
   peuple: string | null;
   sexe: string | null;
   taille_et_poids: string | null;
-  age: string | null;
+  age: number | null;
   apparence: string | null;
   dexterite: number | null;
   intelligence: number | null;
@@ -61,7 +65,10 @@ export interface CharacterSheetWriteRow {
   points_de_vie: number | null;
   points_de_magie: number | null;
   protection: number | null;
-  monnaie: number | null;
+  purse_gold: number | null;
+  purse_silver: number | null;
+  purse_copper: number | null;
+  competences: string | null;
   armes: string | null;
   armures: string | null;
   equipement: string | null;
@@ -86,9 +93,12 @@ const DETAIL_COLUMNS = [
   "points_de_vie",
   "points_de_magie",
   "protection",
-  "monnaie",
-  "armes",
+  "purse_gold",
+  "purse_silver",
+  "purse_copper",
   "armures",
+  "armes",
+  "competences",
   "equipement",
   "sorts_et_miracles",
   "notes",
