@@ -33,8 +33,8 @@ export class UserController {
         return;
       }
 
-      const { userId, email, createdAt } = result.value;
-      res.status(200).json({ userId, email, createdAt: createdAt.toISOString() });
+      const { userId, email, pseudo, createdAt } = result.value;
+      res.status(200).json({ userId, email, pseudo, createdAt: createdAt.toISOString() });
     } catch (error) {
       next(error);
     }
