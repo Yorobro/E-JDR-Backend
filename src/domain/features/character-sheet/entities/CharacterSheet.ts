@@ -1,4 +1,6 @@
 import { CharacterSheetName } from "@domain/features/character-sheet/value-objects/CharacterSheetName";
+import { Sex } from "@domain/features/character-sheet/value-objects/Sex";
+import { Purse } from "@domain/features/character-sheet/value-objects/Purse";
 
 /**
  * Champs **détaillés et éditables** d'une fiche (hors identité technique : id, ownerId,
@@ -6,13 +8,13 @@ import { CharacterSheetName } from "@domain/features/character-sheet/value-objec
  * porté à part par {@link CharacterSheetName}). Aucune règle métier sur les valeurs.
  */
 export interface CharacterSheetDetails {
-  // Identité (texte court)
+  // Identité (texte, niveau/âge entiers, sexe contraint M/F/NB)
   readonly formation: string | null;
-  readonly niveau: string | null;
+  readonly niveau: number | null;
   readonly peuple: string | null;
-  readonly sexe: string | null;
+  readonly sexe: Sex | null;
   readonly tailleEtPoids: string | null;
-  readonly age: string | null;
+  readonly age: number | null;
   readonly apparence: string | null;
   // Caractéristiques (entiers)
   readonly dexterite: number | null;
@@ -24,8 +26,10 @@ export interface CharacterSheetDetails {
   readonly pointsDeVie: number | null;
   readonly pointsDeMagie: number | null;
   readonly protection: number | null;
-  readonly monnaie: number | null;
+  // Bourse (value object)
+  readonly purse: Purse | null;
   // Zones de texte long
+  readonly competences: string | null;
   readonly armes: string | null;
   readonly armures: string | null;
   readonly equipement: string | null;
@@ -50,7 +54,8 @@ const EMPTY_DETAILS: CharacterSheetDetails = {
   pointsDeVie: null,
   pointsDeMagie: null,
   protection: null,
-  monnaie: null,
+  purse: null,
+  competences: null,
   armes: null,
   armures: null,
   equipement: null,

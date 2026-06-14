@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CharacterSheetName } from "@domain/features/character-sheet/value-objects/CharacterSheetName";
+import { Sex } from "@domain/features/character-sheet/value-objects/Sex";
+import { Purse } from "@domain/features/character-sheet/value-objects/Purse";
 
 describe("CharacterSheet (entité)", () => {
   const build = (ownerId = "user-1"): CharacterSheet =>
@@ -41,10 +43,20 @@ describe("CharacterSheet (entité)", () => {
       name: CharacterSheetName.create("Aragorn"),
       createdAt: new Date("2026-01-01T00:00:00Z"),
       peuple: "Dúnedain",
+      niveau: 5,
+      age: 87,
+      sexe: Sex.create("M"),
       vigueur: 6,
+      competences: "Pistage",
+      purse: Purse.create({ gold: 2 }),
     });
     expect(sheet.details.peuple).toBe("Dúnedain");
+    expect(sheet.details.niveau).toBe(5);
+    expect(sheet.details.age).toBe(87);
+    expect(sheet.details.sexe?.value).toBe("M");
     expect(sheet.details.vigueur).toBe(6);
+    expect(sheet.details.competences).toBe("Pistage");
+    expect(sheet.details.purse?.gold).toBe(2);
     expect(sheet.details.formation).toBeNull();
   });
 
