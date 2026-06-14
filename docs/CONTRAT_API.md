@@ -241,7 +241,8 @@ rattachée à plusieurs campagnes.
 
 ### POST /campaigns/:campaignId/characters
 
-Rattache une fiche (du demandeur) à la campagne.
+Rattache une fiche à la campagne. **Réservé au MJ de la campagne** : il rattache la fiche d'un
+autre joueur (le `actorUserId` vient de la session, jamais du corps).
 
 **Corps** : `{ "characterSheetId": "uuid" }` — **Réponse 201** (aucun corps).
 
@@ -249,7 +250,7 @@ Rattache une fiche (du demandeur) à la campagne.
 |---|---|---|
 | `CAMPAIGN_NOT_FOUND` | 404 | Campagne inconnue |
 | `CHARACTER_SHEET_NOT_FOUND` | 404 | Fiche inconnue |
-| `CHARACTER_SHEET_ACCESS_DENIED` | 403 | La fiche n'appartient pas au demandeur |
+| `CHARACTER_SHEET_ACCESS_DENIED` | 403 | Le demandeur n'est pas le MJ de la campagne |
 | `GM_CANNOT_JOIN_OWN_CAMPAIGN` | 409 | Le MJ ne peut pas rattacher une de ses fiches à sa propre campagne |
 | `SHEET_ALREADY_IN_CAMPAIGN` | 409 | Fiche déjà rattachée à cette campagne |
 | `UNAUTHENTICATED` | 401 | Non authentifié |
@@ -258,9 +259,16 @@ Rattache une fiche (du demandeur) à la campagne.
 
 Liste les fiches rattachées à la campagne. **Réponse 200** : `{ "characters": [ { "id", "ownerId", "name", "createdAt" } ] }`. Erreur `CAMPAIGN_NOT_FOUND` (404).
 
+### GET /campaigns/:campaignId/linkable-characters
+
+**Réservé au MJ de la campagne.** Liste les fiches **rattachables** : toutes celles dont le
+propriétaire n'est pas le MJ, en excluant les fiches déjà rattachées à la campagne. **Réponse 200** :
+`{ "characters": [ { "id", "ownerId", "name", "createdAt" } ] }`. Erreurs : `CAMPAIGN_NOT_FOUND` (404),
+`CHARACTER_SHEET_ACCESS_DENIED` (403, le demandeur n'est pas le MJ), `UNAUTHENTICATED` (401).
+
 ### DELETE /campaigns/:campaignId/characters/:characterSheetId
 
-Détache une fiche (autorisé au MJ de la campagne **ou** au propriétaire de la fiche). **Réponse 204** (idempotent). Erreurs : `CAMPAIGN_NOT_FOUND`/`CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403).
+Détache une fiche. **Réservé au MJ de la campagne.** **Réponse 204** (idempotent). Erreurs : `CAMPAIGN_NOT_FOUND`/`CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403, le demandeur n'est pas le MJ).
 
 ---
 
