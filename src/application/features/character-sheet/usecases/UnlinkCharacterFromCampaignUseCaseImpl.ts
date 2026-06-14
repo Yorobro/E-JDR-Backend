@@ -13,9 +13,9 @@ import { CharacterSheetAccessDeniedError } from "@application/features/character
 /**
  * Use case de détachement d'une fiche d'une campagne.
  *
- * Autorisation : le détachement est permis soit au **maître du jeu** de la campagne, soit au
- * **propriétaire** de la fiche. L'opération est idempotente (succès même si le lien est déjà
- * absent) une fois l'autorisation validée.
+ * Autorisation : le détachement est permis au seul maître du jeu de la campagne.
+ * L'opération est idempotente (succès même si le lien est déjà absent) une fois l'autorisation
+ * validée.
  */
 export class UnlinkCharacterFromCampaignUseCaseImpl implements UnlinkCharacterFromCampaignUseCase {
   constructor(
@@ -38,9 +38,8 @@ export class UnlinkCharacterFromCampaignUseCaseImpl implements UnlinkCharacterFr
       return Result.failure(new CharacterSheetNotFoundError());
     }
 
-    const isAuthorized =
-      campaign.isGameMaster(command.actorUserId) || sheet.isOwnedBy(command.actorUserId);
-    if (!isAuthorized) {
+    // Seul le MJ de la campagne gère la composition de sa table (rattache et détache).
+    if (!campaign.isGameMaster(command.actorUserId)) {
       return Result.failure(new CharacterSheetAccessDeniedError());
     }
 

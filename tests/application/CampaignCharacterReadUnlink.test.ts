@@ -69,22 +69,7 @@ describe("UnlinkCharacterFromCampaignUseCaseImpl", () => {
     );
   });
 
-  it("détache si le demandeur est le propriétaire de la fiche", async () => {
-    txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1"));
-    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "p-1"));
-    await txRepos.campaignCharacters.link("camp-1", "s-1", new Date());
-
-    const result = await useCase.execute({
-      campaignId: "camp-1",
-      characterSheetId: "s-1",
-      actorUserId: "p-1",
-    });
-
-    expect(result.isSuccess).toBe(true);
-    expect(await txRepos.campaignCharacters.existsByCampaignAndSheet("camp-1", "s-1")).toBe(false);
-  });
-
-  it("détache aussi si le demandeur est le MJ de la campagne", async () => {
+  it("réussit quand le MJ détache une fiche", async () => {
     txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1"));
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "p-1"));
     await txRepos.campaignCharacters.link("camp-1", "s-1", new Date());
@@ -96,9 +81,25 @@ describe("UnlinkCharacterFromCampaignUseCaseImpl", () => {
     });
 
     expect(result.isSuccess).toBe(true);
+    expect(await txRepos.campaignCharacters.existsByCampaignAndSheet("camp-1", "s-1")).toBe(false);
   });
 
-  it("échoue (403) si le demandeur n'est ni le MJ ni le propriétaire", async () => {
+  it("refuse 403 quand le propriétaire (non-MJ) tente de détacher", async () => {
+    txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1"));
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "p-1"));
+    await txRepos.campaignCharacters.link("camp-1", "s-1", new Date());
+
+    const result = await useCase.execute({
+      campaignId: "camp-1",
+      characterSheetId: "s-1",
+      actorUserId: "p-1",
+    });
+
+    expect(result.error).toBeInstanceOf(CharacterSheetAccessDeniedError);
+    expect(await txRepos.campaignCharacters.existsByCampaignAndSheet("camp-1", "s-1")).toBe(true);
+  });
+
+  it("refuse 403 pour un tiers", async () => {
     txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1"));
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "p-1"));
     await txRepos.campaignCharacters.link("camp-1", "s-1", new Date());
