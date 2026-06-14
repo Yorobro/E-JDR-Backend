@@ -1,5 +1,6 @@
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
+import { SheetCampaignView } from "@application/features/character-sheet/abstractions/repositories/SheetCampaignView";
 import { CampaignCharacterDao } from "@infrastructure/persistence/mysql/features/character-sheet/dao/CampaignCharacterDao";
 import { CharacterSheetMapper } from "@infrastructure/persistence/mysql/features/character-sheet/mappers/CharacterSheetMapper";
 
@@ -34,5 +35,16 @@ export class MysqlCampaignCharacterRepository implements CampaignCharacterReposi
   public async findSheetsByCampaignId(campaignId: string): Promise<CharacterSheet[]> {
     const rows = await this.campaignCharacterDao.findSheetsByCampaignId(campaignId);
     return rows.map((row) => CharacterSheetMapper.toDomain(row));
+  }
+
+  public async findCampaignViewsBySheetId(
+    characterSheetId: string,
+  ): Promise<SheetCampaignView[]> {
+    const rows = await this.campaignCharacterDao.findCampaignViewsBySheetId(characterSheetId);
+    return rows.map((row) => ({
+      campaignId: row.campaign_id,
+      campaignName: row.campaign_name,
+      gameMasterPseudo: row.game_master_pseudo,
+    }));
   }
 }

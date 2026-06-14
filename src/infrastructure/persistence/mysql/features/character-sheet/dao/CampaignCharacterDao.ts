@@ -7,6 +7,13 @@ interface CountRow extends RowDataPacket {
   count: number;
 }
 
+/** Ligne brute d'une campagne rattachée à une fiche, enrichie du pseudo du MJ. */
+interface SheetCampaignViewRow extends RowDataPacket {
+  campaign_id: string;
+  campaign_name: string;
+  game_master_pseudo: string;
+}
+
 /**
  * DAO de la table de liaison `campaign_characters` : **SQL pur**.
  *
@@ -78,6 +85,28 @@ export class CampaignCharacterDao {
         WHERE cc.campaign_id = ?
         ORDER BY cc.created_at DESC`,
       [campaignId],
+    );
+    return rows;
+  }
+
+  /**
+   * Récupère les campagnes auxquelles une fiche est rattachée (JOIN vers `campaigns` et `users`),
+   * enrichies du pseudo du MJ, des plus récemment rattachées aux plus anciennes.
+   *
+   * @param characterSheetId - Identifiant de la fiche.
+   * @returns Les lignes (id + nom de campagne + pseudo du MJ) rattachées.
+   */
+  public async findCampaignViewsBySheetId(
+    characterSheetId: string,
+  ): Promise<SheetCampaignViewRow[]> {
+    const [rows] = await this.executor.execute<SheetCampaignViewRow[]>(
+      `SELECT c.id AS campaign_id, c.name AS campaign_name, u.pseudo AS game_master_pseudo
+         FROM campaigns c
+         JOIN campaign_characters cc ON cc.campaign_id = c.id
+         JOIN users u ON u.id = c.game_master_id
+        WHERE cc.character_sheet_id = ?
+        ORDER BY cc.created_at DESC`,
+      [characterSheetId],
     );
     return rows;
   }

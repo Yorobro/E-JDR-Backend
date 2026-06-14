@@ -1,4 +1,5 @@
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
+import { SheetCampaignView } from "@application/features/character-sheet/abstractions/repositories/SheetCampaignView";
 
 /**
  * Port « out » de la liaison N-N entre campagnes et fiches de personnage
@@ -41,4 +42,11 @@ export interface CampaignCharacterRepository {
    * @returns Les fiches rattachées (vide si aucune).
    */
   findSheetsByCampaignId(campaignId: string): Promise<CharacterSheet[]>;
+
+  /**
+   * Récupère les campagnes auxquelles une fiche est rattachée, avec le pseudo du MJ.
+   * @param characterSheetId - Identifiant de la fiche.
+   * @returns Les vues (vide si aucune), des plus récemment rattachées aux plus anciennes.
+   */
+  findCampaignViewsBySheetId(characterSheetId: string): Promise<SheetCampaignView[]>;
 }
