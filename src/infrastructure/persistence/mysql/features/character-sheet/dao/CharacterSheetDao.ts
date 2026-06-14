@@ -71,4 +71,30 @@ export class CharacterSheetDao {
   public async deleteById(id: string): Promise<void> {
     await this.executor.execute("DELETE FROM character_sheets WHERE id = ?", [id]);
   }
+
+  /**
+   * Récupère les fiches rattachables à une campagne : propriétaire ≠ MJ, hors fiches déjà
+   * liées à cette campagne. Triées des plus récentes aux plus anciennes.
+   *
+   * @param gameMasterId - L'identifiant du MJ (ses fiches sont exclues).
+   * @param campaignId - L'identifiant de la campagne (les fiches déjà liées sont exclues).
+   * @returns Les lignes correspondantes (tableau éventuellement vide).
+   */
+  public async findLinkableForCampaign(
+    gameMasterId: string,
+    campaignId: string,
+  ): Promise<CharacterSheetRow[]> {
+    const [rows] = await this.executor.execute<CharacterSheetRow[]>(
+      `SELECT cs.id, cs.owner_id, cs.name, cs.created_at
+         FROM character_sheets cs
+        WHERE cs.owner_id <> ?
+          AND NOT EXISTS (
+            SELECT 1 FROM campaign_characters cc
+             WHERE cc.character_sheet_id = cs.id AND cc.campaign_id = ?
+          )
+        ORDER BY cs.created_at DESC`,
+      [gameMasterId, campaignId],
+    );
+    return rows;
+  }
 }

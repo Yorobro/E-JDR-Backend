@@ -123,4 +123,49 @@ describe("CharacterSheet / CampaignCharacter DAO (intégration MySQL)", () => {
 
     expect(await linkDao.existsByCampaignAndSheet("camp-1", "s-1")).toBe(false);
   });
+
+  it("findLinkableForCampaign exclut les fiches du MJ et les fiches déjà liées", async () => {
+    // beforeEach a déjà inséré "owner-1" (PLAYER) et "mj-1" (GM).
+    // On ajoute un second joueur pour la fiche déjà liée.
+    await insertUser(pool, "player-2");
+
+    await insertCampaign("camp-1", "mj-1");
+
+    // Fiche A : appartient au MJ → exclue
+    await sheetDao.insert({
+      id: "sheet-gm",
+      owner_id: "mj-1",
+      name: "Fiche du MJ",
+      created_at: new Date("2026-01-01T08:00:00Z"),
+    });
+
+    // Fiche B : appartient à PLAYER → attendue dans le résultat
+    await sheetDao.insert({
+      id: "sheet-player",
+      owner_id: "owner-1",
+      name: "Fiche du Joueur",
+      created_at: new Date("2026-01-02T08:00:00Z"),
+    });
+
+    // Fiche C : appartient à PLAYER2, mais déjà liée → exclue
+    await sheetDao.insert({
+      id: "sheet-linked",
+      owner_id: "player-2",
+      name: "Fiche déjà liée",
+      created_at: new Date("2026-01-03T08:00:00Z"),
+    });
+    await linkDao.insert({
+      campaign_id: "camp-1",
+      character_sheet_id: "sheet-linked",
+      created_at: new Date(),
+    });
+
+    const result = await sheetDao.findLinkableForCampaign("mj-1", "camp-1");
+
+    const ids = result.map((r) => r.id);
+    expect(ids).toContain("sheet-player");
+    expect(ids).not.toContain("sheet-gm");
+    expect(ids).not.toContain("sheet-linked");
+    expect(result).toHaveLength(1);
+  });
 });

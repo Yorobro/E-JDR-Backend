@@ -30,10 +30,10 @@ export class MysqlCharacterSheetRepository implements CharacterSheetRepository {
   }
 
   public async findLinkableForCampaign(
-    _gameMasterId: string,
-    _campaignId: string,
+    gameMasterId: string,
+    campaignId: string,
   ): Promise<CharacterSheet[]> {
-    // TODO: implement SQL query in CharacterSheetDao (task A3+)
-    throw new Error("Not implemented");
+    const rows = await this.characterSheetDao.findLinkableForCampaign(gameMasterId, campaignId);
+    return rows.map((row) => CharacterSheetMapper.toDomain(row));
   }
 }
