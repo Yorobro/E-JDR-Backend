@@ -15,6 +15,14 @@ export interface CharacterSheetRepository {
   save(sheet: CharacterSheet): Promise<void>;
 
   /**
+   * Met à jour une fiche existante (nom + champs détaillés). N'altère ni le propriétaire ni la
+   * date de création.
+   *
+   * @param sheet - L'entité dans son nouvel état.
+   */
+  update(sheet: CharacterSheet): Promise<void>;
+
+  /**
    * Récupère toutes les fiches appartenant à un utilisateur.
    *
    * @param ownerId - Identifiant du propriétaire.

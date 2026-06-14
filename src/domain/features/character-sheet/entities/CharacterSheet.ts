@@ -1,10 +1,69 @@
 import { CharacterSheetName } from "@domain/features/character-sheet/value-objects/CharacterSheetName";
 
 /**
- * Données nécessaires pour reconstruire une `CharacterSheet` existante (ex : depuis la base).
- * Le nom est déjà un value object validé via {@link CharacterSheetName}.
+ * Champs **détaillés et éditables** d'une fiche (hors identité technique : id, ownerId,
+ * createdAt). Tous optionnels et nullables : la saisie est souple (seul le `name` est requis,
+ * porté à part par {@link CharacterSheetName}). Aucune règle métier sur les valeurs.
  */
-export interface CharacterSheetSnapshot {
+export interface CharacterSheetDetails {
+  // Identité (texte court)
+  readonly formation: string | null;
+  readonly niveau: string | null;
+  readonly peuple: string | null;
+  readonly sexe: string | null;
+  readonly tailleEtPoids: string | null;
+  readonly age: string | null;
+  readonly apparence: string | null;
+  // Caractéristiques (entiers)
+  readonly dexterite: number | null;
+  readonly intelligence: number | null;
+  readonly perception: number | null;
+  readonly social: number | null;
+  readonly vigueur: number | null;
+  // Ressources de combat (entiers)
+  readonly pointsDeVie: number | null;
+  readonly pointsDeMagie: number | null;
+  readonly protection: number | null;
+  readonly monnaie: number | null;
+  // Zones de texte long
+  readonly armes: string | null;
+  readonly armures: string | null;
+  readonly equipement: string | null;
+  readonly sortsEtMiracles: string | null;
+  readonly notes: string | null;
+}
+
+/** Instantané « tout à null » des champs détaillés, utilisé comme base de création. */
+const EMPTY_DETAILS: CharacterSheetDetails = {
+  formation: null,
+  niveau: null,
+  peuple: null,
+  sexe: null,
+  tailleEtPoids: null,
+  age: null,
+  apparence: null,
+  dexterite: null,
+  intelligence: null,
+  perception: null,
+  social: null,
+  vigueur: null,
+  pointsDeVie: null,
+  pointsDeMagie: null,
+  protection: null,
+  monnaie: null,
+  armes: null,
+  armures: null,
+  equipement: null,
+  sortsEtMiracles: null,
+  notes: null,
+};
+
+/**
+ * Données nécessaires pour reconstruire une `CharacterSheet` existante (ex : depuis la base).
+ * Le nom est déjà un value object validé via {@link CharacterSheetName} ; les champs détaillés
+ * sont des primitifs nullables ({@link CharacterSheetDetails}).
+ */
+export interface CharacterSheetSnapshot extends CharacterSheetDetails {
   /** Identifiant unique de la fiche. */
   readonly id: string;
   /** Identifiant de l'utilisateur propriétaire de la fiche. */
@@ -21,7 +80,9 @@ export interface CharacterSheetSnapshot {
  * Une fiche existe indépendamment des campagnes : elle appartient à son propriétaire
  * (`ownerId`) et peut ensuite être rattachée à plusieurs campagnes (relation gérée hors de
  * cette entité, par la liaison `campaign_characters`). Immuable de l'extérieur (aucun setter).
- * Le nom est porté par un value object {@link CharacterSheetName} garantissant sa validité.
+ * Le nom est porté par un value object {@link CharacterSheetName} garantissant sa validité ;
+ * les champs détaillés ({@link CharacterSheetDetails}) sont des primitifs nullables modifiables
+ * via {@link CharacterSheet.withDetails}.
  */
 export class CharacterSheet {
   /**
@@ -34,7 +95,7 @@ export class CharacterSheet {
 
   /**
    * Crée une **nouvelle** fiche de personnage. L'utilisateur fourni en `ownerId` en devient
-   * le propriétaire.
+   * le propriétaire. Les champs détaillés non fournis sont initialisés à `null`.
    *
    * @param params - Les données de la nouvelle fiche.
    * @param params.id - Identifiant unique (généré en amont par un `IdGeneratorService`).
@@ -48,8 +109,11 @@ export class CharacterSheet {
     ownerId: string;
     name: CharacterSheetName;
     createdAt: Date;
-  }): CharacterSheet {
-    return new CharacterSheet(params);
+  } & Partial<CharacterSheetDetails>): CharacterSheet {
+    return new CharacterSheet({
+      ...EMPTY_DETAILS,
+      ...params,
+    });
   }
 
   /**
@@ -83,15 +147,42 @@ export class CharacterSheet {
   }
 
   /**
+   * @returns Les champs détaillés de la fiche (identité, caractéristiques, textes longs).
+   *   Utile pour projeter la fiche complète sans exposer le value object `name`.
+   */
+  public get details(): CharacterSheetDetails {
+    const { id, ownerId, name, createdAt, ...details } = this.props;
+    void id;
+    void ownerId;
+    void name;
+    void createdAt;
+    return details;
+  }
+
+  /**
    * Indique si l'utilisateur donné est le **propriétaire** de cette fiche.
    *
    * Exprime l'invariant de propriété : les opérations réservées au propriétaire (suppression,
-   * rattachement…) s'appuient sur cette règle plutôt que de comparer des identifiants ailleurs.
+   * modification, rattachement…) s'appuient sur cette règle plutôt que de comparer des
+   * identifiants ailleurs.
    *
    * @param userId - L'identifiant de l'utilisateur à tester.
    * @returns `true` si l'utilisateur est le propriétaire, `false` sinon.
    */
   public isOwnedBy(userId: string): boolean {
     return this.props.ownerId === userId;
+  }
+
+  /**
+   * Produit une **nouvelle** instance avec un nom et/ou des champs détaillés modifiés, sans
+   * muter l'originale. L'identité technique (id, ownerId, createdAt) est préservée.
+   *
+   * @param changes - Le nouveau nom (optionnel) et les champs détaillés à remplacer (partiels).
+   * @returns Une nouvelle `CharacterSheet` reflétant les changements.
+   */
+  public withDetails(
+    changes: { name?: CharacterSheetName } & Partial<CharacterSheetDetails>,
+  ): CharacterSheet {
+    return new CharacterSheet({ ...this.props, ...changes });
   }
 }

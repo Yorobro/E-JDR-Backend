@@ -1,15 +1,49 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { Pool } from "mysql2/promise";
 
-import { CharacterSheetDao } from "@infrastructure/persistence/mysql/features/character-sheet/dao/CharacterSheetDao";
+import {
+  CharacterSheetDao,
+  CharacterSheetWriteRow,
+} from "@infrastructure/persistence/mysql/features/character-sheet/dao/CharacterSheetDao";
 import { CampaignCharacterDao } from "@infrastructure/persistence/mysql/features/character-sheet/dao/CampaignCharacterDao";
 import { createTestPool, clearAllTables, insertUser } from "./dbTestUtils";
+
+/** Construit une ligne d'écriture complète : colonnes détaillées à `null` par défaut. */
+function sheetRow(
+  partial: Pick<CharacterSheetWriteRow, "id" | "owner_id" | "name" | "created_at"> &
+    Partial<CharacterSheetWriteRow>,
+): CharacterSheetWriteRow {
+  return {
+    formation: null,
+    niveau: null,
+    peuple: null,
+    sexe: null,
+    taille_et_poids: null,
+    age: null,
+    apparence: null,
+    dexterite: null,
+    intelligence: null,
+    perception: null,
+    social: null,
+    vigueur: null,
+    points_de_vie: null,
+    points_de_magie: null,
+    protection: null,
+    monnaie: null,
+    armes: null,
+    armures: null,
+    equipement: null,
+    sorts_et_miracles: null,
+    notes: null,
+    ...partial,
+  };
+}
 
 /**
  * Tests d'intégration des DAO fiches et liaison contre un MySQL réel (Testcontainers).
  *
  * Valide le SQL et le schéma migré (V005 : `character_sheets` + `campaign_characters`, FK,
- * PK composite anti-doublon, JOIN de lecture).
+ * PK composite anti-doublon, JOIN de lecture ; V006 : colonnes détaillées).
  */
 describe("CharacterSheet / CampaignCharacter DAO (intégration MySQL)", () => {
   let pool: Pool;
@@ -42,12 +76,7 @@ describe("CharacterSheet / CampaignCharacter DAO (intégration MySQL)", () => {
 
   it("insert + findByOwnerId + findById + deleteById sur character_sheets", async () => {
     const createdAt = new Date("2026-01-02T08:30:00Z");
-    await sheetDao.insert({
-      id: "s-1",
-      owner_id: "owner-1",
-      name: "Aragorn",
-      created_at: createdAt,
-    });
+    await sheetDao.insert(sheetRow({ id: "s-1", owner_id: "owner-1", name: "Aragorn", created_at: createdAt }));
 
     const byOwner = await sheetDao.findByOwnerId("owner-1");
     expect(byOwner).toHaveLength(1);
@@ -63,18 +92,60 @@ describe("CharacterSheet / CampaignCharacter DAO (intégration MySQL)", () => {
 
   it("insert refuse un owner_id inexistant (FK)", async () => {
     await expect(
-      sheetDao.insert({ id: "orphan", owner_id: "fantome", name: "X", created_at: new Date() }),
+      sheetDao.insert(sheetRow({ id: "orphan", owner_id: "fantome", name: "X", created_at: new Date() })),
     ).rejects.toThrow();
+  });
+
+  it("insert + findById + update préservent les champs détaillés (V006)", async () => {
+    await sheetDao.insert(
+      sheetRow({
+        id: "s-detail",
+        owner_id: "owner-1",
+        name: "Gandalf",
+        created_at: new Date("2026-01-02T09:00:00Z"),
+        peuple: "Istari",
+        vigueur: 5,
+        points_de_vie: 15,
+        notes: "Un magicien n'est jamais en retard.",
+      }),
+    );
+
+    const inserted = await sheetDao.findById("s-detail");
+    expect(inserted).not.toBeNull();
+    expect(inserted!.peuple).toBe("Istari");
+    expect(inserted!.vigueur).toBe(5);
+    expect(inserted!.points_de_vie).toBe(15);
+    expect(inserted!.notes).toBe("Un magicien n'est jamais en retard.");
+    // Colonnes non renseignées : NULL.
+    expect(inserted!.formation).toBeNull();
+    expect(inserted!.monnaie).toBeNull();
+
+    await sheetDao.update(
+      sheetRow({
+        id: "s-detail",
+        owner_id: "owner-1",
+        name: "Gandalf le Blanc",
+        created_at: new Date("2999-01-01T00:00:00Z"), // ignoré par update
+        peuple: "Istari",
+        vigueur: 7,
+        monnaie: 100,
+      }),
+    );
+
+    const updated = await sheetDao.findById("s-detail");
+    expect(updated!.name).toBe("Gandalf le Blanc");
+    expect(updated!.vigueur).toBe(7);
+    expect(updated!.monnaie).toBe(100);
+    // update ne réécrit pas les champs absents → remis à null, mais created_at inchangé.
+    expect(updated!.points_de_vie).toBeNull();
+    expect(updated!.created_at.getTime()).toBe(new Date("2026-01-02T09:00:00Z").getTime());
   });
 
   it("link + existsByCampaignAndSheet + findSheetsByCampaignId + delete sur la liaison", async () => {
     await insertCampaign("camp-1", "mj-1");
-    await sheetDao.insert({
-      id: "s-1",
-      owner_id: "owner-1",
-      name: "Frodo",
-      created_at: new Date("2026-01-02T08:00:00Z"),
-    });
+    await sheetDao.insert(
+      sheetRow({ id: "s-1", owner_id: "owner-1", name: "Frodo", created_at: new Date("2026-01-02T08:00:00Z") }),
+    );
 
     await linkDao.insert({
       campaign_id: "camp-1",
@@ -93,7 +164,7 @@ describe("CharacterSheet / CampaignCharacter DAO (intégration MySQL)", () => {
 
   it("la PK composite empêche les doublons de rattachement", async () => {
     await insertCampaign("camp-1", "mj-1");
-    await sheetDao.insert({ id: "s-1", owner_id: "owner-1", name: "Sam", created_at: new Date() });
+    await sheetDao.insert(sheetRow({ id: "s-1", owner_id: "owner-1", name: "Sam", created_at: new Date() }));
     await linkDao.insert({
       campaign_id: "camp-1",
       character_sheet_id: "s-1",
@@ -107,12 +178,7 @@ describe("CharacterSheet / CampaignCharacter DAO (intégration MySQL)", () => {
 
   it("supprimer une fiche retire ses liaisons (ON DELETE CASCADE)", async () => {
     await insertCampaign("camp-1", "mj-1");
-    await sheetDao.insert({
-      id: "s-1",
-      owner_id: "owner-1",
-      name: "Merry",
-      created_at: new Date(),
-    });
+    await sheetDao.insert(sheetRow({ id: "s-1", owner_id: "owner-1", name: "Merry", created_at: new Date() }));
     await linkDao.insert({
       campaign_id: "camp-1",
       character_sheet_id: "s-1",
@@ -132,28 +198,29 @@ describe("CharacterSheet / CampaignCharacter DAO (intégration MySQL)", () => {
     await insertCampaign("camp-1", "mj-1");
 
     // Fiche A : appartient au MJ → exclue
-    await sheetDao.insert({
-      id: "sheet-gm",
-      owner_id: "mj-1",
-      name: "Fiche du MJ",
-      created_at: new Date("2026-01-01T08:00:00Z"),
-    });
+    await sheetDao.insert(
+      sheetRow({ id: "sheet-gm", owner_id: "mj-1", name: "Fiche du MJ", created_at: new Date("2026-01-01T08:00:00Z") }),
+    );
 
     // Fiche B : appartient à PLAYER → attendue dans le résultat
-    await sheetDao.insert({
-      id: "sheet-player",
-      owner_id: "owner-1",
-      name: "Fiche du Joueur",
-      created_at: new Date("2026-01-02T08:00:00Z"),
-    });
+    await sheetDao.insert(
+      sheetRow({
+        id: "sheet-player",
+        owner_id: "owner-1",
+        name: "Fiche du Joueur",
+        created_at: new Date("2026-01-02T08:00:00Z"),
+      }),
+    );
 
     // Fiche C : appartient à PLAYER2, mais déjà liée → exclue
-    await sheetDao.insert({
-      id: "sheet-linked",
-      owner_id: "player-2",
-      name: "Fiche déjà liée",
-      created_at: new Date("2026-01-03T08:00:00Z"),
-    });
+    await sheetDao.insert(
+      sheetRow({
+        id: "sheet-linked",
+        owner_id: "player-2",
+        name: "Fiche déjà liée",
+        created_at: new Date("2026-01-03T08:00:00Z"),
+      }),
+    );
     await linkDao.insert({
       campaign_id: "camp-1",
       character_sheet_id: "sheet-linked",

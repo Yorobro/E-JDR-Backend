@@ -217,7 +217,7 @@ toujours déduit de la session.
 
 Crée une fiche appartenant à l'utilisateur authentifié.
 
-**Corps** : `{ "name": "Aragorn" }` — **Réponse 201** : `{ "id": "uuid", "name": "Aragorn", "createdAt": "..." }`
+**Corps** : `{ "name": "Aragorn" }` — **Réponse 201** : `{ "id", "ownerId", "name", "createdAt" }`
 
 | Code | HTTP | Sens |
 |---|---|---|
@@ -226,7 +226,27 @@ Crée une fiche appartenant à l'utilisateur authentifié.
 
 ### GET /character-sheets
 
-Liste les fiches de l'utilisateur authentifié. **Réponse 200** : `{ "characterSheets": [ { "id", "ownerId", "name", "createdAt" } ] }`.
+Liste les fiches de l'utilisateur authentifié. Projection **légère** (nom seul, pour les tuiles).
+**Réponse 200** : `{ "characterSheets": [ { "id", "ownerId", "name", "createdAt" } ] }`.
+
+### GET /character-sheets/:id
+
+Détail **complet** d'une fiche (seul le propriétaire). **Réponse 200** : tous les champs —
+`{ "id", "ownerId", "name", "createdAt", "formation", "niveau", "peuple", "sexe",
+"tailleEtPoids", "age", "apparence", "dexterite", "intelligence", "perception", "social",
+"vigueur", "pointsDeVie", "pointsDeMagie", "protection", "monnaie", "armes", "armures",
+"equipement", "sortsEtMiracles", "notes" }`. Champs détaillés `null` si non renseignés.
+Erreurs : `CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403),
+`UNAUTHENTICATED` (401).
+
+### PUT /character-sheets/:id
+
+Met à jour une fiche (seul le propriétaire). Saisie **souple** : seul `name` est requis (revalidé,
+max 120) ; les champs détaillés sont optionnels (texte borné, nombres entiers ≥ 0, normalisés
+côté serveur). **Corps** : `{ "name", + champs détaillés optionnels }`. **Réponse 200** : la fiche
+complète (même forme que `GET /character-sheets/:id`). Erreurs : `INVALID_CHARACTER_SHEET_NAME`
+(400), `CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403),
+`UNAUTHENTICATED` (401).
 
 ### DELETE /character-sheets/:id
 

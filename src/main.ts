@@ -39,6 +39,8 @@ import { DeleteCampaignUseCaseImpl } from "@application/features/campaign/usecas
 import { CreateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CreateCharacterSheetUseCaseImpl";
 import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/character-sheet/usecases/ListMyCharacterSheetsUseCaseImpl";
 import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/DeleteCharacterSheetUseCaseImpl";
+import { GetCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/GetCharacterSheetUseCaseImpl";
+import { UpdateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/UpdateCharacterSheetUseCaseImpl";
 import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/LinkCharacterToCampaignUseCaseImpl";
 import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
 import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
@@ -198,11 +200,22 @@ function buildCharacterSheetController(
     services.unitOfWork,
     logger,
   );
+  const getCharacterSheet = new GetCharacterSheetUseCaseImpl(
+    services.characterSheetRepository,
+    logger,
+  );
+  const updateCharacterSheet = new UpdateCharacterSheetUseCaseImpl(
+    services.characterSheetRepository,
+    services.unitOfWork,
+    logger,
+  );
 
   return new CharacterSheetController(
     createCharacterSheet,
     listMyCharacterSheets,
     deleteCharacterSheet,
+    getCharacterSheet,
+    updateCharacterSheet,
   );
 }
 

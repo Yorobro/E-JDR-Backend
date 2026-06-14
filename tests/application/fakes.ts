@@ -5,7 +5,10 @@ import { HashedPassword } from "@domain/features/auth/value-objects/HashedPasswo
 import { Campaign } from "@domain/features/campaign/entities/Campaign";
 import { CampaignName } from "@domain/features/campaign/value-objects/CampaignName";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
-import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
+import {
+  CharacterSheet,
+  CharacterSheetDetails,
+} from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CharacterSheetName } from "@domain/features/character-sheet/value-objects/CharacterSheetName";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
@@ -162,6 +165,10 @@ export class FakeCharacterSheetRepository implements CharacterSheetRepository {
   private campaignCharacters?: FakeCampaignCharacterRepository;
 
   public async save(sheet: CharacterSheet): Promise<void> {
+    this.sheets.set(sheet.id, sheet);
+  }
+
+  public async update(sheet: CharacterSheet): Promise<void> {
     this.sheets.set(sheet.id, sheet);
   }
 
@@ -395,18 +402,21 @@ export function buildFakeTransactionalRepositories(overrides?: {
  * @param id - L'identifiant de la fiche (par défaut "sheet-1").
  * @param ownerId - L'identifiant du propriétaire (par défaut "user-1").
  * @param name - Le nom de la fiche (par défaut "Aragorn").
+ * @param details - Champs détaillés optionnels (identité, caractéristiques, textes longs).
  * @returns Une entité `CharacterSheet` prête pour les tests.
  */
 export function buildTestCharacterSheet(
   id = "sheet-1",
   ownerId = "user-1",
   name = "Aragorn",
+  details: Partial<CharacterSheetDetails> = {},
 ): CharacterSheet {
   return CharacterSheet.create({
     id,
     ownerId,
     name: CharacterSheetName.create(name),
     createdAt: new Date("2026-01-01T00:00:00Z"),
+    ...details,
   });
 }
 

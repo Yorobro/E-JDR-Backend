@@ -78,6 +78,83 @@ describe("Character sheet routes (intégration HTTP)", () => {
     });
   });
 
+  describe("Détail et mise à jour d'une fiche", () => {
+    it("GET /character-sheets/:id renvoie la fiche complète (200)", async () => {
+      const agent = await authenticate("p@test.com");
+      const created = await agent.post("/character-sheets").send({ name: "Aragorn" });
+
+      const res = await agent.get(`/character-sheets/${created.body.id}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ id: created.body.id, name: "Aragorn" });
+      // Les champs détaillés sont présents et null à la création.
+      expect(res.body.peuple).toBeNull();
+      expect(res.body.vigueur).toBeNull();
+      expect(res.body.notes).toBeNull();
+    });
+
+    it("PUT /character-sheets/:id met à jour la fiche, GET reflète les changements", async () => {
+      const agent = await authenticate("p@test.com");
+      const created = await agent.post("/character-sheets").send({ name: "Aragorn" });
+
+      const put = await agent.put(`/character-sheets/${created.body.id}`).send({
+        name: "Strider",
+        peuple: "Rôdeur",
+        vigueur: 7,
+        notes: "Garde du Nord",
+      });
+      expect(put.status).toBe(200);
+      expect(put.body).toMatchObject({ name: "Strider", peuple: "Rôdeur", vigueur: 7 });
+
+      const res = await agent.get(`/character-sheets/${created.body.id}`);
+      expect(res.body.name).toBe("Strider");
+      expect(res.body.vigueur).toBe(7);
+      expect(res.body.notes).toBe("Garde du Nord");
+    });
+
+    it("PUT avec un nom vide renvoie 400", async () => {
+      const agent = await authenticate("p@test.com");
+      const created = await agent.post("/character-sheets").send({ name: "Aragorn" });
+
+      const res = await agent.put(`/character-sheets/${created.body.id}`).send({ name: "   " });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("INVALID_CHARACTER_SHEET_NAME");
+    });
+
+    it("GET /character-sheets/:id inconnu renvoie 404", async () => {
+      const agent = await authenticate("p@test.com");
+      const res = await agent.get("/character-sheets/inconnu");
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe("CHARACTER_SHEET_NOT_FOUND");
+    });
+
+    it("GET la fiche d'un autre renvoie 403", async () => {
+      const owner = await authenticate("owner@test.com");
+      const created = await owner.post("/character-sheets").send({ name: "Privée" });
+      const intrus = await authenticate("intrus@test.com");
+
+      const res = await intrus.get(`/character-sheets/${created.body.id}`);
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");
+    });
+
+    it("PUT la fiche d'un autre renvoie 403", async () => {
+      const owner = await authenticate("owner@test.com");
+      const created = await owner.post("/character-sheets").send({ name: "Privée" });
+      const intrus = await authenticate("intrus@test.com");
+
+      const res = await intrus.put(`/character-sheets/${created.body.id}`).send({ name: "Hack" });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");
+    });
+
+    it("GET /character-sheets/:id sans cookie renvoie 401", async () => {
+      const res = await request(app).get("/character-sheets/whatever");
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe("UNAUTHENTICATED");
+    });
+  });
+
   describe("Liaison campagne↔fiches", () => {
     it("rattache la fiche d'un joueur à la campagne d'un MJ (201) puis la liste", async () => {
       const mj = await authenticate("mj@test.com");

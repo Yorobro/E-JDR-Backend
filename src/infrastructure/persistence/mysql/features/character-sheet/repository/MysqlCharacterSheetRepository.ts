@@ -15,6 +15,10 @@ export class MysqlCharacterSheetRepository implements CharacterSheetRepository {
     await this.characterSheetDao.insert(CharacterSheetMapper.toRow(sheet));
   }
 
+  public async update(sheet: CharacterSheet): Promise<void> {
+    await this.characterSheetDao.update(CharacterSheetMapper.toRow(sheet));
+  }
+
   public async findByOwnerId(ownerId: string): Promise<CharacterSheet[]> {
     const rows = await this.characterSheetDao.findByOwnerId(ownerId);
     return rows.map((row) => CharacterSheetMapper.toDomain(row));

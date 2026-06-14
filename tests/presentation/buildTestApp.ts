@@ -20,6 +20,8 @@ import { CampaignCharacterController } from "@presentation/http/features/campaig
 import { CreateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CreateCharacterSheetUseCaseImpl";
 import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/character-sheet/usecases/ListMyCharacterSheetsUseCaseImpl";
 import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/DeleteCharacterSheetUseCaseImpl";
+import { GetCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/GetCharacterSheetUseCaseImpl";
+import { UpdateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/UpdateCharacterSheetUseCaseImpl";
 import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/LinkCharacterToCampaignUseCaseImpl";
 import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
 import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
@@ -125,6 +127,8 @@ export function buildTestApp(): {
     new CreateCharacterSheetUseCaseImpl(idGenerator, unitOfWork, logger),
     new ListMyCharacterSheetsUseCaseImpl(repos.characterSheets),
     new DeleteCharacterSheetUseCaseImpl(repos.characterSheets, unitOfWork, logger),
+    new GetCharacterSheetUseCaseImpl(repos.characterSheets, logger),
+    new UpdateCharacterSheetUseCaseImpl(repos.characterSheets, unitOfWork, logger),
   );
 
   const authMiddleware = buildAuthMiddleware(tokenProvider);
