@@ -1,4 +1,6 @@
 import { CharacterSheetName } from "@domain/features/character-sheet/value-objects/CharacterSheetName";
+import { Sex } from "@domain/features/character-sheet/value-objects/Sex";
+import { Purse } from "@domain/features/character-sheet/value-objects/Purse";
 import { CharacterSheetDetails } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { DomainError } from "@domain/shared/errors/DomainError";
 import { Result } from "@application/shared/Result";
@@ -90,7 +92,27 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
       throw error;
     }
 
-    const updated = sheet.withDetails({ name, ...this.detailsFrom(command) });
+    let sexe: Sex | null = null;
+    let purse: Purse | null = null;
+    try {
+      if (command.sexe != null && command.sexe !== "") {
+        sexe = Sex.create(command.sexe);
+      }
+      if (command.purse != null) {
+        purse = Purse.create({
+          gold: command.purse.gold ?? 0,
+          silver: command.purse.silver ?? 0,
+          copper: command.purse.copper ?? 0,
+        });
+      }
+    } catch (error) {
+      if (error instanceof DomainError) {
+        return Result.failure(new InvalidInputError(error.code, error.message));
+      }
+      throw error;
+    }
+
+    const updated = sheet.withDetails({ name, sexe, purse, ...this.detailsFrom(command) });
 
     await this.unitOfWork.execute(async (repos) => {
       await repos.characterSheets.update(updated);
@@ -104,15 +126,17 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
     return Result.success(toCharacterSheetDetail(updated));
   }
 
-  /** Normalise les champs détaillés de la commande vers le format domaine. */
-  private detailsFrom(command: UpdateCharacterSheetCommand): CharacterSheetDetails {
+  /**
+   * Normalise les champs détaillés de la commande vers le format domaine, **hors** `sexe` et
+   * `purse` (value objects construits et validés à part dans {@link execute}).
+   */
+  private detailsFrom(command: UpdateCharacterSheetCommand): Partial<CharacterSheetDetails> {
     return {
       formation: shortText(command.formation),
-      niveau: shortText(command.niveau),
+      niveau: nonNegativeInt(command.niveau),
       peuple: shortText(command.peuple),
-      sexe: shortText(command.sexe),
       tailleEtPoids: shortText(command.tailleEtPoids),
-      age: shortText(command.age),
+      age: nonNegativeInt(command.age),
       apparence: shortText(command.apparence),
       dexterite: nonNegativeInt(command.dexterite),
       intelligence: nonNegativeInt(command.intelligence),
@@ -122,7 +146,7 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
       pointsDeVie: nonNegativeInt(command.pointsDeVie),
       pointsDeMagie: nonNegativeInt(command.pointsDeMagie),
       protection: nonNegativeInt(command.protection),
-      monnaie: nonNegativeInt(command.monnaie),
+      competences: longText(command.competences),
       armes: longText(command.armes),
       armures: longText(command.armures),
       equipement: longText(command.equipement),

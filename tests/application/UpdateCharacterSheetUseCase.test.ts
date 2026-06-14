@@ -55,10 +55,52 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
       characterSheetId: "s-1",
       ownerId: "owner-1",
       name: "Aragorn",
-      monnaie: -50,
+      vigueur: -50,
     });
 
-    expect(result.value.monnaie).toBe(0);
+    expect(result.value.vigueur).toBe(0);
+  });
+
+  it("met à jour sexe (VO), purse et competences", async () => {
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
+    const result = await useCase.execute({
+      characterSheetId: "s-1",
+      ownerId: "owner-1",
+      name: "Aragorn",
+      niveau: 5,
+      age: 87,
+      sexe: "m",
+      competences: "Pistage, Survie",
+      purse: { gold: 1, silver: 150, copper: 0 },
+    });
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.niveau).toBe(5);
+    expect(result.value.age).toBe(87);
+    expect(result.value.sexe).toBe("M");
+    expect(result.value.competences).toBe("Pistage, Survie");
+    expect(result.value.purse).toEqual({ gold: 1, silver: 150, copper: 0 });
+  });
+
+  it("échoue avec InvalidInputError si le sexe est invalide", async () => {
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1"));
+    const result = await useCase.execute({
+      characterSheetId: "s-1",
+      ownerId: "owner-1",
+      name: "X",
+      sexe: "Z",
+    });
+    expect(result.error).toBeInstanceOf(InvalidInputError);
+  });
+
+  it("échoue avec InvalidInputError si la bourse est négative", async () => {
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1"));
+    const result = await useCase.execute({
+      characterSheetId: "s-1",
+      ownerId: "owner-1",
+      name: "X",
+      purse: { gold: -1 },
+    });
+    expect(result.error).toBeInstanceOf(InvalidInputError);
   });
 
   it("échoue avec CharacterSheetNotFoundError si la fiche n'existe pas", async () => {
