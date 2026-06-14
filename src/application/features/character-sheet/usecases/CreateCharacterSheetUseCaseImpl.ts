@@ -59,6 +59,7 @@ export class CreateCharacterSheetUseCaseImpl implements CreateCharacterSheetUseC
 
     return Result.success({
       id: sheet.id,
+      ownerId: sheet.ownerId,
       name: sheet.name.value,
       createdAt: sheet.createdAt,
     });

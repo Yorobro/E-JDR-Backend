@@ -30,6 +30,9 @@ describe("Character sheet routes (intégration HTTP)", () => {
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ name: "Aragorn" });
       expect(typeof res.body.id).toBe("string");
+      // Le contrat doit être homogène avec GET /character-sheets : ownerId présent
+      // (sinon le DTO front, qui l'exige, échoue à parser la réponse → fausse "erreur réseau").
+      expect(typeof res.body.ownerId).toBe("string");
     });
 
     it("GET /character-sheets ne renvoie que mes fiches", async () => {

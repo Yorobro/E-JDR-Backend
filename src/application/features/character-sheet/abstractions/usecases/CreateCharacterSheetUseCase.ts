@@ -5,6 +5,7 @@ import { CreateCharacterSheetCommand } from "@application/features/character-she
 /** Résultat de succès d'une création de fiche : ses informations publiques. */
 export interface CreateCharacterSheetResult {
   readonly id: string;
+  readonly ownerId: string;
   readonly name: string;
   readonly createdAt: Date;
 }

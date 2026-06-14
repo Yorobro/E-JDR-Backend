@@ -33,8 +33,8 @@ export class CharacterSheetController {
         return;
       }
 
-      const { id, name, createdAt } = result.value;
-      res.status(201).json({ id, name, createdAt: createdAt.toISOString() });
+      const { id, ownerId, name, createdAt } = result.value;
+      res.status(201).json({ id, ownerId, name, createdAt: createdAt.toISOString() });
     } catch (error) {
       next(error);
     }
