@@ -171,6 +171,23 @@ export class FakeCharacterSheetRepository implements CharacterSheetRepository {
     this.sheets.delete(id);
   }
 
+  /** Liaisons connues (clé = `${campaignId}:${sheetId}`), pour simuler l'exclusion des déjà liées. */
+  private readonly links = new Set<string>();
+
+  /** Aide de test : enregistre une liaison fiche↔campagne (pour `findLinkableForCampaign`). */
+  public seedLink(campaignId: string, sheetId: string): void {
+    this.links.add(`${campaignId}:${sheetId}`);
+  }
+
+  public async findLinkableForCampaign(
+    gameMasterId: string,
+    campaignId: string,
+  ): Promise<CharacterSheet[]> {
+    return [...this.sheets.values()].filter(
+      (sheet) => !sheet.isOwnedBy(gameMasterId) && !this.links.has(`${campaignId}:${sheet.id}`),
+    );
+  }
+
   /** Aide de test : pré-remplit le repository avec une fiche. */
   public seed(sheet: CharacterSheet): void {
     this.sheets.set(sheet.id, sheet);

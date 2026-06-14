@@ -28,4 +28,12 @@ export class MysqlCharacterSheetRepository implements CharacterSheetRepository {
   public async deleteById(id: string): Promise<void> {
     await this.characterSheetDao.deleteById(id);
   }
+
+  public async findLinkableForCampaign(
+    _gameMasterId: string,
+    _campaignId: string,
+  ): Promise<CharacterSheet[]> {
+    // TODO: implement SQL query in CharacterSheetDao (task A3+)
+    throw new Error("Not implemented");
+  }
 }

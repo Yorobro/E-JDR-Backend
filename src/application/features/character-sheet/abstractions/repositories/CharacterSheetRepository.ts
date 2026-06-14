@@ -36,4 +36,14 @@ export interface CharacterSheetRepository {
    * @param id - L'identifiant de la fiche à supprimer.
    */
   deleteById(id: string): Promise<void>;
+
+  /**
+   * Récupère les fiches rattachables à une campagne : toutes celles dont le propriétaire
+   * n'est PAS le maître du jeu, en excluant les fiches déjà rattachées à cette campagne.
+   *
+   * @param gameMasterId - Identifiant du MJ de la campagne (ses fiches sont exclues).
+   * @param campaignId - Identifiant de la campagne (les fiches déjà liées sont exclues).
+   * @returns Les fiches rattachables (tableau éventuellement vide).
+   */
+  findLinkableForCampaign(gameMasterId: string, campaignId: string): Promise<CharacterSheet[]>;
 }
