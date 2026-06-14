@@ -42,10 +42,12 @@ export async function clearAllTables(pool: Pool): Promise<void> {
  *
  * @param pool - Le pool de test.
  * @param id - L'identifiant de l'utilisateur.
+ * @param pseudo - Le pseudo (par défaut dérivé de l'id).
  */
-export async function insertUser(pool: Pool, id: string): Promise<void> {
-  await pool.execute("INSERT INTO users (id, created_at) VALUES (?, ?)", [
+export async function insertUser(pool: Pool, id: string, pseudo = `pseudo-${id}`): Promise<void> {
+  await pool.execute("INSERT INTO users (id, pseudo, created_at) VALUES (?, ?, ?)", [
     id,
+    pseudo,
     new Date("2026-01-01T10:00:00Z"),
   ]);
 }

@@ -27,10 +27,10 @@ describe("Auth routes (intégration HTTP)", () => {
   it("POST /auth/register crée le compte (201) et pose les cookies access + refresh", async () => {
     const res = await request(app)
       .post("/auth/register")
-      .send({ email: "new@test.com", password: "password123" });
+      .send({ email: "new@test.com", pseudo: "Gandalf", password: "password123" });
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ email: "new@test.com" });
+    expect(res.body).toMatchObject({ email: "new@test.com", pseudo: "Gandalf" });
 
     const cookies = res.headers["set-cookie"] as unknown as string[];
     expect(cookies.some((c) => c.startsWith("access_token="))).toBe(true);
@@ -42,10 +42,10 @@ describe("Auth routes (intégration HTTP)", () => {
   it("POST /auth/register en double renvoie 409", async () => {
     await request(app)
       .post("/auth/register")
-      .send({ email: "dup@test.com", password: "password123" });
+      .send({ email: "dup@test.com", pseudo: "Gandalf", password: "password123" });
     const res = await request(app)
       .post("/auth/register")
-      .send({ email: "dup@test.com", password: "password123" });
+      .send({ email: "dup@test.com", pseudo: "Gandalf", password: "password123" });
 
     expect(res.status).toBe(409);
     expect(res.body.code).toBe("EMAIL_ALREADY_USED");
@@ -61,7 +61,7 @@ describe("Auth routes (intégration HTTP)", () => {
   it("POST /auth/register avec un mot de passe trop court renvoie 400", async () => {
     const res = await request(app)
       .post("/auth/register")
-      .send({ email: "weak@test.com", password: "short" });
+      .send({ email: "weak@test.com", pseudo: "Gandalf", password: "short" });
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe("WEAK_PASSWORD");
@@ -79,7 +79,7 @@ describe("Auth routes (intégration HTTP)", () => {
   it("POST /auth/login réussit (200) après inscription et pose les cookies", async () => {
     await request(app)
       .post("/auth/register")
-      .send({ email: "log@test.com", password: "password123" });
+      .send({ email: "log@test.com", pseudo: "Gandalf", password: "password123" });
 
     const res = await request(app)
       .post("/auth/login")
@@ -118,7 +118,9 @@ describe("Auth routes (intégration HTTP)", () => {
 
   it("POST /auth/refresh effectue la rotation à partir du cookie posé au register", async () => {
     const agent = request.agent(app);
-    await agent.post("/auth/register").send({ email: "rot@test.com", password: "password123" });
+    await agent
+      .post("/auth/register")
+      .send({ email: "rot@test.com", pseudo: "Gandalf", password: "password123" });
 
     const res = await agent.post("/auth/refresh");
 
@@ -136,12 +138,14 @@ describe("Auth routes (intégration HTTP)", () => {
     it("renvoie 200 et le profil avec les cookies posés par register", async () => {
       // request.agent conserve les cookies entre les appels, comme un vrai client.
       const agent = request.agent(app);
-      await agent.post("/auth/register").send({ email: "me@test.com", password: "password123" });
+      await agent
+        .post("/auth/register")
+        .send({ email: "me@test.com", pseudo: "Gandalf", password: "password123" });
 
       const res = await agent.get("/me");
 
       expect(res.status).toBe(200);
-      expect(res.body).toMatchObject({ email: "me@test.com" });
+      expect(res.body).toMatchObject({ email: "me@test.com", pseudo: "Gandalf" });
       expect(typeof res.body.userId).toBe("string");
       expect(typeof res.body.createdAt).toBe("string");
     });

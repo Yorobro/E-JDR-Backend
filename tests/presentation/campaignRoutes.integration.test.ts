@@ -22,7 +22,7 @@ describe("Campaign routes (intégration HTTP)", () => {
   /** Inscrit un utilisateur et renvoie un agent supertest conservant ses cookies de session. */
   async function authenticate(email = "mj@test.com"): Promise<ReturnType<typeof request.agent>> {
     const agent = request.agent(app);
-    await agent.post("/auth/register").send({ email, password: "password123" });
+    await agent.post("/auth/register").send({ email, pseudo: "Gandalf", password: "password123" });
     return agent;
   }
 

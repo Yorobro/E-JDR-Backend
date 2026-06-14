@@ -2,19 +2,25 @@ import { describe, it, expect } from "vitest";
 import { User } from "@domain/features/auth/entities/User";
 
 describe("User (entité métier)", () => {
-  it("expose son identité en lecture seule (id, createdAt)", () => {
+  it("expose son identité en lecture seule (id, pseudo, createdAt)", () => {
     const createdAt = new Date("2025-01-01T00:00:00Z");
-    const user = User.create({ id: "user-1", createdAt });
+    const user = User.create({ id: "user-1", pseudo: "Gandalf", createdAt });
 
     expect(user.id).toBe("user-1");
+    expect(user.pseudo).toBe("Gandalf");
     expect(user.createdAt).toEqual(createdAt);
   });
 
   it("se reconstruit à l'identique via restore", () => {
-    const snapshot = { id: "user-9", createdAt: new Date("2024-06-01T12:00:00Z") };
+    const snapshot = {
+      id: "user-9",
+      pseudo: "Gandalf",
+      createdAt: new Date("2024-06-01T12:00:00Z"),
+    };
     const user = User.restore(snapshot);
 
     expect(user.id).toBe("user-9");
+    expect(user.pseudo).toBe("Gandalf");
     expect(user.createdAt).toEqual(snapshot.createdAt);
   });
 });

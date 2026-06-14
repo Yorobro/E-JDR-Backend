@@ -445,10 +445,11 @@ export function buildTestCampaign(
  * Aide de test : construit un utilisateur métier.
  *
  * @param id - L'identifiant (par défaut "user-1").
+ * @param pseudo - Le pseudo (par défaut "Joueur").
  * @returns Une entité `User` prête pour les tests.
  */
-export function buildTestUser(id = "user-1"): User {
-  return User.create({ id, createdAt: new Date("2025-01-01T00:00:00Z") });
+export function buildTestUser(id = "user-1", pseudo = "Joueur"): User {
+  return User.create({ id, pseudo, createdAt: new Date("2025-01-01T00:00:00Z") });
 }
 
 /**
