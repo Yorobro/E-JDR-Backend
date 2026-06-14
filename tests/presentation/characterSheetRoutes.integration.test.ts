@@ -100,16 +100,32 @@ describe("Character sheet routes (intégration HTTP)", () => {
       const put = await agent.put(`/character-sheets/${created.body.id}`).send({
         name: "Strider",
         peuple: "Rôdeur",
+        niveau: 5,
+        age: 87,
+        sexe: "M",
+        competences: "Pistage",
         vigueur: 7,
         notes: "Garde du Nord",
+        purse: { gold: 1, silver: 50, copper: 0 },
       });
       expect(put.status).toBe(200);
-      expect(put.body).toMatchObject({ name: "Strider", peuple: "Rôdeur", vigueur: 7 });
+      expect(put.body).toMatchObject({ name: "Strider", peuple: "Rôdeur", niveau: 5, sexe: "M" });
+      expect(put.body.purse).toEqual({ gold: 1, silver: 50, copper: 0 });
 
       const res = await agent.get(`/character-sheets/${created.body.id}`);
       expect(res.body.name).toBe("Strider");
       expect(res.body.vigueur).toBe(7);
-      expect(res.body.notes).toBe("Garde du Nord");
+      expect(res.body.competences).toBe("Pistage");
+      expect(res.body.purse).toEqual({ gold: 1, silver: 50, copper: 0 });
+    });
+
+    it("PUT avec un sexe invalide renvoie 400", async () => {
+      const agent = await authenticate("p@test.com");
+      const created = await agent.post("/character-sheets").send({ name: "Aragorn" });
+
+      const res = await agent.put(`/character-sheets/${created.body.id}`).send({ name: "A", sexe: "Z" });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("INVALID_SEX");
     });
 
     it("PUT avec un nom vide renvoie 400", async () => {

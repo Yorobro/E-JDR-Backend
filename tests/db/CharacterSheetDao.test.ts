@@ -29,9 +29,12 @@ function sheetRow(
     points_de_vie: null,
     points_de_magie: null,
     protection: null,
-    monnaie: null,
-    armes: null,
+    purse_gold: null,
+    purse_silver: null,
+    purse_copper: null,
     armures: null,
+    armes: null,
+    competences: null,
     equipement: null,
     sorts_et_miracles: null,
     notes: null,
@@ -104,8 +107,14 @@ describe("CharacterSheet / CampaignCharacter DAO (intégration MySQL)", () => {
         name: "Gandalf",
         created_at: new Date("2026-01-02T09:00:00Z"),
         peuple: "Istari",
+        niveau: 20,
+        sexe: "M",
         vigueur: 5,
         points_de_vie: 15,
+        competences: "Magie, Sagesse",
+        purse_gold: 1,
+        purse_silver: 50,
+        purse_copper: 0,
         notes: "Un magicien n'est jamais en retard.",
       }),
     );
@@ -113,12 +122,18 @@ describe("CharacterSheet / CampaignCharacter DAO (intégration MySQL)", () => {
     const inserted = await sheetDao.findById("s-detail");
     expect(inserted).not.toBeNull();
     expect(inserted!.peuple).toBe("Istari");
+    expect(inserted!.niveau).toBe(20);
+    expect(inserted!.sexe).toBe("M");
     expect(inserted!.vigueur).toBe(5);
     expect(inserted!.points_de_vie).toBe(15);
+    expect(inserted!.competences).toBe("Magie, Sagesse");
+    expect(inserted!.purse_gold).toBe(1);
+    expect(inserted!.purse_silver).toBe(50);
+    expect(inserted!.purse_copper).toBe(0);
     expect(inserted!.notes).toBe("Un magicien n'est jamais en retard.");
     // Colonnes non renseignées : NULL.
     expect(inserted!.formation).toBeNull();
-    expect(inserted!.monnaie).toBeNull();
+    expect(inserted!.protection).toBeNull();
 
     await sheetDao.update(
       sheetRow({
@@ -128,14 +143,14 @@ describe("CharacterSheet / CampaignCharacter DAO (intégration MySQL)", () => {
         created_at: new Date("2999-01-01T00:00:00Z"), // ignoré par update
         peuple: "Istari",
         vigueur: 7,
-        monnaie: 100,
+        purse_gold: 2,
       }),
     );
 
     const updated = await sheetDao.findById("s-detail");
     expect(updated!.name).toBe("Gandalf le Blanc");
     expect(updated!.vigueur).toBe(7);
-    expect(updated!.monnaie).toBe(100);
+    expect(updated!.purse_gold).toBe(2);
     // update ne réécrit pas les champs absents → remis à null, mais created_at inchangé.
     expect(updated!.points_de_vie).toBeNull();
     expect(updated!.created_at.getTime()).toBe(new Date("2026-01-02T09:00:00Z").getTime());
