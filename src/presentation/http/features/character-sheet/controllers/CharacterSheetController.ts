@@ -4,6 +4,7 @@ import { ListMyCharacterSheetsUseCase } from "@application/features/character-sh
 import { DeleteCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/DeleteCharacterSheetUseCase";
 import { GetCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/GetCharacterSheetUseCase";
 import { UpdateCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/UpdateCharacterSheetUseCase";
+import { GetSheetCampaignsUseCase } from "@application/features/character-sheet/abstractions/usecases/GetSheetCampaignsUseCase";
 import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
 import { UpdateCharacterSheetCommand } from "@application/features/character-sheet/commands/UpdateCharacterSheetCommand";
 import { CharacterSheetHttpMapper } from "@presentation/http/features/character-sheet/mappers/CharacterSheetHttpMapper";
@@ -65,6 +66,7 @@ export class CharacterSheetController {
     private readonly deleteCharacterSheet: DeleteCharacterSheetUseCase,
     private readonly getCharacterSheet: GetCharacterSheetUseCase,
     private readonly updateCharacterSheet: UpdateCharacterSheetUseCase,
+    private readonly getSheetCampaigns: GetSheetCampaignsUseCase,
   ) {}
 
   /** `POST /character-sheets` — crée une fiche appartenant à l'utilisateur authentifié. */
@@ -130,6 +132,32 @@ export class CharacterSheetController {
       }
 
       res.status(200).json(toResponse(result.value));
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /** `GET /character-sheets/:id/campaigns` — campagnes rattachées à la fiche (propriétaire seul). */
+  public campaigns = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.getSheetCampaigns.execute({
+        characterSheetId: req.params.id ?? "",
+        ownerId: req.user!.userId,
+      });
+
+      if (result.isFailure) {
+        res
+          .status(CharacterSheetHttpMapper.statusFor(result.error))
+          .json({ code: result.error.code, message: result.error.message });
+        return;
+      }
+
+      const campaigns = result.value.map((view) => ({
+        campaignId: view.campaignId,
+        campaignName: view.campaignName,
+        gameMasterPseudo: view.gameMasterPseudo,
+      }));
+      res.status(200).json({ campaigns });
     } catch (error) {
       next(error);
     }

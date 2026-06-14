@@ -22,6 +22,7 @@ import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/characte
 import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/DeleteCharacterSheetUseCaseImpl";
 import { GetCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/GetCharacterSheetUseCaseImpl";
 import { UpdateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/UpdateCharacterSheetUseCaseImpl";
+import { GetSheetCampaignsUseCaseImpl } from "@application/features/character-sheet/usecases/GetSheetCampaignsUseCaseImpl";
 import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/LinkCharacterToCampaignUseCaseImpl";
 import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
 import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
@@ -129,6 +130,7 @@ export function buildTestApp(): {
     new DeleteCharacterSheetUseCaseImpl(repos.characterSheets, unitOfWork, logger),
     new GetCharacterSheetUseCaseImpl(repos.characterSheets, logger),
     new UpdateCharacterSheetUseCaseImpl(repos.characterSheets, unitOfWork, logger),
+    new GetSheetCampaignsUseCaseImpl(repos.characterSheets, repos.campaignCharacters, logger),
   );
 
   const authMiddleware = buildAuthMiddleware(tokenProvider);

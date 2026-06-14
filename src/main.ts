@@ -41,6 +41,7 @@ import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/characte
 import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/DeleteCharacterSheetUseCaseImpl";
 import { GetCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/GetCharacterSheetUseCaseImpl";
 import { UpdateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/UpdateCharacterSheetUseCaseImpl";
+import { GetSheetCampaignsUseCaseImpl } from "@application/features/character-sheet/usecases/GetSheetCampaignsUseCaseImpl";
 import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/LinkCharacterToCampaignUseCaseImpl";
 import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
 import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
@@ -209,6 +210,11 @@ function buildCharacterSheetController(
     services.unitOfWork,
     logger,
   );
+  const getSheetCampaigns = new GetSheetCampaignsUseCaseImpl(
+    services.characterSheetRepository,
+    services.campaignCharacterRepository,
+    logger,
+  );
 
   return new CharacterSheetController(
     createCharacterSheet,
@@ -216,6 +222,7 @@ function buildCharacterSheetController(
     deleteCharacterSheet,
     getCharacterSheet,
     updateCharacterSheet,
+    getSheetCampaigns,
   );
 }
 

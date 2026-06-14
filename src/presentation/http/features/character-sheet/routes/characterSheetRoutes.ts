@@ -15,6 +15,7 @@ export function buildCharacterSheetRoutes(controller: CharacterSheetController):
   router.post("/", controller.create);
   router.get("/", controller.list);
   router.get("/:id", controller.getById);
+  router.get("/:id/campaigns", controller.campaigns);
   router.put("/:id", controller.update);
   router.delete("/:id", controller.remove);
 
