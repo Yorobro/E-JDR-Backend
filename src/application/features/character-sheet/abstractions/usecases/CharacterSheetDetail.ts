@@ -11,13 +11,13 @@ export interface CharacterSheetDetail {
   readonly ownerId: string;
   readonly name: string;
   readonly createdAt: Date;
-  // Identité (texte court)
+  // Identité (texte court, niveau/âge entiers)
   readonly formation: string | null;
-  readonly niveau: string | null;
+  readonly niveau: number | null;
   readonly peuple: string | null;
   readonly sexe: string | null;
   readonly tailleEtPoids: string | null;
-  readonly age: string | null;
+  readonly age: number | null;
   readonly apparence: string | null;
   // Caractéristiques (entiers)
   readonly dexterite: number | null;
@@ -29,11 +29,20 @@ export interface CharacterSheetDetail {
   readonly pointsDeVie: number | null;
   readonly pointsDeMagie: number | null;
   readonly protection: number | null;
-  readonly monnaie: number | null;
+  // Bourse (pièces brutes)
+  readonly purse: PurseView | null;
   // Zones de texte long
+  readonly competences: string | null;
   readonly armes: string | null;
   readonly armures: string | null;
   readonly equipement: string | null;
   readonly sortsEtMiracles: string | null;
   readonly notes: string | null;
+}
+
+/** Représentation publique de la bourse (pièces brutes, non normalisées). */
+export interface PurseView {
+  readonly gold: number;
+  readonly silver: number;
+  readonly copper: number;
 }
