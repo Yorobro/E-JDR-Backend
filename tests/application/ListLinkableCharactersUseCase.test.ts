@@ -4,6 +4,7 @@ import { CampaignNotFoundError } from "@application/features/campaign/errors/Cam
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 import {
   FakeCampaignRepository,
+  FakeCampaignCharacterRepository,
   FakeCharacterSheetRepository,
   buildTestCampaign,
   buildTestCharacterSheet,
@@ -17,9 +18,12 @@ describe("ListLinkableCharactersUseCaseImpl", () => {
   function setup() {
     const campaigns = new FakeCampaignRepository();
     const sheets = new FakeCharacterSheetRepository();
+    // La liaison réelle est la source de vérité des fiches déjà rattachées (comme le SQL).
+    const campaignCharacters = new FakeCampaignCharacterRepository(sheets);
+    sheets.attachCampaignCharacters(campaignCharacters);
     campaigns.seed(buildTestCampaign(CAMPAIGN_ID, GM));
     const useCase = new ListLinkableCharactersUseCaseImpl(campaigns, sheets);
-    return { campaigns, sheets, useCase };
+    return { campaigns, sheets, campaignCharacters, useCase };
   }
 
   it("échoue si la campagne n'existe pas", async () => {
@@ -48,9 +52,9 @@ describe("ListLinkableCharactersUseCaseImpl", () => {
   });
 
   it("exclut les fiches déjà rattachées à la campagne", async () => {
-    const { sheets, useCase } = setup();
+    const { sheets, campaignCharacters, useCase } = setup();
     sheets.seed(buildTestCharacterSheet("s-player", PLAYER, "Aragorn"));
-    sheets.seedLink(CAMPAIGN_ID, "s-player");
+    await campaignCharacters.link(CAMPAIGN_ID, "s-player");
     const result = await useCase.execute({ campaignId: CAMPAIGN_ID, actorUserId: GM });
     expect(result.isSuccess).toBe(true);
     expect(result.value).toHaveLength(0);

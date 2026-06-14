@@ -155,6 +155,12 @@ export class FakeCampaignRepository implements CampaignRepository {
 export class FakeCharacterSheetRepository implements CharacterSheetRepository {
   private readonly sheets = new Map<string, CharacterSheet>();
 
+  /**
+   * Repository de liaison, source de vérité des fiches déjà rattachées (renseigné après
+   * construction par {@link attachCampaignCharacters} pour éviter la dépendance circulaire).
+   */
+  private campaignCharacters?: FakeCampaignCharacterRepository;
+
   public async save(sheet: CharacterSheet): Promise<void> {
     this.sheets.set(sheet.id, sheet);
   }
@@ -171,21 +177,28 @@ export class FakeCharacterSheetRepository implements CharacterSheetRepository {
     this.sheets.delete(id);
   }
 
-  /** Liaisons connues (clé = `${campaignId}:${sheetId}`), pour simuler l'exclusion des déjà liées. */
-  private readonly links = new Set<string>();
-
-  /** Aide de test : enregistre une liaison fiche↔campagne (pour `findLinkableForCampaign`). */
-  public seedLink(campaignId: string, sheetId: string): void {
-    this.links.add(`${campaignId}:${sheetId}`);
+  /**
+   * Branche le repository de liaison pour que `findLinkableForCampaign` consulte les
+   * vraies liaisons (celles créées via `link()`), comme le `NOT EXISTS` du SQL réel.
+   */
+  public attachCampaignCharacters(campaignCharacters: FakeCampaignCharacterRepository): void {
+    this.campaignCharacters = campaignCharacters;
   }
 
   public async findLinkableForCampaign(
     gameMasterId: string,
     campaignId: string,
   ): Promise<CharacterSheet[]> {
-    return [...this.sheets.values()].filter(
-      (sheet) => !sheet.isOwnedBy(gameMasterId) && !this.links.has(`${campaignId}:${sheet.id}`),
-    );
+    const candidates = [...this.sheets.values()].filter((sheet) => !sheet.isOwnedBy(gameMasterId));
+    const linkable: CharacterSheet[] = [];
+    for (const sheet of candidates) {
+      const alreadyLinked =
+        (await this.campaignCharacters?.existsByCampaignAndSheet(campaignId, sheet.id)) ?? false;
+      if (!alreadyLinked) {
+        linkable.push(sheet);
+      }
+    }
+    return linkable;
   }
 
   /** Aide de test : pré-remplit le repository avec une fiche. */
@@ -362,14 +375,17 @@ export function buildFakeTransactionalRepositories(overrides?: {
   campaignCharacters: FakeCampaignCharacterRepository;
 } {
   const characterSheets = overrides?.characterSheets ?? new FakeCharacterSheetRepository();
+  // La liaison résout les fiches via le repo de fiches (reproduit le JOIN MySQL).
+  const campaignCharacters = new FakeCampaignCharacterRepository(characterSheets);
+  // Lien retour : `findLinkableForCampaign` doit voir les vraies liaisons (NOT EXISTS du SQL).
+  characterSheets.attachCampaignCharacters(campaignCharacters);
   return {
     users: overrides?.users ?? new FakeUserRepository(),
     credentials: overrides?.credentials ?? new FakeCredentialRepository(),
     refreshTokens: overrides?.refreshTokens ?? new FakeRefreshTokenRepository(),
     campaigns: overrides?.campaigns ?? new FakeCampaignRepository(),
     characterSheets,
-    // La liaison résout les fiches via le repo de fiches (reproduit le JOIN MySQL).
-    campaignCharacters: new FakeCampaignCharacterRepository(characterSheets),
+    campaignCharacters,
   };
 }
 

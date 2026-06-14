@@ -146,5 +146,42 @@ describe("Character sheet routes (intégration HTTP)", () => {
         .send({ characterSheetId: "x" });
       expect(res.status).toBe(401);
     });
+
+    it("GET linkable-characters (MJ) liste les fiches des autres, exclut les siennes et les déjà liées", async () => {
+      const mj = await authenticate("mj@test.com");
+      const campaign = await mj.post("/campaigns").send({ name: "C" });
+      // une fiche au MJ (doit être exclue)
+      await mj.post("/character-sheets").send({ name: "Fiche MJ" });
+
+      const player = await authenticate("player@test.com");
+      // une fiche libre du joueur (doit apparaître) + une déjà liée (doit être exclue)
+      await player.post("/character-sheets").send({ name: "Libre" });
+      const linked = await player.post("/character-sheets").send({ name: "Déjà liée" });
+      // le MJ rattache "linked" → elle ne doit plus être rattachable
+      await mj
+        .post(`/campaigns/${campaign.body.id}/characters`)
+        .send({ characterSheetId: linked.body.id });
+
+      const res = await mj.get(`/campaigns/${campaign.body.id}/linkable-characters`);
+      expect(res.status).toBe(200);
+      const names = res.body.characters.map((c: { name: string }) => c.name);
+      expect(names).toContain("Libre");
+      expect(names).not.toContain("Fiche MJ");
+      expect(names).not.toContain("Déjà liée");
+    });
+
+    it("GET linkable-characters par un non-MJ renvoie 403", async () => {
+      const mj = await authenticate("mj@test.com");
+      const campaign = await mj.post("/campaigns").send({ name: "C" });
+      const intrus = await authenticate("intrus@test.com");
+      const res = await intrus.get(`/campaigns/${campaign.body.id}/linkable-characters`);
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");
+    });
+
+    it("GET linkable-characters sans cookie renvoie 401", async () => {
+      const res = await request(app).get("/campaigns/whatever/linkable-characters");
+      expect(res.status).toBe(401);
+    });
   });
 });
