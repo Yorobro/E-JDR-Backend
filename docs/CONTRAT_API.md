@@ -244,6 +244,14 @@ Détail **complet** d'une fiche (seul le propriétaire). **Réponse 200** : tous
 Champs détaillés `null` si non renseignés. Erreurs : `CHARACTER_SHEET_NOT_FOUND` (404),
 `CHARACTER_SHEET_ACCESS_DENIED` (403), `UNAUTHENTICATED` (401).
 
+### GET /character-sheets/:id/campaigns
+
+Liste les campagnes auxquelles la fiche est rattachée, enrichies du pseudo du MJ (**seul le
+propriétaire de la fiche**). **Réponse 200** :
+`{ "campaigns": [ { "campaignId", "campaignName", "gameMasterPseudo" } ] }` — liste vide si la
+fiche n'est rattachée à aucune campagne, des plus récemment rattachées aux plus anciennes. Erreurs :
+`CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403), `UNAUTHENTICATED` (401).
+
 ### PUT /character-sheets/:id
 
 Met à jour une fiche (seul le propriétaire). Saisie **souple** : seul `name` est requis (revalidé,

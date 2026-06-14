@@ -177,6 +177,27 @@ describe("CharacterSheet / CampaignCharacter DAO (intégration MySQL)", () => {
     expect(await linkDao.existsByCampaignAndSheet("camp-1", "s-1")).toBe(false);
   });
 
+  it("findCampaignViewsBySheetId renvoie le nom de la campagne et le pseudo du MJ", async () => {
+    // MJ dédié avec un pseudo explicite (le "mj-1" du beforeEach a un pseudo dérivé de l'id).
+    await insertUser(pool, "mj-pseudo", "MJ");
+    await insertCampaign("camp-1", "mj-pseudo");
+    await sheetDao.insert(
+      sheetRow({ id: "s-1", owner_id: "owner-1", name: "Frodo", created_at: new Date("2026-01-02T08:00:00Z") }),
+    );
+    await linkDao.insert({
+      campaign_id: "camp-1",
+      character_sheet_id: "s-1",
+      created_at: new Date(),
+    });
+
+    const views = await linkDao.findCampaignViewsBySheetId("s-1");
+
+    expect(views).toHaveLength(1);
+    expect(views[0]!.campaign_id).toBe("camp-1");
+    expect(views[0]!.campaign_name).toBe("Campagne");
+    expect(views[0]!.game_master_pseudo).toBe("MJ");
+  });
+
   it("la PK composite empêche les doublons de rattachement", async () => {
     await insertCampaign("camp-1", "mj-1");
     await sheetDao.insert(sheetRow({ id: "s-1", owner_id: "owner-1", name: "Sam", created_at: new Date() }));
