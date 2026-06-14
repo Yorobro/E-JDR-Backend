@@ -26,7 +26,8 @@ interface UpdateCharacterSheetBody {
   pointsDeVie?: unknown;
   pointsDeMagie?: unknown;
   protection?: unknown;
-  monnaie?: unknown;
+  purse?: unknown;
+  competences?: unknown;
   armes?: unknown;
   armures?: unknown;
   equipement?: unknown;
@@ -37,6 +38,18 @@ interface UpdateCharacterSheetBody {
 /** Sérialise un `CharacterSheetDetail` (date → ISO) pour la réponse HTTP. */
 function toResponse(detail: CharacterSheetDetail): Record<string, unknown> {
   return { ...detail, createdAt: detail.createdAt.toISOString() };
+}
+
+/** Extrait la bourse du corps : objet {gold,silver,copper} numérique, sinon `null`. */
+function toPurseCommand(
+  value: unknown,
+): { gold: number | null; silver: number | null; copper: number | null } | null {
+  if (value == null || typeof value !== "object") {
+    return null;
+  }
+  const v = value as Record<string, unknown>;
+  const num = (x: unknown): number | null => (typeof x === "number" ? x : null);
+  return { gold: num(v.gold), silver: num(v.silver), copper: num(v.copper) };
 }
 
 /**
@@ -158,11 +171,11 @@ export class CharacterSheetController {
       ownerId,
       name: text(body.name) ?? "",
       formation: text(body.formation),
-      niveau: text(body.niveau),
+      niveau: num(body.niveau),
       peuple: text(body.peuple),
       sexe: text(body.sexe),
       tailleEtPoids: text(body.tailleEtPoids),
-      age: text(body.age),
+      age: num(body.age),
       apparence: text(body.apparence),
       dexterite: num(body.dexterite),
       intelligence: num(body.intelligence),
@@ -172,7 +185,8 @@ export class CharacterSheetController {
       pointsDeVie: num(body.pointsDeVie),
       pointsDeMagie: num(body.pointsDeMagie),
       protection: num(body.protection),
-      monnaie: num(body.monnaie),
+      purse: toPurseCommand(body.purse),
+      competences: text(body.competences),
       armes: text(body.armes),
       armures: text(body.armures),
       equipement: text(body.equipement),
