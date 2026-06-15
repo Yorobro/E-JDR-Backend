@@ -28,6 +28,8 @@ import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/ch
 import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
 import { ListLinkableCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListLinkableCharactersUseCaseImpl";
 import { CharacterSheetController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetController";
+import { ExportCharacterSheetPdfUseCaseImpl } from "@application/features/character-sheet/usecases/ExportCharacterSheetPdfUseCaseImpl";
+import { CharacterSheetExportController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetExportController";
 
 import {
   buildFakeTransactionalRepositories,
@@ -37,6 +39,7 @@ import {
   FakeIdGenerator,
   FakeTokenHasher,
   FakeTokenProvider,
+  FakeCharacterSheetPdfGenerator,
 } from "../application/fakes";
 
 /**
@@ -133,6 +136,14 @@ export function buildTestApp(): {
     new GetSheetCampaignsUseCaseImpl(repos.characterSheets, repos.campaignCharacters, logger),
   );
 
+  const characterSheetExportController = new CharacterSheetExportController(
+    new ExportCharacterSheetPdfUseCaseImpl(
+      repos.characterSheets,
+      new FakeCharacterSheetPdfGenerator(),
+      logger,
+    ),
+  );
+
   const authMiddleware = buildAuthMiddleware(tokenProvider);
 
   const app = buildHttpApp(
@@ -142,6 +153,7 @@ export function buildTestApp(): {
       campaign: campaignController,
       campaignCharacter: campaignCharacterController,
       characterSheet: characterSheetController,
+      characterSheetExport: characterSheetExportController,
     },
     authMiddleware,
     logger,

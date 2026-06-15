@@ -252,6 +252,13 @@ propriétaire de la fiche**). **Réponse 200** :
 fiche n'est rattachée à aucune campagne, des plus récemment rattachées aux plus anciennes. Erreurs :
 `CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403), `UNAUTHENTICATED` (401).
 
+### GET /character-sheets/:id/export-pdf
+
+Exporte la fiche au format PDF (**seul le propriétaire**). **Réponse 200** : le PDF en binaire,
+`Content-Type: application/pdf` et `Content-Disposition: attachment; filename="fiche-{slug}.pdf"`
+(le `slug` est dérivé du nom de la fiche). Erreurs (réponse JSON `{ code, message }`) :
+`CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403), `UNAUTHENTICATED` (401).
+
 ### PUT /character-sheets/:id
 
 Met à jour une fiche (seul le propriétaire). Saisie **souple** : seul `name` est requis (revalidé,

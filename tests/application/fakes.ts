@@ -27,6 +27,7 @@ import {
   AuthTokens,
   AuthTokenService,
 } from "@application/features/auth/abstractions/services/AuthTokenService";
+import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 import { UnitOfWork, TransactionalRepositories } from "@application/shared/UnitOfWork";
 
 /**
@@ -366,6 +367,13 @@ export class FakeAuthTokenService implements AuthTokenService {
       refreshToken: `refresh-for-${userId}`,
       refreshTokenExpiresAt: new Date("2999-01-01"),
     };
+  }
+}
+
+/** Générateur PDF factice : renvoie un Buffer commençant par l'en-tête PDF, sans rendu réel. */
+export class FakeCharacterSheetPdfGenerator implements CharacterSheetPdfGenerator {
+  public async generate(): Promise<Buffer> {
+    return Buffer.from("%PDF-fake");
   }
 }
 
