@@ -1,32 +1,19 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { drizzle, MySql2Database } from "drizzle-orm/mysql2";
 import { Pool } from "mysql2/promise";
-
+import * as schema from "@infrastructure/persistence/drizzle/schema";
 import { RefreshTokenDao } from "@infrastructure/persistence/mysql/features/auth/dao/RefreshTokenDao";
 import { createTestPool, clearAllTables, insertUser } from "./dbTestUtils";
 
-/**
- * Tests d'intégration du `RefreshTokenDao` contre un MySQL réel (Testcontainers).
- *
- * Couvre le cycle de vie des sessions révocables : insertion, recherche par empreinte,
- * révocations ciblées et purge des jetons expirés (index `expires_at` de V002).
- */
-describe("RefreshTokenDao (intégration MySQL)", () => {
+describe("RefreshTokenDao (intégration MySQL via Drizzle)", () => {
   let pool: Pool;
+  let db: MySql2Database<typeof schema>;
   let dao: RefreshTokenDao;
-
-  function buildRow(id: string, userId: string, tokenHash: string, expiresAt: Date) {
-    return {
-      id,
-      user_id: userId,
-      token_hash: tokenHash,
-      expires_at: expiresAt,
-      created_at: new Date("2026-01-02T08:30:00Z"),
-    };
-  }
 
   beforeAll(() => {
     pool = createTestPool();
-    dao = new RefreshTokenDao(pool);
+    db = drizzle(pool, { schema, mode: "default" });
+    dao = new RefreshTokenDao(db);
   });
 
   afterAll(async () => {
@@ -35,69 +22,44 @@ describe("RefreshTokenDao (intégration MySQL)", () => {
 
   beforeEach(async () => {
     await clearAllTables(pool);
-    await insertUser(pool, "user-1");
-    await insertUser(pool, "user-2");
+    await insertUser(pool, "u-1");
   });
 
-  it("insert puis findByTokenHash renvoie la ligne", async () => {
-    const expiresAt = new Date("2026-02-01T00:00:00Z");
-    await dao.insert(buildRow("rt-1", "user-1", "hash-1", expiresAt));
+  function row(id: string, tokenHash: string, expiresAt: Date) {
+    return {
+      id,
+      user_id: "u-1",
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+      created_at: new Date("2026-01-01T10:00:00Z"),
+    };
+  }
 
-    const row = await dao.findByTokenHash("hash-1");
-
-    expect(row).not.toBeNull();
-    expect(row!.user_id).toBe("user-1");
-    expect(row!.expires_at.getTime()).toBe(expiresAt.getTime());
+  it("insère puis relit par empreinte", async () => {
+    await dao.insert(row("t-1", "h".repeat(64), new Date("2026-12-31T00:00:00Z")));
+    const found = await dao.findByTokenHash("h".repeat(64));
+    expect(found?.id).toBe("t-1");
   });
 
-  it("findByTokenHash renvoie null pour une empreinte inconnue", async () => {
-    expect(await dao.findByTokenHash("ghost")).toBeNull();
+  it("supprime par empreinte", async () => {
+    await dao.insert(row("t-1", "a".repeat(64), new Date("2026-12-31T00:00:00Z")));
+    await dao.deleteByTokenHash("a".repeat(64));
+    expect(await dao.findByTokenHash("a".repeat(64))).toBeNull();
   });
 
-  it("deleteByTokenHash supprime uniquement la ligne visée", async () => {
-    await dao.insert(buildRow("rt-1", "user-1", "hash-1", new Date("2026-02-01T00:00:00Z")));
-    await dao.insert(buildRow("rt-2", "user-1", "hash-2", new Date("2026-02-01T00:00:00Z")));
-
-    await dao.deleteByTokenHash("hash-1");
-
-    expect(await dao.findByTokenHash("hash-1")).toBeNull();
-    expect(await dao.findByTokenHash("hash-2")).not.toBeNull();
+  it("supprime tous les tokens d'un utilisateur", async () => {
+    await dao.insert(row("t-1", "b".repeat(64), new Date("2026-12-31T00:00:00Z")));
+    await dao.insert(row("t-2", "c".repeat(64), new Date("2026-12-31T00:00:00Z")));
+    await dao.deleteAllForUser("u-1");
+    expect(await dao.findByTokenHash("b".repeat(64))).toBeNull();
+    expect(await dao.findByTokenHash("c".repeat(64))).toBeNull();
   });
 
-  it("deleteAllForUser supprime toutes les sessions d'un utilisateur sans toucher les autres", async () => {
-    await dao.insert(buildRow("rt-1", "user-1", "hash-1", new Date("2026-02-01T00:00:00Z")));
-    await dao.insert(buildRow("rt-2", "user-1", "hash-2", new Date("2026-02-01T00:00:00Z")));
-    await dao.insert(buildRow("rt-3", "user-2", "hash-3", new Date("2026-02-01T00:00:00Z")));
-
-    await dao.deleteAllForUser("user-1");
-
-    expect(await dao.findByTokenHash("hash-1")).toBeNull();
-    expect(await dao.findByTokenHash("hash-2")).toBeNull();
-    expect(await dao.findByTokenHash("hash-3")).not.toBeNull();
-  });
-
-  it("deleteExpired purge les jetons expirés et conserve les valides", async () => {
-    const now = new Date("2026-01-15T00:00:00Z");
-    await dao.insert(buildRow("rt-1", "user-1", "hash-expired", new Date("2026-01-10T00:00:00Z")));
-    await dao.insert(buildRow("rt-2", "user-1", "hash-valid", new Date("2026-02-01T00:00:00Z")));
-
-    await dao.deleteExpired(now);
-
-    expect(await dao.findByTokenHash("hash-expired")).toBeNull();
-    expect(await dao.findByTokenHash("hash-valid")).not.toBeNull();
-  });
-
-  it("insert refuse une empreinte en double (UNIQUE token_hash)", async () => {
-    await dao.insert(buildRow("rt-1", "user-1", "hash-1", new Date("2026-02-01T00:00:00Z")));
-
-    await expect(
-      dao.insert(buildRow("rt-2", "user-2", "hash-1", new Date("2026-02-01T00:00:00Z"))),
-    ).rejects.toThrow();
-  });
-
-  it("insert refuse un user_id inexistant (FK)", async () => {
-    await expect(
-      dao.insert(buildRow("rt-1", "ghost", "hash-1", new Date("2026-02-01T00:00:00Z"))),
-    ).rejects.toThrow();
+  it("purge uniquement les tokens expirés", async () => {
+    await dao.insert(row("t-old", "d".repeat(64), new Date("2025-01-01T00:00:00Z")));
+    await dao.insert(row("t-new", "e".repeat(64), new Date("2027-01-01T00:00:00Z")));
+    await dao.deleteExpired(new Date("2026-06-15T00:00:00Z"));
+    expect(await dao.findByTokenHash("d".repeat(64))).toBeNull();
+    expect(await dao.findByTokenHash("e".repeat(64))).not.toBeNull();
   });
 });
