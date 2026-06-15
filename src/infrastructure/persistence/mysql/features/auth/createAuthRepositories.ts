@@ -1,4 +1,4 @@
-import { SqlExecutor } from "@infrastructure/persistence/mysql/SqlExecutor";
+import { DrizzleExecutor } from "@infrastructure/persistence/drizzle/DrizzleExecutor";
 import { TransactionalRepositories } from "@application/shared/UnitOfWork";
 import { UserDao } from "@infrastructure/persistence/mysql/features/auth/dao/UserDao";
 import { CredentialDao } from "@infrastructure/persistence/mysql/features/auth/dao/CredentialDao";
@@ -15,7 +15,7 @@ import { MysqlRefreshTokenRepository } from "@infrastructure/persistence/mysql/f
  * que les deux modes produisent exactement les mêmes repos, sans duplication de câblage.
  */
 export function createAuthRepositories(
-  executor: SqlExecutor,
+  executor: DrizzleExecutor,
 ): Pick<TransactionalRepositories, "users" | "credentials" | "refreshTokens"> {
   return {
     users: new MysqlUserRepository(new UserDao(executor)),
