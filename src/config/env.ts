@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { resolveDbName } from "../../db/resolveDbName";
 
 dotenv.config();
 
@@ -74,7 +75,8 @@ export function loadConfig(): AppConfig {
       port: Number(optionalEnv("DB_PORT", "3306")),
       user: requireEnv("DB_USER"),
       password: requireEnv("DB_PASSWORD"),
-      database: optionalEnv("DB_NAME", "") || undefined,
+      // Force la base applicative (e_jdr) et écarte les noms réservés type « test ».
+      database: resolveDbName(process.env.DB_NAME),
     },
     jwt: {
       accessSecret: requireEnv("JWT_ACCESS_SECRET"),

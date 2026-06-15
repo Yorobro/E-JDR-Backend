@@ -1,5 +1,6 @@
 import { defineConfig } from "drizzle-kit";
 import "dotenv/config";
+import { resolveDbName } from "./db/resolveDbName";
 
 export default defineConfig({
   dialect: "mysql",
@@ -10,6 +11,7 @@ export default defineConfig({
     port: Number(process.env.DB_PORT ?? "3306"),
     user: process.env.DB_USER ?? "root",
     password: process.env.DB_PASSWORD ?? "",
-    database: process.env.DB_NAME ?? "e_jdr",
+    // Ignore un éventuel DB_NAME réservé (ex. « test » injecté par la plateforme) au profit d'e_jdr.
+    database: resolveDbName(process.env.DB_NAME),
   },
 });
