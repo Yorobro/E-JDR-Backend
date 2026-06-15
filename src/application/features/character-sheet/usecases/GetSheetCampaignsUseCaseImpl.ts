@@ -5,9 +5,7 @@ import { CharacterSheetRepository } from "@application/features/character-sheet/
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 import { SheetCampaignView } from "@application/features/character-sheet/abstractions/repositories/SheetCampaignView";
 import { GetSheetCampaignsQuery } from "@application/features/character-sheet/query/GetSheetCampaignsQuery";
-import {
-  GetSheetCampaignsUseCase,
-} from "@application/features/character-sheet/abstractions/usecases/GetSheetCampaignsUseCase";
+import { GetSheetCampaignsUseCase } from "@application/features/character-sheet/abstractions/usecases/GetSheetCampaignsUseCase";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 
@@ -34,10 +32,13 @@ export class GetSheetCampaignsUseCaseImpl implements GetSheetCampaignsUseCase {
     }
 
     if (!sheet.isOwnedBy(query.ownerId)) {
-      this.logger.warn("Tentative de consultation des campagnes d'une fiche par un non-propriétaire", {
-        characterSheetId: query.characterSheetId,
-        ownerId: query.ownerId,
-      });
+      this.logger.warn(
+        "Tentative de consultation des campagnes d'une fiche par un non-propriétaire",
+        {
+          characterSheetId: query.characterSheetId,
+          ownerId: query.ownerId,
+        },
+      );
       return Result.failure(new CharacterSheetAccessDeniedError());
     }
 

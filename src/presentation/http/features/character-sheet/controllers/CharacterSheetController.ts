@@ -189,10 +189,8 @@ export class CharacterSheetController {
     ownerId: string,
     body: UpdateCharacterSheetBody,
   ): UpdateCharacterSheetCommand {
-    const text = (value: unknown): string | null =>
-      typeof value === "string" ? value : null;
-    const num = (value: unknown): number | null =>
-      typeof value === "number" ? value : null;
+    const text = (value: unknown): string | null => (typeof value === "string" ? value : null);
+    const num = (value: unknown): number | null => (typeof value === "number" ? value : null);
 
     return {
       characterSheetId,

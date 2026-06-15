@@ -123,7 +123,9 @@ describe("Character sheet routes (intégration HTTP)", () => {
       const agent = await authenticate("p@test.com");
       const created = await agent.post("/character-sheets").send({ name: "Aragorn" });
 
-      const res = await agent.put(`/character-sheets/${created.body.id}`).send({ name: "A", sexe: "Z" });
+      const res = await agent
+        .put(`/character-sheets/${created.body.id}`)
+        .send({ name: "A", sexe: "Z" });
       expect(res.status).toBe(400);
       expect(res.body.code).toBe("INVALID_SEX");
     });

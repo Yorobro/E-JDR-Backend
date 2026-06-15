@@ -20,7 +20,9 @@ export class Pseudo {
       throw new InvalidPseudoError("le pseudo ne peut pas être vide");
     }
     if (normalized.length > Pseudo.MAX_LENGTH) {
-      throw new InvalidPseudoError(`le pseudo ne peut pas dépasser ${Pseudo.MAX_LENGTH} caractères`);
+      throw new InvalidPseudoError(
+        `le pseudo ne peut pas dépasser ${Pseudo.MAX_LENGTH} caractères`,
+      );
     }
     return new Pseudo(normalized);
   }

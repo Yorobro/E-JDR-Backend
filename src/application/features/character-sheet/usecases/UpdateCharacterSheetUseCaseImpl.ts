@@ -10,9 +10,7 @@ import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { UpdateCharacterSheetCommand } from "@application/features/character-sheet/commands/UpdateCharacterSheetCommand";
-import {
-  UpdateCharacterSheetUseCase,
-} from "@application/features/character-sheet/abstractions/usecases/UpdateCharacterSheetUseCase";
+import { UpdateCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/UpdateCharacterSheetUseCase";
 import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";

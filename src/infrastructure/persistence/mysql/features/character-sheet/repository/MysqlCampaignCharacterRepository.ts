@@ -37,9 +37,7 @@ export class MysqlCampaignCharacterRepository implements CampaignCharacterReposi
     return rows.map((row) => CharacterSheetMapper.toDomain(row));
   }
 
-  public async findCampaignViewsBySheetId(
-    characterSheetId: string,
-  ): Promise<SheetCampaignView[]> {
+  public async findCampaignViewsBySheetId(characterSheetId: string): Promise<SheetCampaignView[]> {
     const rows = await this.campaignCharacterDao.findCampaignViewsBySheetId(characterSheetId);
     return rows.map((row) => ({
       campaignId: row.campaign_id,

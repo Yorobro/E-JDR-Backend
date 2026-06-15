@@ -144,10 +144,10 @@ export class CharacterSheetDao {
   public async update(row: CharacterSheetWriteRow): Promise<void> {
     const editable = ["name", ...DETAIL_COLUMNS] as const;
     const assignments = editable.map((column) => `${column} = ?`).join(", ");
-    await this.executor.execute(
-      `UPDATE character_sheets SET ${assignments} WHERE id = ?`,
-      [...valuesOf(row, editable), row.id],
-    );
+    await this.executor.execute(`UPDATE character_sheets SET ${assignments} WHERE id = ?`, [
+      ...valuesOf(row, editable),
+      row.id,
+    ]);
   }
 
   /**

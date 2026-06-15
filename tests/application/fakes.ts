@@ -268,9 +268,7 @@ export class FakeCampaignCharacterRepository implements CampaignCharacterReposit
     return sheets;
   }
 
-  public async findCampaignViewsBySheetId(
-    characterSheetId: string,
-  ): Promise<SheetCampaignView[]> {
+  public async findCampaignViewsBySheetId(characterSheetId: string): Promise<SheetCampaignView[]> {
     const suffix = `::${characterSheetId}`;
     const campaignIds = [...this.links]
       .filter((k) => k.endsWith(suffix))

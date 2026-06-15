@@ -109,12 +109,14 @@ export class CharacterSheet {
    * @param params.createdAt - Horodatage de création (injecté pour rester testable).
    * @returns Une nouvelle instance de `CharacterSheet`.
    */
-  public static create(params: {
-    id: string;
-    ownerId: string;
-    name: CharacterSheetName;
-    createdAt: Date;
-  } & Partial<CharacterSheetDetails>): CharacterSheet {
+  public static create(
+    params: {
+      id: string;
+      ownerId: string;
+      name: CharacterSheetName;
+      createdAt: Date;
+    } & Partial<CharacterSheetDetails>,
+  ): CharacterSheet {
     return new CharacterSheet({
       ...EMPTY_DETAILS,
       ...params,

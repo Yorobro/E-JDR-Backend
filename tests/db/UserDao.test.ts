@@ -46,7 +46,11 @@ describe("UserDao (intégration MySQL)", () => {
   });
 
   it("insert refuse un id en double (PRIMARY KEY)", async () => {
-    await dao.insert({ id: "user-1", pseudo: "Gandalf", created_at: new Date("2026-01-02T08:30:00Z") });
+    await dao.insert({
+      id: "user-1",
+      pseudo: "Gandalf",
+      created_at: new Date("2026-01-02T08:30:00Z"),
+    });
 
     await expect(
       dao.insert({ id: "user-1", pseudo: "Gandalf", created_at: new Date("2026-01-02T09:00:00Z") }),

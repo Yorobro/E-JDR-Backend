@@ -3,9 +3,7 @@ import { AppError } from "@application/errors/AppError";
 import { Logger } from "@application/shared/Logger";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { GetCharacterSheetQuery } from "@application/features/character-sheet/query/GetCharacterSheetQuery";
-import {
-  GetCharacterSheetUseCase,
-} from "@application/features/character-sheet/abstractions/usecases/GetCharacterSheetUseCase";
+import { GetCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/GetCharacterSheetUseCase";
 import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
