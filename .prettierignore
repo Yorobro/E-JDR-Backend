@@ -9,3 +9,7 @@ eslint-rules
 
 # Documentation : mise en forme manuelle (tableaux alignés) préservée.
 *.md
+
+# Migrations Drizzle : SQL et snapshots meta/ générés par drizzle-kit, ne pas reformater
+# (drizzle-kit réécrit ces fichiers dans son propre format ; le reformatage créerait du bruit).
+src/infrastructure/persistence/drizzle/migrations
