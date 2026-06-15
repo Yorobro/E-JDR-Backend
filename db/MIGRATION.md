@@ -123,6 +123,44 @@ La migration baseline `0000_*.sql` contient le `CREATE TABLE` des **6 tables** (
   Une fois cette ligne posée, `npm run db:migrate` ignore la baseline et n'applique que les
   migrations **postérieures**. Sur une base neuve, cette étape est inutile.
 
+## Reset complet — `db:reset` (DESTRUCTIF)
+
+Quand les données d'une base **sont jetables** (dev, ou prod en phase early sans données à
+préserver) et qu'on veut une base **100 % Drizzle sans résidu** d'un ancien outil de migration,
+le plus simple est la table rase :
+
+```bash
+npm run db:reset
+```
+
+Ce script (`db/reset.ts`) cible la base de `.env` (`DB_*`) et :
+
+1. supprime **toutes** les tables de la base (données comprises), y compris une éventuelle table
+   de suivi héritée (`schema_migrations`) ;
+2. réapplique les migrations Drizzle depuis zéro via le migrator (la baseline recrée les 6
+   tables, puis les migrations suivantes s'appliquent), ce qui initialise `__drizzle_migrations`.
+
+Résultat : une base propre, suivie uniquement par Drizzle.
+
+### ⚠️ Procédure PROD
+
+`db:reset` **détruit toutes les données**. En prod, ne l'utiliser **que** si les données sont
+réellement jetables (décision explicite). Procédure :
+
+1. **Confirmer** que la prod n'a pas de données à préserver.
+2. Pointer la connexion vers la prod en fournissant ses variables d'environnement au script,
+   par exemple :
+   ```bash
+   DB_HOST=<prod-host> DB_PORT=<port> DB_USER=<user> DB_PASSWORD=<pwd> DB_NAME=<db> \
+     npm run db:reset
+   ```
+   (ou en s'appuyant sur le `.env`/secret manager de l'environnement de prod).
+3. Déployer le code de la branche, puis démarrer normalement (`npm run serve`, qui enchaîne
+   `db:migrate` — désormais idempotent puisque la baseline est tracée).
+
+Si un jour la prod contient des données **à préserver**, ne pas utiliser `db:reset` : utiliser
+l'adoption non destructive de la section « Bases existantes — baseline » ci-dessus.
+
 ## Commandes utiles
 
 | Commande | Description |
@@ -130,6 +168,7 @@ La migration baseline `0000_*.sql` contient le `CREATE TABLE` des **6 tables** (
 | `npm run db:generate` | Génère une migration SQL à partir du schema Drizzle modifié (+ snapshot dans `meta/`). |
 | `npm run db:migrate` | Applique les migrations Drizzle en attente et les trace dans `__drizzle_migrations`. |
 | `npm run db:custom -- --name=<desc>` | Crée une migration SQL **vide** à écrire à la main (transformations de données, backfill, renommage avec recopie). |
+| `npm run db:reset` | **DESTRUCTIF.** Drop toutes les tables de la base puis réapplique les migrations Drizzle depuis zéro (base jetable / passage 100 % Drizzle). |
 | `npm run test:db` | Rejoue toutes les migrations sur une base vierge via le migrator Drizzle (Testcontainers, Docker requis). |
 
 ## Checklist avant de merger une migration
