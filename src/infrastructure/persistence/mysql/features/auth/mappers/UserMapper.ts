@@ -17,6 +17,7 @@ export class UserMapper {
   public static toDomain(row: UserRow): User {
     return User.restore({
       id: row.id,
+      pseudo: row.pseudo,
       createdAt: new Date(row.created_at),
     });
   }
@@ -27,9 +28,10 @@ export class UserMapper {
    * @param user - L'entité `User` à persister.
    * @returns Un objet dont les clés correspondent aux colonnes de la table `users`.
    */
-  public static toRow(user: User): { id: string; created_at: Date } {
+  public static toRow(user: User): { id: string; pseudo: string; created_at: Date } {
     return {
       id: user.id,
+      pseudo: user.pseudo,
       created_at: user.createdAt,
     };
   }

@@ -12,6 +12,8 @@ export interface RegisterUserResult {
   readonly userId: string;
   /** Adresse e-mail (normalisée) du nouvel utilisateur. */
   readonly email: string;
+  /** Pseudo (nom d'affichage) du nouvel utilisateur. */
+  readonly pseudo: string;
   /** Paire de jetons d'authentification émise lors de l'inscription. */
   readonly tokens: AuthTokens;
 }

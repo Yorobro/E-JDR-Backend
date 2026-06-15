@@ -4,6 +4,8 @@
 export interface UserSnapshot {
   /** Identifiant unique de l'utilisateur. */
   readonly id: string;
+  /** Pseudo (nom d'affichage) de l'utilisateur. */
+  readonly pseudo: string;
   /** Date de création du compte. */
   readonly createdAt: Date;
 }
@@ -31,11 +33,12 @@ export class User {
    *
    * @param params - Identité du nouvel utilisateur.
    * @param params.id - Identifiant unique (généré en amont par un `IdGeneratorService`).
+   * @param params.pseudo - Pseudo (nom d'affichage), déjà validé en amont.
    * @param params.createdAt - Horodatage de création (injecté pour rester testable/déterministe).
    * @returns Une nouvelle instance de `User`.
    */
-  public static create(params: { id: string; createdAt: Date }): User {
-    return new User({ id: params.id, createdAt: params.createdAt });
+  public static create(params: { id: string; pseudo: string; createdAt: Date }): User {
+    return new User({ id: params.id, pseudo: params.pseudo, createdAt: params.createdAt });
   }
 
   /**
@@ -51,6 +54,11 @@ export class User {
   /** @returns L'identifiant unique de l'utilisateur. */
   public get id(): string {
     return this.props.id;
+  }
+
+  /** @returns Le pseudo (nom d'affichage) de l'utilisateur. */
+  public get pseudo(): string {
+    return this.props.pseudo;
   }
 
   /** @returns La date de création du compte. */

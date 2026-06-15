@@ -1,6 +1,7 @@
 import { User } from "@domain/features/auth/entities/User";
 import { Credential } from "@domain/features/auth/entities/Credential";
 import { Email } from "@domain/features/auth/value-objects/Email";
+import { Pseudo } from "@domain/features/auth/value-objects/Pseudo";
 import { PlainPassword } from "@domain/features/auth/value-objects/PlainPassword";
 import { HashedPassword } from "@domain/features/auth/value-objects/HashedPassword";
 import { DomainError } from "@domain/shared/errors/DomainError";
@@ -43,10 +44,12 @@ export class RegisterUserUseCaseImpl implements RegisterUserUseCase {
     command: RegisterUserCommand,
   ): Promise<Result<RegisterUserResult, AppError>> {
     let email: Email;
+    let pseudo: Pseudo;
     let plainPassword: PlainPassword;
 
     try {
       email = Email.create(command.email);
+      pseudo = Pseudo.create(command.pseudo);
       plainPassword = PlainPassword.create(command.password);
     } catch (error) {
       if (error instanceof DomainError) {
@@ -62,7 +65,11 @@ export class RegisterUserUseCaseImpl implements RegisterUserUseCase {
       return Result.failure(new EmailAlreadyUsedError());
     }
 
-    const user = User.create({ id: this.idGenerator.generate(), createdAt: new Date() });
+    const user = User.create({
+      id: this.idGenerator.generate(),
+      pseudo: pseudo.value,
+      createdAt: new Date(),
+    });
     const credential = await this.buildCredential(user.id, email, plainPassword);
 
     await this.unitOfWork.execute(async (repos) => {
@@ -77,6 +84,7 @@ export class RegisterUserUseCaseImpl implements RegisterUserUseCase {
     return Result.success({
       userId: user.id,
       email: credential.email.value,
+      pseudo: user.pseudo,
       tokens,
     });
   }

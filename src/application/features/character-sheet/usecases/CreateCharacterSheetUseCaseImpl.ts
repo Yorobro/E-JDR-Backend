@@ -1,0 +1,67 @@
+import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
+import { CharacterSheetName } from "@domain/features/character-sheet/value-objects/CharacterSheetName";
+import { DomainError } from "@domain/shared/errors/DomainError";
+
+import { Result } from "@application/shared/Result";
+import { AppError } from "@application/errors/AppError";
+import { Logger } from "@application/shared/Logger";
+import { UnitOfWork } from "@application/shared/UnitOfWork";
+import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
+import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
+import { CreateCharacterSheetCommand } from "@application/features/character-sheet/commands/CreateCharacterSheetCommand";
+import {
+  CreateCharacterSheetUseCase,
+  CreateCharacterSheetResult,
+} from "@application/features/character-sheet/abstractions/usecases/CreateCharacterSheetUseCase";
+
+/**
+ * Use case de création d'une fiche de personnage.
+ *
+ * Orchestration pure : valide le nom via le domaine, crée l'entité en établissant l'utilisateur
+ * courant comme propriétaire, puis la persiste via le `UnitOfWork`.
+ */
+export class CreateCharacterSheetUseCaseImpl implements CreateCharacterSheetUseCase {
+  constructor(
+    private readonly idGenerator: IdGeneratorService,
+    private readonly unitOfWork: UnitOfWork,
+    private readonly logger: Logger,
+  ) {}
+
+  public async execute(
+    command: CreateCharacterSheetCommand,
+  ): Promise<Result<CreateCharacterSheetResult, AppError>> {
+    let name: CharacterSheetName;
+
+    try {
+      name = CharacterSheetName.create(command.name);
+    } catch (error) {
+      if (error instanceof DomainError) {
+        return Result.failure(new InvalidInputError(error.code, error.message));
+      }
+      throw error;
+    }
+
+    const sheet = CharacterSheet.create({
+      id: this.idGenerator.generate(),
+      ownerId: command.ownerId,
+      name,
+      createdAt: new Date(),
+    });
+
+    await this.unitOfWork.execute(async (repos) => {
+      await repos.characterSheets.save(sheet);
+    });
+
+    this.logger.info("Fiche de personnage créée", {
+      characterSheetId: sheet.id,
+      ownerId: sheet.ownerId,
+    });
+
+    return Result.success({
+      id: sheet.id,
+      ownerId: sheet.ownerId,
+      name: sheet.name.value,
+      createdAt: sheet.createdAt,
+    });
+  }
+}

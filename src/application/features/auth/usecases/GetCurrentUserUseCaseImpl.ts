@@ -36,6 +36,7 @@ export class GetCurrentUserUseCaseImpl implements GetCurrentUserUseCase {
     return Result.success({
       userId: user.id,
       email: credential.email.value,
+      pseudo: user.pseudo,
       createdAt: user.createdAt,
     });
   }

@@ -37,7 +37,7 @@ export class AuthController {
   /**
    * `POST /auth/register` — inscrit un utilisateur puis le connecte directement.
    *
-   * @param req - La requête (corps : `{ email, password }`).
+   * @param req - La requête (corps : `{ email, pseudo, password }`).
    * @param res - La réponse.
    * @param next - Relais vers le middleware d'erreurs pour les exceptions techniques.
    */
@@ -45,6 +45,7 @@ export class AuthController {
     try {
       const result = await this.registerUser.execute({
         email: req.body?.email,
+        pseudo: req.body?.pseudo,
         password: req.body?.password,
       });
 
@@ -54,7 +55,11 @@ export class AuthController {
       }
 
       AuthHttpMapper.setAuthCookies(res, result.value.tokens, this.config.isProduction);
-      res.status(201).json({ userId: result.value.userId, email: result.value.email });
+      res.status(201).json({
+        userId: result.value.userId,
+        email: result.value.email,
+        pseudo: result.value.pseudo,
+      });
     } catch (error) {
       this.handleThrownError(error, res, next);
     }

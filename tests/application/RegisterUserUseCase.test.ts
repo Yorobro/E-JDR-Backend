@@ -35,11 +35,13 @@ describe("RegisterUserUseCaseImpl", () => {
   it("inscrit un nouvel utilisateur, crée l'identité métier ET l'identifiant, et connecte", async () => {
     const result = await useCase.execute({
       email: "new@test.com",
+      pseudo: "Gandalf",
       password: "password123",
     });
 
     expect(result.isSuccess).toBe(true);
     expect(result.value.email).toBe("new@test.com");
+    expect(result.value.pseudo).toBe("Gandalf");
     expect(result.value.tokens.accessToken).toContain("access-for-");
     // L'identifiant d'authentification a bien été persisté.
     expect(await txRepos.credentials.existsByEmail(Email.create("new@test.com"))).toBe(true);
@@ -54,11 +56,25 @@ describe("RegisterUserUseCaseImpl", () => {
 
     const result = await useCase.execute({
       email: "taken@test.com",
+      pseudo: "Gandalf",
       password: "password123",
     });
 
     expect(result.isFailure).toBe(true);
     expect(result.error).toBeInstanceOf(EmailAlreadyUsedError);
+    // Aucun jeton émis en cas d'échec.
+    expect(authTokenService.issuedFor).toHaveLength(0);
+  });
+
+  it("échoue avec INVALID_PSEUDO si le pseudo est vide", async () => {
+    const result = await useCase.execute({
+      email: "blank@test.com",
+      pseudo: "   ",
+      password: "password123",
+    });
+
+    expect(result.isFailure).toBe(true);
+    expect(result.error.code).toBe("INVALID_PSEUDO");
     // Aucun jeton émis en cas d'échec.
     expect(authTokenService.issuedFor).toHaveLength(0);
   });

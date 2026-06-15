@@ -10,6 +10,8 @@ import { SqlExecutor } from "@infrastructure/persistence/mysql/SqlExecutor";
 export interface UserRow extends RowDataPacket {
   /** Identifiant (colonne `id`). */
   id: string;
+  /** Pseudo (colonne `pseudo`). */
+  pseudo: string;
   /** Date de création (colonne `created_at`). */
   created_at: Date;
 }
@@ -29,9 +31,10 @@ export class UserDao {
    * @param row - Les valeurs de colonnes à insérer.
    * @returns Une promesse résolue une fois l'insertion effectuée.
    */
-  public async insert(row: { id: string; created_at: Date }): Promise<void> {
-    await this.executor.execute("INSERT INTO users (id, created_at) VALUES (?, ?)", [
+  public async insert(row: { id: string; pseudo: string; created_at: Date }): Promise<void> {
+    await this.executor.execute("INSERT INTO users (id, pseudo, created_at) VALUES (?, ?, ?)", [
       row.id,
+      row.pseudo,
       row.created_at,
     ]);
   }
@@ -44,7 +47,7 @@ export class UserDao {
    */
   public async findById(id: string): Promise<UserRow | null> {
     const [rows] = await this.executor.execute<UserRow[]>(
-      "SELECT id, created_at FROM users WHERE id = ? LIMIT 1",
+      "SELECT id, pseudo, created_at FROM users WHERE id = ? LIMIT 1",
       [id],
     );
     return rows[0] ?? null;

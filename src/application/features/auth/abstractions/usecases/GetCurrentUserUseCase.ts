@@ -10,6 +10,8 @@ export interface CurrentUserResult {
   readonly userId: string;
   /** Adresse e-mail du compte. */
   readonly email: string;
+  /** Pseudo (nom d'affichage) du compte. */
+  readonly pseudo: string;
   /** Date de création du compte. */
   readonly createdAt: Date;
 }

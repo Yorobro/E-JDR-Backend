@@ -1,6 +1,9 @@
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
+import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
+import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
+import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 
 /**
  * Jeu de repositories liés à une même transaction, fournis au callback d'un `UnitOfWork`.
@@ -12,6 +15,9 @@ export interface TransactionalRepositories {
   readonly users: UserRepository;
   readonly credentials: CredentialRepository;
   readonly refreshTokens: RefreshTokenRepository;
+  readonly campaigns: CampaignRepository;
+  readonly characterSheets: CharacterSheetRepository;
+  readonly campaignCharacters: CampaignCharacterRepository;
 }
 
 /**

@@ -29,12 +29,13 @@ describe("UserDao (intégration MySQL)", () => {
 
   it("insert puis findById renvoie la ligne insérée", async () => {
     const createdAt = new Date("2026-01-02T08:30:00Z");
-    await dao.insert({ id: "user-1", created_at: createdAt });
+    await dao.insert({ id: "user-1", pseudo: "Gandalf", created_at: createdAt });
 
     const row = await dao.findById("user-1");
 
     expect(row).not.toBeNull();
     expect(row!.id).toBe("user-1");
+    expect(row!.pseudo).toBe("Gandalf");
     expect(row!.created_at.getTime()).toBe(createdAt.getTime());
   });
 
@@ -45,10 +46,14 @@ describe("UserDao (intégration MySQL)", () => {
   });
 
   it("insert refuse un id en double (PRIMARY KEY)", async () => {
-    await dao.insert({ id: "user-1", created_at: new Date("2026-01-02T08:30:00Z") });
+    await dao.insert({
+      id: "user-1",
+      pseudo: "Gandalf",
+      created_at: new Date("2026-01-02T08:30:00Z"),
+    });
 
     await expect(
-      dao.insert({ id: "user-1", created_at: new Date("2026-01-02T09:00:00Z") }),
+      dao.insert({ id: "user-1", pseudo: "Gandalf", created_at: new Date("2026-01-02T09:00:00Z") }),
     ).rejects.toThrow();
   });
 });
