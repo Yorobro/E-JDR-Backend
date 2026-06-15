@@ -8,7 +8,7 @@ import { MysqlCredentialRepository } from "@infrastructure/persistence/mysql/fea
 import { MysqlRefreshTokenRepository } from "@infrastructure/persistence/mysql/features/auth/repository/MysqlRefreshTokenRepository";
 
 /**
- * Construit le jeu de repositories auth sur un `SqlExecutor` donné.
+ * Construit le jeu de repositories auth sur un `DrizzleExecutor` donné.
  *
  * Point unique de construction des repos : utilisé par le composition root (`main.ts`,
  * sur le pool) ET par le `MysqlUnitOfWork` (sur une connexion transactionnelle). Garantit

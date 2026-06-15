@@ -4,7 +4,7 @@ import { CampaignDao } from "@infrastructure/persistence/mysql/features/campaign
 import { MysqlCampaignRepository } from "@infrastructure/persistence/mysql/features/campaign/repository/MysqlCampaignRepository";
 
 /**
- * Construit le jeu de repositories campaign sur un `SqlExecutor` donné.
+ * Construit le jeu de repositories campaign sur un `DrizzleExecutor` donné.
  *
  * Point unique de construction des repos campaign : utilisé par le composition root (`main.ts`,
  * sur le pool) ET par le `MysqlUnitOfWork` (sur une connexion transactionnelle). Garantit
