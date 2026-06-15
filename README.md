@@ -121,7 +121,7 @@ npm run test
 cp .env.example .env   # puis renseigner les accès MySQL et les secrets JWT
 
 # 4. Appliquer les migrations (crée les tables)
-npm run migrate:up
+npm run db:migrate
 
 # 5. Démarrer le serveur en développement
 npm run dev
@@ -138,11 +138,12 @@ npm run dev
 | `npm run test:coverage` | Exécute les tests et vérifie les seuils de couverture. |
 | `npm run lint` | Analyse statique ESLint (zéro avertissement toléré). |
 | `npm run format` / `npm run format:check` | Applique / vérifie le formatage Prettier. |
-| `npm run migrate:up` | Applique les migrations en attente. |
-| `npm run migrate:down` | **Échoue volontairement** : migrations *forward-only* (voir ci-dessous). |
-| `npm run migrate:status` | Affiche l'état des migrations. |
+| `npm run db:generate` | Génère une migration SQL à partir du schema Drizzle modifié. |
+| `npm run db:migrate` | Applique les migrations Drizzle en attente. |
+| `npm run db:custom -- --name=<desc>` | Crée une migration SQL vide à écrire à la main (transformations de données). |
 
 > **Migrations forward-only** — Le projet n'applique pas de rollback automatique : annuler
-> en supprimant la seule trace, sans défaire le DDL, laisserait la base incohérente.
-> `migrate:down` lève donc une erreur explicite ; pour revenir en arrière, on écrit une
-> nouvelle migration `Vxxx` correctrice.
+> en supprimant la seule trace, sans défaire le DDL, laisserait la base incohérente. Pour
+> revenir en arrière, on écrit une nouvelle migration correctrice (via `npm run db:custom`).
+> Les conventions complètes (workflow auto/custom, baseline) sont décrites dans
+> [`db/MIGRATION.md`](db/MIGRATION.md).
