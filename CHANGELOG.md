@@ -1,3 +1,8 @@
+## <small>1.4.1 (2026-06-15)</small>
+
+* Merge branch 'refactor/drizzle' ([364c015](https://github.com/Yorobro/E-JDR-Backend/commit/364c015))
+* fix(build): move drizzle-kit to dependencies for prod migrations ([dd2fb3d](https://github.com/Yorobro/E-JDR-Backend/commit/dd2fb3d))
+
 ## 1.4.0 (2026-06-15)
 
 * Merge pull request #4 from Yorobro/refactor/drizzle ([2baf8d5](https://github.com/Yorobro/E-JDR-Backend/commit/2baf8d5)), closes [#4](https://github.com/Yorobro/E-JDR-Backend/issues/4)
