@@ -1,24 +1,13 @@
-import { RowDataPacket } from "mysql2/promise";
-import { SqlExecutor } from "@infrastructure/persistence/mysql/SqlExecutor";
+import { eq } from "drizzle-orm";
+import { DrizzleExecutor } from "@infrastructure/persistence/drizzle/DrizzleExecutor";
+import { credentials } from "@infrastructure/persistence/drizzle/schema";
 
-/**
- * Représentation **brute** d'une ligne de la table `credentials`, telle que renvoyée par MySQL.
- */
-export interface CredentialRow extends RowDataPacket {
-  id: string;
-  user_id: string;
-  email: string;
-  password_hash: string;
-  created_at: Date;
-  failed_attempts: number;
-  locked_until: Date | null;
-}
+/** Représentation brute d'une ligne `credentials` (type inféré du schema Drizzle). */
+export type CredentialRow = typeof credentials.$inferSelect;
 
-/**
- * DAO de la table `credentials` : **SQL pur**, une seule table, renvoie des lignes brutes.
- */
+/** DAO de la table `credentials` : query builder Drizzle. */
 export class CredentialDao {
-  constructor(private readonly executor: SqlExecutor) {}
+  constructor(private readonly executor: DrizzleExecutor) {}
 
   public async insert(row: {
     id: string;
@@ -29,44 +18,33 @@ export class CredentialDao {
     failed_attempts: number;
     locked_until: Date | null;
   }): Promise<void> {
-    await this.executor.execute(
-      `INSERT INTO credentials (id, user_id, email, password_hash, created_at, failed_attempts, locked_until)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        row.id,
-        row.user_id,
-        row.email,
-        row.password_hash,
-        row.created_at,
-        row.failed_attempts,
-        row.locked_until,
-      ],
-    );
+    await this.executor.insert(credentials).values(row);
   }
 
   public async findByEmail(email: string): Promise<CredentialRow | null> {
-    const [rows] = await this.executor.execute<CredentialRow[]>(
-      `SELECT id, user_id, email, password_hash, created_at, failed_attempts, locked_until
-       FROM credentials WHERE email = ? LIMIT 1`,
-      [email],
-    );
+    const rows = await this.executor
+      .select()
+      .from(credentials)
+      .where(eq(credentials.email, email))
+      .limit(1);
     return rows[0] ?? null;
   }
 
   public async findByUserId(userId: string): Promise<CredentialRow | null> {
-    const [rows] = await this.executor.execute<CredentialRow[]>(
-      `SELECT id, user_id, email, password_hash, created_at, failed_attempts, locked_until
-       FROM credentials WHERE user_id = ? LIMIT 1`,
-      [userId],
-    );
+    const rows = await this.executor
+      .select()
+      .from(credentials)
+      .where(eq(credentials.user_id, userId))
+      .limit(1);
     return rows[0] ?? null;
   }
 
   public async existsByEmail(email: string): Promise<boolean> {
-    const [rows] = await this.executor.execute<RowDataPacket[]>(
-      "SELECT 1 FROM credentials WHERE email = ? LIMIT 1",
-      [email],
-    );
+    const rows = await this.executor
+      .select({ id: credentials.id })
+      .from(credentials)
+      .where(eq(credentials.email, email))
+      .limit(1);
     return rows.length > 0;
   }
 
@@ -74,9 +52,9 @@ export class CredentialDao {
     id: string,
     data: { failed_attempts: number; locked_until: Date | null },
   ): Promise<void> {
-    await this.executor.execute(
-      "UPDATE credentials SET failed_attempts = ?, locked_until = ? WHERE id = ?",
-      [data.failed_attempts, data.locked_until, id],
-    );
+    await this.executor
+      .update(credentials)
+      .set({ failed_attempts: data.failed_attempts, locked_until: data.locked_until })
+      .where(eq(credentials.id, id));
   }
 }

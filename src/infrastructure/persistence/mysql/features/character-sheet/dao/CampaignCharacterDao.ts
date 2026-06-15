@@ -1,113 +1,85 @@
-import { RowDataPacket } from "mysql2/promise";
-import { SqlExecutor } from "@infrastructure/persistence/mysql/SqlExecutor";
+import { eq, and, desc } from "drizzle-orm";
+import { DrizzleExecutor } from "@infrastructure/persistence/drizzle/DrizzleExecutor";
+import {
+  campaignCharacters,
+  characterSheets,
+  campaigns,
+  users,
+} from "@infrastructure/persistence/drizzle/schema";
 import { CharacterSheetRow } from "@infrastructure/persistence/mysql/features/character-sheet/dao/CharacterSheetDao";
 
-/** Ligne brute du COUNT d'existence d'un lien. */
-interface CountRow extends RowDataPacket {
-  count: number;
-}
-
 /** Ligne brute d'une campagne rattachée à une fiche, enrichie du pseudo du MJ. */
-interface SheetCampaignViewRow extends RowDataPacket {
+export interface SheetCampaignViewRow {
   campaign_id: string;
   campaign_name: string;
   game_master_pseudo: string;
 }
 
 /**
- * DAO de la table de liaison `campaign_characters` : **SQL pur**.
- *
- * Gère le rattachement N-N campagnes↔fiches. La méthode {@link findSheetsByCampaignId} joint
- * vers `character_sheets` et renvoie des `CharacterSheetRow` (mappées ensuite vers le domaine).
+ * DAO de la table de liaison `campaign_characters` : query builder Drizzle.
  */
 export class CampaignCharacterDao {
-  constructor(private readonly executor: SqlExecutor) {}
+  constructor(private readonly executor: DrizzleExecutor) {}
 
-  /**
-   * Insère un lien campagne↔fiche.
-   *
-   * @param row - Les colonnes du lien.
-   */
   public async insert(row: {
     campaign_id: string;
     character_sheet_id: string;
     created_at: Date;
   }): Promise<void> {
-    await this.executor.execute(
-      "INSERT INTO campaign_characters (campaign_id, character_sheet_id, created_at) VALUES (?, ?, ?)",
-      [row.campaign_id, row.character_sheet_id, row.created_at],
-    );
+    await this.executor.insert(campaignCharacters).values(row);
   }
 
-  /**
-   * Supprime un lien campagne↔fiche (aucune erreur si absent).
-   *
-   * @param campaignId - Identifiant de la campagne.
-   * @param characterSheetId - Identifiant de la fiche.
-   */
   public async delete(campaignId: string, characterSheetId: string): Promise<void> {
-    await this.executor.execute(
-      "DELETE FROM campaign_characters WHERE campaign_id = ? AND character_sheet_id = ?",
-      [campaignId, characterSheetId],
-    );
+    await this.executor
+      .delete(campaignCharacters)
+      .where(
+        and(
+          eq(campaignCharacters.campaign_id, campaignId),
+          eq(campaignCharacters.character_sheet_id, characterSheetId),
+        ),
+      );
   }
 
-  /**
-   * Indique si un lien campagne↔fiche existe déjà.
-   *
-   * @param campaignId - Identifiant de la campagne.
-   * @param characterSheetId - Identifiant de la fiche.
-   * @returns `true` si le lien existe.
-   */
   public async existsByCampaignAndSheet(
     campaignId: string,
     characterSheetId: string,
   ): Promise<boolean> {
-    const [rows] = await this.executor.execute<CountRow[]>(
-      "SELECT COUNT(*) AS count FROM campaign_characters WHERE campaign_id = ? AND character_sheet_id = ?",
-      [campaignId, characterSheetId],
-    );
-    return (rows[0]?.count ?? 0) > 0;
+    const rows = await this.executor
+      .select({ one: campaignCharacters.campaign_id })
+      .from(campaignCharacters)
+      .where(
+        and(
+          eq(campaignCharacters.campaign_id, campaignId),
+          eq(campaignCharacters.character_sheet_id, characterSheetId),
+        ),
+      )
+      .limit(1);
+    return rows.length > 0;
   }
 
-  /**
-   * Récupère les fiches rattachées à une campagne (JOIN vers `character_sheets`),
-   * des plus récemment rattachées aux plus anciennes.
-   *
-   * @param campaignId - Identifiant de la campagne.
-   * @returns Les lignes `character_sheets` rattachées.
-   */
   public async findSheetsByCampaignId(campaignId: string): Promise<CharacterSheetRow[]> {
-    const [rows] = await this.executor.execute<CharacterSheetRow[]>(
-      `SELECT cs.id, cs.owner_id, cs.name, cs.created_at
-         FROM character_sheets cs
-         JOIN campaign_characters cc ON cc.character_sheet_id = cs.id
-        WHERE cc.campaign_id = ?
-        ORDER BY cc.created_at DESC`,
-      [campaignId],
-    );
-    return rows;
+    return this.executor
+      .select()
+      .from(characterSheets)
+      .innerJoin(campaignCharacters, eq(campaignCharacters.character_sheet_id, characterSheets.id))
+      .where(eq(campaignCharacters.campaign_id, campaignId))
+      .orderBy(desc(campaignCharacters.created_at))
+      .then((rows) => rows.map((r) => r.character_sheets));
   }
 
-  /**
-   * Récupère les campagnes auxquelles une fiche est rattachée (JOIN vers `campaigns` et `users`),
-   * enrichies du pseudo du MJ, des plus récemment rattachées aux plus anciennes.
-   *
-   * @param characterSheetId - Identifiant de la fiche.
-   * @returns Les lignes (id + nom de campagne + pseudo du MJ) rattachées.
-   */
   public async findCampaignViewsBySheetId(
     characterSheetId: string,
   ): Promise<SheetCampaignViewRow[]> {
-    const [rows] = await this.executor.execute<SheetCampaignViewRow[]>(
-      `SELECT c.id AS campaign_id, c.name AS campaign_name, u.pseudo AS game_master_pseudo
-         FROM campaigns c
-         JOIN campaign_characters cc ON cc.campaign_id = c.id
-         JOIN users u ON u.id = c.game_master_id
-        WHERE cc.character_sheet_id = ?
-        ORDER BY cc.created_at DESC`,
-      [characterSheetId],
-    );
-    return rows;
+    return this.executor
+      .select({
+        campaign_id: campaigns.id,
+        campaign_name: campaigns.name,
+        game_master_pseudo: users.pseudo,
+      })
+      .from(campaigns)
+      .innerJoin(campaignCharacters, eq(campaignCharacters.campaign_id, campaigns.id))
+      .innerJoin(users, eq(users.id, campaigns.game_master_id))
+      .where(eq(campaignCharacters.character_sheet_id, characterSheetId))
+      .orderBy(desc(campaignCharacters.created_at));
   }
 }

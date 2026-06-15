@@ -1,37 +1,33 @@
 import mysql, { Pool, PoolOptions } from "mysql2/promise";
+import { drizzle, MySql2Database } from "drizzle-orm/mysql2";
+import * as schema from "@infrastructure/persistence/drizzle/schema";
 
 /**
- * Encapsule la création et l'accès au pool de connexions MySQL (via `mysql2/promise`).
+ * Encapsule le pool MySQL (`mysql2`) et l'instance Drizzle construite par-dessus.
  *
- * Le pool est partagé par tous les DAO : il gère l'ouverture/fermeture des connexions et
- * leur réutilisation. Cette classe est le seul point de l'infrastructure qui connaît la
- * configuration de connexion.
+ * `mysql2` reste le driver bas niveau (protocole, pool) ; Drizzle s'appuie dessus pour le
+ * query builder typé. Tous les DAO reçoivent l'instance `db` (ou une transaction dérivée).
  */
 export class MysqlConnection {
-  /** Le pool de connexions sous-jacent. */
   private readonly pool: Pool;
+  private readonly db: MySql2Database<typeof schema>;
 
-  /**
-   * @param options - Les options de connexion MySQL (hôte, port, identifiants, base...).
-   */
   constructor(options: PoolOptions) {
     this.pool = mysql.createPool(options);
+    this.db = drizzle(this.pool, { schema, mode: "default" });
   }
 
-  /**
-   * Donne accès au pool de connexions pour l'exécution des requêtes.
-   *
-   * @returns Le pool `mysql2/promise`.
-   */
+  /** Donne accès à l'instance Drizzle (mode normal, hors transaction). */
+  public getDb(): MySql2Database<typeof schema> {
+    return this.db;
+  }
+
+  /** Donne accès au pool sous-jacent (migrations, fixtures de test). */
   public getPool(): Pool {
     return this.pool;
   }
 
-  /**
-   * Ferme proprement le pool de connexions (à appeler à l'arrêt de l'application).
-   *
-   * @returns Une promesse résolue une fois le pool fermé.
-   */
+  /** Ferme proprement le pool (à l'arrêt de l'application). */
   public async close(): Promise<void> {
     await this.pool.end();
   }

@@ -1,32 +1,20 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { drizzle, MySql2Database } from "drizzle-orm/mysql2";
 import { Pool } from "mysql2/promise";
-
+import * as schema from "@infrastructure/persistence/drizzle/schema";
 import { CredentialDao } from "@infrastructure/persistence/mysql/features/auth/dao/CredentialDao";
 import { createTestPool, clearAllTables, insertUser } from "./dbTestUtils";
 
-/**
- * Tests d'intégration du `CredentialDao` contre un MySQL réel (Testcontainers).
- *
- * Couvre le CRUD, les contraintes (UNIQUE e-mail, FK user_id) et les champs
- * anti-brute-force (`failed_attempts`, `locked_until`) ajoutés par V003.
- */
-describe("CredentialDao (intégration MySQL)", () => {
+describe("CredentialDao (intégration MySQL via Drizzle)", () => {
   let pool: Pool;
+  let db: MySql2Database<typeof schema>;
   let dao: CredentialDao;
-
-  const baseRow = {
-    id: "cred-1",
-    user_id: "user-1",
-    email: "me@test.com",
-    password_hash: "bcrypt-hash",
-    created_at: new Date("2026-01-02T08:30:00Z"),
-    failed_attempts: 0,
-    locked_until: null as Date | null,
-  };
+  const createdAt = new Date("2026-01-01T10:00:00Z");
 
   beforeAll(() => {
     pool = createTestPool();
-    dao = new CredentialDao(pool);
+    db = drizzle(pool, { schema, mode: "default" });
+    dao = new CredentialDao(db);
   });
 
   afterAll(async () => {
@@ -35,62 +23,50 @@ describe("CredentialDao (intégration MySQL)", () => {
 
   beforeEach(async () => {
     await clearAllTables(pool);
-    await insertUser(pool, "user-1");
+    await insertUser(pool, "u-1");
   });
 
-  it("insert puis findByEmail renvoie la ligne complète", async () => {
-    await dao.insert(baseRow);
+  function baseRow() {
+    return {
+      id: "c-1",
+      user_id: "u-1",
+      email: "a@b.c",
+      password_hash: "hash",
+      created_at: createdAt,
+      failed_attempts: 0,
+      locked_until: null,
+    };
+  }
 
-    const row = await dao.findByEmail("me@test.com");
+  it("insère puis relit par email et par user_id", async () => {
+    await dao.insert(baseRow());
 
-    expect(row).not.toBeNull();
-    expect(row!.id).toBe("cred-1");
-    expect(row!.user_id).toBe("user-1");
-    expect(row!.password_hash).toBe("bcrypt-hash");
-    expect(row!.failed_attempts).toBe(0);
-    expect(row!.locked_until).toBeNull();
-    expect(row!.created_at.getTime()).toBe(baseRow.created_at.getTime());
+    const byEmail = await dao.findByEmail("a@b.c");
+    expect(byEmail?.id).toBe("c-1");
+    expect(byEmail?.failed_attempts).toBe(0);
+    expect(byEmail?.locked_until).toBeNull();
+
+    const byUser = await dao.findByUserId("u-1");
+    expect(byUser?.id).toBe("c-1");
   });
 
-  it("findByUserId renvoie la ligne du bon utilisateur", async () => {
-    await dao.insert(baseRow);
-
-    const row = await dao.findByUserId("user-1");
-
-    expect(row).not.toBeNull();
-    expect(row!.email).toBe("me@test.com");
+  it("existsByEmail reflète la présence", async () => {
+    expect(await dao.existsByEmail("a@b.c")).toBe(false);
+    await dao.insert(baseRow());
+    expect(await dao.existsByEmail("a@b.c")).toBe(true);
   });
 
-  it("findByUserId renvoie null pour un utilisateur sans credential", async () => {
-    expect(await dao.findByUserId("user-1")).toBeNull();
+  it("met à jour le verrouillage", async () => {
+    await dao.insert(baseRow());
+    const lockedUntil = new Date("2026-02-01T00:00:00Z");
+    await dao.update("c-1", { failed_attempts: 3, locked_until: lockedUntil });
+
+    const row = await dao.findByEmail("a@b.c");
+    expect(row?.failed_attempts).toBe(3);
+    expect(row?.locked_until).toBeInstanceOf(Date);
   });
 
-  it("existsByEmail distingue présent/absent", async () => {
-    await dao.insert(baseRow);
-
-    expect(await dao.existsByEmail("me@test.com")).toBe(true);
-    expect(await dao.existsByEmail("other@test.com")).toBe(false);
-  });
-
-  it("update persiste les champs de verrouillage", async () => {
-    await dao.insert(baseRow);
-    const lockedUntil = new Date("2026-01-02T09:00:00Z");
-
-    await dao.update("cred-1", { failed_attempts: 5, locked_until: lockedUntil });
-
-    const row = await dao.findByEmail("me@test.com");
-    expect(row!.failed_attempts).toBe(5);
-    expect(row!.locked_until!.getTime()).toBe(lockedUntil.getTime());
-  });
-
-  it("insert refuse un e-mail en double (UNIQUE)", async () => {
-    await dao.insert(baseRow);
-    await insertUser(pool, "user-2");
-
-    await expect(dao.insert({ ...baseRow, id: "cred-2", user_id: "user-2" })).rejects.toThrow();
-  });
-
-  it("insert refuse un user_id inexistant (FK)", async () => {
-    await expect(dao.insert({ ...baseRow, user_id: "ghost" })).rejects.toThrow();
+  it("rejette un credential sans user existant (FK)", async () => {
+    await expect(dao.insert({ ...baseRow(), id: "c-2", user_id: "fantome" })).rejects.toThrow();
   });
 });

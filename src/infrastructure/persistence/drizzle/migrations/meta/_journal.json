@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1781551321441,
+      "tag": "0000_lethal_killmonger",
+      "breakpoints": true
+    }
+  ]
+}

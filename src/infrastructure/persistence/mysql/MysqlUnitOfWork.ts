@@ -5,32 +5,23 @@ import { createCharacterSheetRepositories } from "@infrastructure/persistence/my
 import { UnitOfWork, TransactionalRepositories } from "@application/shared/UnitOfWork";
 
 /**
- * Implémentation MySQL du `UnitOfWork`.
+ * Implémentation du `UnitOfWork` basée sur les transactions Drizzle.
  *
- * Ouvre une connexion dédiée depuis le pool, démarre une transaction, construit les repos
- * liés à cette connexion, exécute le callback, puis valide (commit) ou annule (rollback)
- * selon que le callback réussit ou lève. La connexion est toujours rendue au pool (finally).
+ * `db.transaction(cb)` ouvre une transaction, fournit un exécuteur transactionnel `tx`,
+ * commit si `cb` réussit et rollback s'il lève. La règle « toute écriture passe par le UoW »
+ * est préservée : les repos construits ici sont liés à `tx`.
  */
 export class MysqlUnitOfWork implements UnitOfWork {
   constructor(private readonly connection: MysqlConnection) {}
 
   public async execute<T>(work: (repos: TransactionalRepositories) => Promise<T>): Promise<T> {
-    const conn = await this.connection.getPool().getConnection();
-    await conn.beginTransaction();
-    try {
+    return this.connection.getDb().transaction(async (tx) => {
       const repos: TransactionalRepositories = {
-        ...createAuthRepositories(conn),
-        ...createCampaignRepositories(conn),
-        ...createCharacterSheetRepositories(conn),
+        ...createAuthRepositories(tx),
+        ...createCampaignRepositories(tx),
+        ...createCharacterSheetRepositories(tx),
       };
-      const result = await work(repos);
-      await conn.commit();
-      return result;
-    } catch (error) {
-      await conn.rollback();
-      throw error;
-    } finally {
-      conn.release();
-    }
+      return work(repos);
+    });
   }
 }
