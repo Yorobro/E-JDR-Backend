@@ -14,6 +14,7 @@ import { TokenProviderServiceImpl } from "@infrastructure/security/TokenProvider
 import { TokenHasherServiceImpl } from "@infrastructure/security/TokenHasherServiceImpl";
 import { IdGeneratorServiceImpl } from "@infrastructure/id/IdGeneratorServiceImpl";
 import { PinoLogger } from "@infrastructure/logging/PinoLogger";
+import { PdfKitCharacterSheetPdfGenerator } from "@infrastructure/pdf/PdfKitCharacterSheetPdfGenerator";
 
 // Application — ports repositories
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
@@ -25,6 +26,7 @@ import { CampaignCharacterRepository } from "@application/features/character-she
 // Application — ports services
 import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
 import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
+import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 // Application — implémentations
 import { Logger } from "@application/shared/Logger";
 import { AuthTokenServiceImpl } from "@application/features/auth/services/AuthTokenServiceImpl";
@@ -46,6 +48,7 @@ import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/charac
 import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
 import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
 import { ListLinkableCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListLinkableCharactersUseCaseImpl";
+import { ExportCharacterSheetPdfUseCaseImpl } from "@application/features/character-sheet/usecases/ExportCharacterSheetPdfUseCaseImpl";
 
 // Presentation — feature auth
 import { AuthController } from "@presentation/http/features/auth/controllers/AuthController";
@@ -58,7 +61,9 @@ import { CampaignCharacterController } from "@presentation/http/features/campaig
 import { buildCampaignRoutes } from "@presentation/http/features/campaign/routes/campaignRoutes";
 // Presentation — feature character-sheet
 import { CharacterSheetController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetController";
+import { CharacterSheetExportController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetExportController";
 import { buildCharacterSheetRoutes } from "@presentation/http/features/character-sheet/routes/characterSheetRoutes";
+import { buildCharacterSheetExportRoutes } from "@presentation/http/features/character-sheet/routes/characterSheetExportRoutes";
 // Presentation — shared middlewares
 import { requestIdMiddleware } from "@presentation/http/shared/middlewares/requestIdMiddleware";
 import { buildHttpLoggerMiddleware } from "@presentation/http/shared/middlewares/httpLoggerMiddleware";
@@ -93,6 +98,7 @@ interface AuthServices {
   tokenHasher: TokenHasherServiceImpl;
   idGenerator: IdGeneratorServiceImpl;
   authTokenService: AuthTokenService;
+  pdfGenerator: CharacterSheetPdfGenerator;
 }
 
 /**
@@ -130,6 +136,7 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
   });
   const tokenHasher = new TokenHasherServiceImpl();
   const idGenerator = new IdGeneratorServiceImpl();
+  const pdfGenerator = new PdfKitCharacterSheetPdfGenerator();
 
   const authTokenService = new AuthTokenServiceImpl(
     tokenProvider,
@@ -151,6 +158,7 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     tokenHasher,
     idGenerator,
     authTokenService,
+    pdfGenerator,
   };
 }
 
@@ -223,6 +231,28 @@ function buildCharacterSheetController(
     getCharacterSheet,
     updateCharacterSheet,
     getSheetCampaigns,
+  );
+}
+
+/**
+ * Assemble le controller dédié à l'export PDF des fiches.
+ *
+ * Controller distinct du CRUD (`CharacterSheetController`, déjà au plafond de dépendances).
+ *
+ * @param services - Les services partagés produits par {@link buildServices}.
+ * @param logger - Le logger applicatif.
+ * @returns Le controller d'export PDF câblé.
+ */
+function buildCharacterSheetExportController(
+  services: AuthServices,
+  logger: Logger,
+): CharacterSheetExportController {
+  return new CharacterSheetExportController(
+    new ExportCharacterSheetPdfUseCaseImpl(
+      services.characterSheetRepository,
+      services.pdfGenerator,
+      logger,
+    ),
   );
 }
 
@@ -323,6 +353,7 @@ export interface HttpControllers {
   readonly campaign: CampaignController;
   readonly campaignCharacter: CampaignCharacterController;
   readonly characterSheet: CharacterSheetController;
+  readonly characterSheetExport: CharacterSheetExportController;
 }
 
 /**
@@ -364,6 +395,11 @@ export function buildHttpApp(
     authMiddleware,
     buildCharacterSheetRoutes(controllers.characterSheet),
   );
+  app.use(
+    "/character-sheets",
+    authMiddleware,
+    buildCharacterSheetExportRoutes(controllers.characterSheetExport),
+  );
 
   // Le middleware d'erreurs doit être enregistré en dernier.
   app.use(buildErrorHandler(logger));
@@ -400,6 +436,7 @@ async function bootstrap(): Promise<void> {
   const campaignController = buildCampaignController(services, logger);
   const campaignCharacterController = buildCampaignCharacterController(services, logger);
   const characterSheetController = buildCharacterSheetController(services, logger);
+  const characterSheetExportController = buildCharacterSheetExportController(services, logger);
   const authMiddleware = buildAuthMiddleware(services.tokenProvider);
 
   const app = buildHttpApp(
@@ -409,6 +446,7 @@ async function bootstrap(): Promise<void> {
       campaign: campaignController,
       campaignCharacter: campaignCharacterController,
       characterSheet: characterSheetController,
+      characterSheetExport: characterSheetExportController,
     },
     authMiddleware,
     logger,
