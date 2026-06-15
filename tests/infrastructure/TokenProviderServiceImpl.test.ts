@@ -32,6 +32,18 @@ describe("TokenProviderServiceImpl (adapter réel)", () => {
     expect(provider.verifyRefreshToken(signed.token)).toEqual(payload);
   });
 
+  it("produit deux refresh tokens DISTINCTS pour des signatures rapprochées (jti unique)", () => {
+    // Deux logins du même utilisateur dans la même seconde NE doivent PAS produire le même
+    // token (sinon collision sur la contrainte UNIQUE token_hash → 500). Un jti unique garantit
+    // l'unicité du token signé même à `iat` identique.
+    const a = provider.signRefreshToken(payload);
+    const b = provider.signRefreshToken(payload);
+    expect(a.token).not.toBe(b.token);
+    // Les claims applicatifs restent identiques et vérifiables des deux côtés.
+    expect(provider.verifyRefreshToken(a.token)).toEqual(payload);
+    expect(provider.verifyRefreshToken(b.token)).toEqual(payload);
+  });
+
   it("rejette un refresh token vérifié avec le secret d'access (secrets distincts)", () => {
     const refresh = provider.signRefreshToken(payload);
     // Un refresh token ne doit pas passer la vérification d'access.

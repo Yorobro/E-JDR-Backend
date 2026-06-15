@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import jwt, { Algorithm, JwtPayload, SignOptions } from "jsonwebtoken";
 import {
   TokenProviderService,
@@ -78,7 +79,15 @@ export class TokenProviderServiceImpl implements TokenProviderService {
    * @returns Le token signé et sa date d'expiration.
    */
   private sign(payload: TokenPayload, secret: string, expiresIn: string): SignedToken {
-    const options = { expiresIn, algorithm: JWT_ALGORITHM } as SignOptions;
+    // `jwtid` (claim standard `jti`) : identifiant unique par token. Sans lui, deux tokens
+    // signés pour la même identité dans la même seconde (`iat` au format secondes) seraient
+    // byte-pour-byte identiques — donc de même empreinte, ce qui violerait la contrainte
+    // UNIQUE sur `refresh_tokens.token_hash` (erreur 500 au 2e login rapproché).
+    const options = {
+      expiresIn,
+      algorithm: JWT_ALGORITHM,
+      jwtid: randomUUID(),
+    } as SignOptions;
     const token = jwt.sign({ userId: payload.userId, email: payload.email }, secret, options);
     return { token, expiresAt: this.readExpiry(token) };
   }
