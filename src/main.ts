@@ -116,14 +116,14 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     users: userRepository,
     credentials: credentialRepository,
     refreshTokens: refreshTokenRepository,
-  } = createAuthRepositories(connection.getPool());
+  } = createAuthRepositories(connection.getDb());
 
-  const { campaigns: campaignRepository } = createCampaignRepositories(connection.getPool());
+  const { campaigns: campaignRepository } = createCampaignRepositories(connection.getDb());
 
   const {
     characterSheets: characterSheetRepository,
     campaignCharacters: campaignCharacterRepository,
-  } = createCharacterSheetRepositories(connection.getPool());
+  } = createCharacterSheetRepositories(connection.getDb());
 
   const unitOfWork = new MysqlUnitOfWork(connection);
 
