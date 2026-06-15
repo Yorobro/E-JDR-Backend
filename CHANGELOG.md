@@ -1,3 +1,7 @@
+## <small>1.4.2 (2026-06-15)</small>
+
+* fix(db): bootstrap e_jdr database and ignore reserved DB_NAME on deploy ([7f1eb98](https://github.com/Yorobro/E-JDR-Backend/commit/7f1eb98))
+
 ## <small>1.4.1 (2026-06-15)</small>
 
 * Merge branch 'refactor/drizzle' ([364c015](https://github.com/Yorobro/E-JDR-Backend/commit/364c015))

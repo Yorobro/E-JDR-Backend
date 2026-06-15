@@ -1,6 +1,6 @@
 {
   "name": "e-jdr-backend",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Backend E-JDR — Node.js + TypeScript en Clean Architecture",
   "type": "commonjs",
   "main": "dist/main.js",
