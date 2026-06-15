@@ -1,7 +1,9 @@
 import { MySqlContainer, StartedMySqlContainer } from "@testcontainers/mysql";
 import mysql from "mysql2/promise";
 import type { TestProject } from "vitest/node";
-import { runMigrations } from "../../db/migrationRunner";
+import { drizzle } from "drizzle-orm/mysql2";
+import { migrate } from "drizzle-orm/mysql2/migrator";
+import { resolve } from "node:path";
 
 /**
  * Setup global des tests d'intégration DB : démarre un conteneur MySQL jetable,
@@ -48,7 +50,12 @@ export default async function setup(project: TestProject): Promise<() => Promise
 
   const pool = mysql.createPool({ ...info, multipleStatements: true });
   try {
-    await runMigrations(pool);
+    await migrate(drizzle(pool), {
+      migrationsFolder: resolve(
+        __dirname,
+        "../../src/infrastructure/persistence/drizzle/migrations",
+      ),
+    });
   } catch (error) {
     // Échec de migration : sans teardown retourné à Vitest, le conteneur fuirait.
     await container.stop().catch(() => {});
