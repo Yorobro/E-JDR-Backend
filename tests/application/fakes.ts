@@ -3,6 +3,8 @@ import { Credential } from "@domain/features/auth/entities/Credential";
 import { Email } from "@domain/features/auth/value-objects/Email";
 import { Campaign } from "@domain/features/campaign/entities/Campaign";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
+import { Session } from "@domain/features/session/entities/Session";
+import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
@@ -147,6 +149,38 @@ export class FakeCampaignRepository implements CampaignRepository {
   /** Aide de test : pré-remplit le repository avec une campagne. */
   public seed(campaign: Campaign): void {
     this.campaigns.set(campaign.id, campaign);
+  }
+}
+
+/** Repository de sessions en mémoire (indexé par id). */
+export class FakeSessionRepository implements SessionRepository {
+  private readonly sessions = new Map<string, Session>();
+
+  public async save(session: Session): Promise<void> {
+    this.sessions.set(session.id, session);
+  }
+
+  public async update(session: Session): Promise<void> {
+    this.sessions.set(session.id, session);
+  }
+
+  public async findByCampaignId(campaignId: string): Promise<Session[]> {
+    return [...this.sessions.values()]
+      .filter((session) => session.campaignId === campaignId)
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+  }
+
+  public async findById(id: string): Promise<Session | null> {
+    return this.sessions.get(id) ?? null;
+  }
+
+  public async deleteById(id: string): Promise<void> {
+    this.sessions.delete(id);
+  }
+
+  /** Aide de test : pré-remplit le repository avec une session. */
+  public seed(session: Session): void {
+    this.sessions.set(session.id, session);
   }
 }
 
@@ -408,12 +442,14 @@ export function buildFakeTransactionalRepositories(overrides?: {
   credentials?: FakeCredentialRepository;
   refreshTokens?: FakeRefreshTokenRepository;
   campaigns?: FakeCampaignRepository;
+  sessions?: FakeSessionRepository;
   characterSheets?: FakeCharacterSheetRepository;
 }): TransactionalRepositories & {
   users: FakeUserRepository;
   credentials: FakeCredentialRepository;
   refreshTokens: FakeRefreshTokenRepository;
   campaigns: FakeCampaignRepository;
+  sessions: FakeSessionRepository;
   characterSheets: FakeCharacterSheetRepository;
   campaignCharacters: FakeCampaignCharacterRepository;
 } {
@@ -431,6 +467,7 @@ export function buildFakeTransactionalRepositories(overrides?: {
     credentials: overrides?.credentials ?? new FakeCredentialRepository(),
     refreshTokens: overrides?.refreshTokens ?? new FakeRefreshTokenRepository(),
     campaigns,
+    sessions: overrides?.sessions ?? new FakeSessionRepository(),
     characterSheets,
     campaignCharacters,
   };
@@ -441,6 +478,7 @@ export function buildFakeTransactionalRepositories(overrides?: {
 export {
   buildTestCharacterSheet,
   buildTestCampaign,
+  buildTestSession,
   buildTestUser,
   buildTestCredential,
 } from "./builders";

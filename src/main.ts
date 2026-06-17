@@ -7,6 +7,7 @@ import { AppConfig, loadConfig } from "@config/env";
 import { MysqlConnection } from "@infrastructure/persistence/mysql/MysqlConnection";
 import { createAuthRepositories } from "@infrastructure/persistence/mysql/features/auth/createAuthRepositories";
 import { createCampaignRepositories } from "@infrastructure/persistence/mysql/features/campaign/createCampaignRepositories";
+import { createSessionRepositories } from "@infrastructure/persistence/mysql/features/session/createSessionRepositories";
 import { createCharacterSheetRepositories } from "@infrastructure/persistence/mysql/features/character-sheet/createCharacterSheetRepositories";
 import { MysqlUnitOfWork } from "@infrastructure/persistence/mysql/MysqlUnitOfWork";
 import { PasswordHasherServiceImpl } from "@infrastructure/security/PasswordHasherServiceImpl";
@@ -21,6 +22,7 @@ import { UserRepository } from "@application/features/auth/abstractions/reposito
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
+import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 // Application — ports services
@@ -59,6 +61,13 @@ import { buildUserRoutes } from "@presentation/http/features/auth/routes/userRou
 import { CampaignController } from "@presentation/http/features/campaign/controllers/CampaignController";
 import { CampaignCharacterController } from "@presentation/http/features/campaign/controllers/CampaignCharacterController";
 import { buildCampaignRoutes } from "@presentation/http/features/campaign/routes/campaignRoutes";
+// Presentation — feature session
+import { SessionController } from "@presentation/http/features/session/controllers/SessionController";
+import { buildSessionController } from "@presentation/http/features/session/buildSessionController";
+import {
+  buildCampaignSessionRoutes,
+  buildSessionByIdRoutes,
+} from "@presentation/http/features/session/routes/sessionRoutes";
 // Presentation — feature character-sheet
 import { CharacterSheetController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetController";
 import { CharacterSheetExportController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetExportController";
@@ -90,6 +99,7 @@ interface AuthServices {
   credentialRepository: CredentialRepository;
   refreshTokenRepository: RefreshTokenRepository;
   campaignRepository: CampaignRepository;
+  sessionRepository: SessionRepository;
   characterSheetRepository: CharacterSheetRepository;
   campaignCharacterRepository: CampaignCharacterRepository;
   unitOfWork: MysqlUnitOfWork;
@@ -119,6 +129,8 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
   } = createAuthRepositories(connection.getDb());
 
   const { campaigns: campaignRepository } = createCampaignRepositories(connection.getDb());
+
+  const { sessions: sessionRepository } = createSessionRepositories(connection.getDb());
 
   const {
     characterSheets: characterSheetRepository,
@@ -150,6 +162,7 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     credentialRepository,
     refreshTokenRepository,
     campaignRepository,
+    sessionRepository,
     characterSheetRepository,
     campaignCharacterRepository,
     unitOfWork,
@@ -352,6 +365,7 @@ export interface HttpControllers {
   readonly user: UserController;
   readonly campaign: CampaignController;
   readonly campaignCharacter: CampaignCharacterController;
+  readonly session: SessionController;
   readonly characterSheet: CharacterSheetController;
   readonly characterSheetExport: CharacterSheetExportController;
 }
@@ -390,6 +404,10 @@ export function buildHttpApp(
     authMiddleware,
     buildCampaignRoutes(controllers.campaign, controllers.campaignCharacter),
   );
+  // Sessions imbriquées sous une campagne (`/campaigns/:campaignId/sessions`) : routeur dédié
+  // monté en plus du routeur campaign sur le même préfixe.
+  app.use("/campaigns", authMiddleware, buildCampaignSessionRoutes(controllers.session));
+  app.use("/sessions", authMiddleware, buildSessionByIdRoutes(controllers.session));
   app.use(
     "/character-sheets",
     authMiddleware,
@@ -435,6 +453,13 @@ async function bootstrap(): Promise<void> {
   );
   const campaignController = buildCampaignController(services, logger);
   const campaignCharacterController = buildCampaignCharacterController(services, logger);
+  const sessionController = buildSessionController({
+    campaignRepository: services.campaignRepository,
+    sessionRepository: services.sessionRepository,
+    idGenerator: services.idGenerator,
+    unitOfWork: services.unitOfWork,
+    logger,
+  });
   const characterSheetController = buildCharacterSheetController(services, logger);
   const characterSheetExportController = buildCharacterSheetExportController(services, logger);
   const authMiddleware = buildAuthMiddleware(services.tokenProvider);
@@ -445,6 +470,7 @@ async function bootstrap(): Promise<void> {
       user: userController,
       campaign: campaignController,
       campaignCharacter: campaignCharacterController,
+      session: sessionController,
       characterSheet: characterSheetController,
       characterSheetExport: characterSheetExportController,
     },
