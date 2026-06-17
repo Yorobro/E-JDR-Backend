@@ -2,11 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { ListCampaignSessionsUseCaseImpl } from "@application/features/session/usecases/ListCampaignSessionsUseCaseImpl";
 import { CampaignNotFoundError } from "@application/features/campaign/errors/CampaignNotFoundError";
 import { CampaignAccessDeniedError } from "@application/features/campaign/errors/CampaignAccessDeniedError";
-import {
-  buildFakeTransactionalRepositories,
-  buildTestCampaign,
-  buildTestSession,
-} from "./fakes";
+import { buildFakeTransactionalRepositories, buildTestCampaign, buildTestSession } from "./fakes";
 
 describe("ListCampaignSessionsUseCaseImpl", () => {
   let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;

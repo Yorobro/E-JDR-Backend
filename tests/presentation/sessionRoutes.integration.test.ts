@@ -55,8 +55,12 @@ describe("Session routes (intégration HTTP)", () => {
   it("GET /campaigns/:id/sessions liste les sessions de la campagne (plus récentes d'abord)", async () => {
     const mj = await authenticate();
     const campaignId = await createCampaign(mj);
-    await mj.post(`/campaigns/${campaignId}/sessions`).send({ title: "Ancienne", date: "2026-01-10" });
-    await mj.post(`/campaigns/${campaignId}/sessions`).send({ title: "Récente", date: "2026-06-20" });
+    await mj
+      .post(`/campaigns/${campaignId}/sessions`)
+      .send({ title: "Ancienne", date: "2026-01-10" });
+    await mj
+      .post(`/campaigns/${campaignId}/sessions`)
+      .send({ title: "Récente", date: "2026-06-20" });
 
     const res = await mj.get(`/campaigns/${campaignId}/sessions`);
 

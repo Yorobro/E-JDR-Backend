@@ -133,7 +133,9 @@ export class SessionController {
 
   /** Émet une réponse d'erreur (statut HTTP + code/message applicatifs). */
   private fail(res: Response, error: AppError): void {
-    res.status(SessionHttpMapper.statusFor(error)).json({ code: error.code, message: error.message });
+    res
+      .status(SessionHttpMapper.statusFor(error))
+      .json({ code: error.code, message: error.message });
   }
 
   /** Sérialise une `SessionView` pour le transport JSON (`createdAt` en ISO). */

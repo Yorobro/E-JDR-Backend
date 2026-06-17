@@ -22,9 +22,7 @@ export class ListCampaignSessionsUseCaseImpl implements ListCampaignSessionsUseC
     private readonly sessionRepository: SessionRepository,
   ) {}
 
-  public async execute(
-    query: ListCampaignSessionsQuery,
-  ): Promise<Result<SessionView[], AppError>> {
+  public async execute(query: ListCampaignSessionsQuery): Promise<Result<SessionView[], AppError>> {
     const campaign = await this.campaignRepository.findById(query.campaignId);
     if (campaign === null) {
       return Result.failure(new CampaignNotFoundError());
