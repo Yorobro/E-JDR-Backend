@@ -2,6 +2,7 @@ import { UserRepository } from "@application/features/auth/abstractions/reposito
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
+import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 
@@ -16,6 +17,7 @@ export interface TransactionalRepositories {
   readonly credentials: CredentialRepository;
   readonly refreshTokens: RefreshTokenRepository;
   readonly campaigns: CampaignRepository;
+  readonly sessions: SessionRepository;
   readonly characterSheets: CharacterSheetRepository;
   readonly campaignCharacters: CampaignCharacterRepository;
 }

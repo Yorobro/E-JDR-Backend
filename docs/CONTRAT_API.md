@@ -208,6 +208,84 @@ Supprime une campagne. **Seul le maître du jeu propriétaire** peut la supprime
 
 ---
 
+## Endpoints sessions
+
+Une **session** est une rencontre de jeu rattachée à une campagne (relation 1‑N : une campagne
+a plusieurs sessions, une session appartient à une campagne). Toutes les routes sont **protégées**
+(cookie `access_token`) et **réservées au maître du jeu** de la campagne parente : l'identité du
+demandeur est déduite de la session, jamais transmise dans le corps. Le champ `date` est au format
+`YYYY-MM-DD` ; `createdAt` est en ISO 8601 complet.
+
+### POST /campaigns/:campaignId/sessions
+
+Crée une session dans la campagne. **Réservé au MJ de la campagne.**
+
+**Corps** : `{ "title": "Le réveil du dragon", "date": "2026-06-20" }`
+
+**Réponse 201 Created** : `{ "id", "campaignId", "title", "date", "createdAt" }`
+
+| Code applicatif | Statut HTTP | Sens |
+|---|---|---|
+| `INVALID_SESSION_TITLE` | 400 | Titre absent, vide après normalisation, ou > 120 caractères |
+| `INVALID_SESSION_DATE` | 400 | Date absente ou hors format `YYYY-MM-DD` (ou date inexistante) |
+| `CAMPAIGN_NOT_FOUND` | 404 | Campagne inconnue |
+| `CAMPAIGN_ACCESS_DENIED` | 403 | Le demandeur n'est pas le MJ de la campagne |
+| `UNAUTHENTICATED` | 401 | Non authentifié |
+
+### GET /campaigns/:campaignId/sessions
+
+Liste les sessions de la campagne (de la plus récente à la plus ancienne, par `date`).
+**Réservé au MJ de la campagne.**
+
+**Réponse 200 OK** :
+`{ "sessions": [ { "id", "campaignId", "title", "date", "createdAt" } ] }` — liste vide si aucune.
+
+| Code applicatif | Statut HTTP | Sens |
+|---|---|---|
+| `CAMPAIGN_NOT_FOUND` | 404 | Campagne inconnue |
+| `CAMPAIGN_ACCESS_DENIED` | 403 | Le demandeur n'est pas le MJ de la campagne |
+| `UNAUTHENTICATED` | 401 | Non authentifié |
+
+### GET /sessions/:id
+
+Détail d'une session. **Réservé au MJ de la campagne parente.**
+
+**Réponse 200 OK** : `{ "id", "campaignId", "title", "date", "createdAt" }`
+
+| Code applicatif | Statut HTTP | Sens |
+|---|---|---|
+| `SESSION_NOT_FOUND` | 404 | Session inconnue |
+| `CAMPAIGN_ACCESS_DENIED` | 403 | Le demandeur n'est pas le MJ de la campagne parente |
+| `UNAUTHENTICATED` | 401 | Non authentifié |
+
+### PUT /sessions/:id
+
+Met à jour le titre et la date d'une session. **Réservé au MJ de la campagne parente.**
+
+**Corps** : `{ "title": "Nouveau titre", "date": "2026-07-01" }`
+
+**Réponse 200 OK** : la session complète (même forme que `GET /sessions/:id`).
+
+| Code applicatif | Statut HTTP | Sens |
+|---|---|---|
+| `INVALID_SESSION_TITLE` | 400 | Titre absent, vide, ou > 120 caractères |
+| `INVALID_SESSION_DATE` | 400 | Date hors format `YYYY-MM-DD` (ou inexistante) |
+| `SESSION_NOT_FOUND` | 404 | Session inconnue |
+| `CAMPAIGN_ACCESS_DENIED` | 403 | Le demandeur n'est pas le MJ de la campagne parente |
+| `UNAUTHENTICATED` | 401 | Non authentifié |
+
+### DELETE /sessions/:id
+
+Supprime une session. **Réservé au MJ de la campagne parente.** **Réponse 204 No Content**.
+
+| Code applicatif | Statut HTTP | Sens |
+|---|---|---|
+| `SESSION_NOT_FOUND` | 404 | Session inconnue |
+| `CAMPAIGN_ACCESS_DENIED` | 403 | Le demandeur n'est pas le MJ de la campagne parente |
+| `UNAUTHENTICATED` | 401 | Non authentifié |
+
+---
+
 ## Endpoints fiches de personnage
 
 Toutes les routes sont **protégées** (cookie `access_token`). Le propriétaire (`ownerId`) est

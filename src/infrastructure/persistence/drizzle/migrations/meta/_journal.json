@@ -8,6 +8,13 @@
       "when": 1781551321441,
       "tag": "0000_lethal_killmonger",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1781715737954,
+      "tag": "0001_smart_cerebro",
+      "breakpoints": true
     }
   ]
 }

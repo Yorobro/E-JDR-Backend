@@ -17,6 +17,7 @@ import { ListMyCampaignsUseCaseImpl } from "@application/features/campaign/useca
 import { DeleteCampaignUseCaseImpl } from "@application/features/campaign/usecases/DeleteCampaignUseCaseImpl";
 import { CampaignController } from "@presentation/http/features/campaign/controllers/CampaignController";
 import { CampaignCharacterController } from "@presentation/http/features/campaign/controllers/CampaignCharacterController";
+import { buildSessionController } from "@presentation/http/features/session/buildSessionController";
 import { CreateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CreateCharacterSheetUseCaseImpl";
 import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/character-sheet/usecases/ListMyCharacterSheetsUseCaseImpl";
 import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/DeleteCharacterSheetUseCaseImpl";
@@ -144,6 +145,14 @@ export function buildTestApp(): {
     ),
   );
 
+  const sessionController = buildSessionController({
+    campaignRepository: repos.campaigns,
+    sessionRepository: repos.sessions,
+    idGenerator,
+    unitOfWork,
+    logger,
+  });
+
   const authMiddleware = buildAuthMiddleware(tokenProvider);
 
   const app = buildHttpApp(
@@ -152,6 +161,7 @@ export function buildTestApp(): {
       user: userController,
       campaign: campaignController,
       campaignCharacter: campaignCharacterController,
+      session: sessionController,
       characterSheet: characterSheetController,
       characterSheetExport: characterSheetExportController,
     },

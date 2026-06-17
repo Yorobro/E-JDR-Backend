@@ -1,6 +1,7 @@
 import { MysqlConnection } from "@infrastructure/persistence/mysql/MysqlConnection";
 import { createAuthRepositories } from "@infrastructure/persistence/mysql/features/auth/createAuthRepositories";
 import { createCampaignRepositories } from "@infrastructure/persistence/mysql/features/campaign/createCampaignRepositories";
+import { createSessionRepositories } from "@infrastructure/persistence/mysql/features/session/createSessionRepositories";
 import { createCharacterSheetRepositories } from "@infrastructure/persistence/mysql/features/character-sheet/createCharacterSheetRepositories";
 import { UnitOfWork, TransactionalRepositories } from "@application/shared/UnitOfWork";
 
@@ -19,6 +20,7 @@ export class MysqlUnitOfWork implements UnitOfWork {
       const repos: TransactionalRepositories = {
         ...createAuthRepositories(tx),
         ...createCampaignRepositories(tx),
+        ...createSessionRepositories(tx),
         ...createCharacterSheetRepositories(tx),
       };
       return work(repos);

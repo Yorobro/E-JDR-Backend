@@ -4,6 +4,9 @@ import { Email } from "@domain/features/auth/value-objects/Email";
 import { HashedPassword } from "@domain/features/auth/value-objects/HashedPassword";
 import { Campaign } from "@domain/features/campaign/entities/Campaign";
 import { CampaignName } from "@domain/features/campaign/value-objects/CampaignName";
+import { Session } from "@domain/features/session/entities/Session";
+import { SessionTitle } from "@domain/features/session/value-objects/SessionTitle";
+import { SessionDate } from "@domain/features/session/value-objects/SessionDate";
 import {
   CharacterSheet,
   CharacterSheetDetails,
@@ -58,6 +61,30 @@ export function buildTestCampaign(
     id,
     gameMasterId,
     name: CampaignName.create(name),
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+  });
+}
+
+/**
+ * Aide de test : construit une session rattachée à une campagne.
+ *
+ * @param id - L'identifiant de la session (par défaut "session-1").
+ * @param campaignId - L'identifiant de la campagne parente (par défaut "campaign-1").
+ * @param title - Le titre de la session (par défaut "Session 1").
+ * @param date - La date de la session au format `YYYY-MM-DD` (par défaut "2026-06-20").
+ * @returns Une entité `Session` prête pour les tests.
+ */
+export function buildTestSession(
+  id = "session-1",
+  campaignId = "campaign-1",
+  title = "Session 1",
+  date = "2026-06-20",
+): Session {
+  return Session.create({
+    id,
+    campaignId,
+    title: SessionTitle.create(title),
+    date: SessionDate.create(date).value,
     createdAt: new Date("2026-01-01T00:00:00Z"),
   });
 }
