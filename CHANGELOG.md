@@ -1,3 +1,9 @@
+## 1.5.0 (2026-06-17)
+
+* Merge pull request #5 from Yorobro/feat/sessions ([7344680](https://github.com/Yorobro/E-JDR-Backend/commit/7344680)), closes [#5](https://github.com/Yorobro/E-JDR-Backend/issues/5)
+* style(session): apply prettier formatting ([3944d3f](https://github.com/Yorobro/E-JDR-Backend/commit/3944d3f))
+* feat(session): add sessions belonging to a campaign ([1986c10](https://github.com/Yorobro/E-JDR-Backend/commit/1986c10))
+
 ## <small>1.4.2 (2026-06-15)</small>
 
 * fix(db): bootstrap e_jdr database and ignore reserved DB_NAME on deploy ([7f1eb98](https://github.com/Yorobro/E-JDR-Backend/commit/7f1eb98))
