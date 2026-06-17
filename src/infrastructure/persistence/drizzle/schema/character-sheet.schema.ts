@@ -10,6 +10,7 @@ import {
 } from "drizzle-orm/mysql-core";
 import { users } from "./auth.schema";
 import { campaigns } from "./campaign.schema";
+import { formations, peoples } from "./reference.schema";
 
 /** Table `character_sheets` — fiche de personnage (nom requis, détails NULLables). */
 export const characterSheets = mysqlTable(
@@ -21,9 +22,14 @@ export const characterSheets = mysqlTable(
       .references(() => users.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 120 }).notNull(),
     created_at: datetime("created_at", { mode: "date" }).notNull(),
-    formation: varchar("formation", { length: 255 }),
+    // formation / peuple : N‑1 vers les catalogues de l'utilisateur (nullable, SET NULL si l'élément est supprimé).
+    formation_id: char("formation_id", { length: 36 }).references(() => formations.id, {
+      onDelete: "set null",
+    }),
     niveau: int("niveau"),
-    peuple: varchar("peuple", { length: 255 }),
+    peuple_id: char("peuple_id", { length: 36 }).references(() => peoples.id, {
+      onDelete: "set null",
+    }),
     sexe: varchar("sexe", { length: 10 }),
     taille_et_poids: varchar("taille_et_poids", { length: 255 }),
     age: int("age"),
@@ -39,10 +45,8 @@ export const characterSheets = mysqlTable(
     purse_gold: int("purse_gold"),
     purse_silver: int("purse_silver"),
     purse_copper: int("purse_copper"),
-    armures: text("armures"),
-    armes: text("armes"),
-    competences: text("competences"),
-    equipement: text("equipement"),
+    // armes / armures / competences / equipement : désormais en N‑N via les tables de jointure
+    // (cf. reference.schema.ts), plus de colonnes texte ici.
     sorts_et_miracles: text("sorts_et_miracles"),
     notes: text("notes"),
   },

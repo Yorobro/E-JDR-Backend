@@ -18,6 +18,7 @@ import { DeleteCampaignUseCaseImpl } from "@application/features/campaign/usecas
 import { CampaignController } from "@presentation/http/features/campaign/controllers/CampaignController";
 import { CampaignCharacterController } from "@presentation/http/features/campaign/controllers/CampaignCharacterController";
 import { buildSessionController } from "@presentation/http/features/session/buildSessionController";
+import { buildReferenceController } from "@presentation/http/features/reference/buildReferenceController";
 import { CreateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CreateCharacterSheetUseCaseImpl";
 import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/character-sheet/usecases/ListMyCharacterSheetsUseCaseImpl";
 import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/DeleteCharacterSheetUseCaseImpl";
@@ -133,7 +134,13 @@ export function buildTestApp(): {
     new ListMyCharacterSheetsUseCaseImpl(repos.characterSheets),
     new DeleteCharacterSheetUseCaseImpl(repos.characterSheets, unitOfWork, logger),
     new GetCharacterSheetUseCaseImpl(repos.characterSheets, logger),
-    new UpdateCharacterSheetUseCaseImpl(repos.characterSheets, unitOfWork, logger),
+    new UpdateCharacterSheetUseCaseImpl(
+      repos.characterSheets,
+      repos.formations,
+      repos.peoples,
+      unitOfWork,
+      logger,
+    ),
     new GetSheetCampaignsUseCaseImpl(repos.characterSheets, repos.campaignCharacters, logger),
   );
 
@@ -153,6 +160,14 @@ export function buildTestApp(): {
     logger,
   });
 
+  const referenceController = buildReferenceController({
+    characterSheetRepository: repos.characterSheets,
+    references: repos,
+    idGenerator,
+    unitOfWork,
+    logger,
+  });
+
   const authMiddleware = buildAuthMiddleware(tokenProvider);
 
   const app = buildHttpApp(
@@ -164,6 +179,7 @@ export function buildTestApp(): {
       session: sessionController,
       characterSheet: characterSheetController,
       characterSheetExport: characterSheetExportController,
+      reference: referenceController,
     },
     authMiddleware,
     logger,

@@ -8,9 +8,9 @@ function detail(overrides: Partial<CharacterSheetDetail> = {}): CharacterSheetDe
     ownerId: "u-1",
     name: "Aragorn",
     createdAt: new Date("2026-01-01T00:00:00Z"),
-    formation: null,
+    formationId: null,
     niveau: null,
-    peuple: null,
+    peupleId: null,
     sexe: null,
     tailleEtPoids: null,
     age: null,
@@ -24,10 +24,6 @@ function detail(overrides: Partial<CharacterSheetDetail> = {}): CharacterSheetDe
     pointsDeMagie: null,
     protection: null,
     purse: null,
-    competences: null,
-    armes: null,
-    armures: null,
-    equipement: null,
     sortsEtMiracles: null,
     notes: null,
     ...overrides,
@@ -37,7 +33,7 @@ function detail(overrides: Partial<CharacterSheetDetail> = {}): CharacterSheetDe
 describe("PdfKitCharacterSheetPdfGenerator (générateur réel)", () => {
   it("produit un Buffer PDF non vide débutant par les octets magiques %PDF", async () => {
     const pdf = await new PdfKitCharacterSheetPdfGenerator().generate(
-      detail({ peuple: "Dúnedain", vigueur: 6, purse: { gold: 1, silver: 50, copper: 0 } }),
+      detail({ peupleId: "peuple-1", vigueur: 6, purse: { gold: 1, silver: 50, copper: 0 } }),
     );
     expect(pdf).toBeInstanceOf(Buffer);
     expect(pdf.length).toBeGreaterThan(0);

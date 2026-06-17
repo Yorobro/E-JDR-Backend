@@ -9,6 +9,7 @@ import { createAuthRepositories } from "@infrastructure/persistence/mysql/featur
 import { createCampaignRepositories } from "@infrastructure/persistence/mysql/features/campaign/createCampaignRepositories";
 import { createSessionRepositories } from "@infrastructure/persistence/mysql/features/session/createSessionRepositories";
 import { createCharacterSheetRepositories } from "@infrastructure/persistence/mysql/features/character-sheet/createCharacterSheetRepositories";
+import { createReferenceRepositories } from "@infrastructure/persistence/mysql/features/reference/createReferenceRepositories";
 import { MysqlUnitOfWork } from "@infrastructure/persistence/mysql/MysqlUnitOfWork";
 import { PasswordHasherServiceImpl } from "@infrastructure/security/PasswordHasherServiceImpl";
 import { TokenProviderServiceImpl } from "@infrastructure/security/TokenProviderServiceImpl";
@@ -40,17 +41,10 @@ import { GetCurrentUserUseCaseImpl } from "@application/features/auth/usecases/G
 import { CreateCampaignUseCaseImpl } from "@application/features/campaign/usecases/CreateCampaignUseCaseImpl";
 import { ListMyCampaignsUseCaseImpl } from "@application/features/campaign/usecases/ListMyCampaignsUseCaseImpl";
 import { DeleteCampaignUseCaseImpl } from "@application/features/campaign/usecases/DeleteCampaignUseCaseImpl";
-import { CreateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CreateCharacterSheetUseCaseImpl";
-import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/character-sheet/usecases/ListMyCharacterSheetsUseCaseImpl";
-import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/DeleteCharacterSheetUseCaseImpl";
-import { GetCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/GetCharacterSheetUseCaseImpl";
-import { UpdateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/UpdateCharacterSheetUseCaseImpl";
-import { GetSheetCampaignsUseCaseImpl } from "@application/features/character-sheet/usecases/GetSheetCampaignsUseCaseImpl";
 import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/LinkCharacterToCampaignUseCaseImpl";
 import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
 import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
 import { ListLinkableCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListLinkableCharactersUseCaseImpl";
-import { ExportCharacterSheetPdfUseCaseImpl } from "@application/features/character-sheet/usecases/ExportCharacterSheetPdfUseCaseImpl";
 
 // Presentation — feature auth
 import { AuthController } from "@presentation/http/features/auth/controllers/AuthController";
@@ -71,8 +65,19 @@ import {
 // Presentation — feature character-sheet
 import { CharacterSheetController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetController";
 import { CharacterSheetExportController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetExportController";
+import {
+  buildCharacterSheetController,
+  buildCharacterSheetExportController,
+} from "@presentation/http/features/character-sheet/buildCharacterSheetControllers";
 import { buildCharacterSheetRoutes } from "@presentation/http/features/character-sheet/routes/characterSheetRoutes";
 import { buildCharacterSheetExportRoutes } from "@presentation/http/features/character-sheet/routes/characterSheetExportRoutes";
+// Presentation — feature reference
+import { ReferenceController } from "@presentation/http/features/reference/controllers/ReferenceController";
+import { buildReferenceController } from "@presentation/http/features/reference/buildReferenceController";
+import {
+  buildReferenceCatalogueRoutes,
+  buildSheetReferenceLinkRoutes,
+} from "@presentation/http/features/reference/routes/referenceRoutes";
 // Presentation — shared middlewares
 import { requestIdMiddleware } from "@presentation/http/shared/middlewares/requestIdMiddleware";
 import { buildHttpLoggerMiddleware } from "@presentation/http/shared/middlewares/httpLoggerMiddleware";
@@ -102,6 +107,7 @@ interface AuthServices {
   sessionRepository: SessionRepository;
   characterSheetRepository: CharacterSheetRepository;
   campaignCharacterRepository: CampaignCharacterRepository;
+  referenceRepositories: ReturnType<typeof createReferenceRepositories>;
   unitOfWork: MysqlUnitOfWork;
   passwordHasher: PasswordHasherServiceImpl;
   tokenProvider: TokenProviderService;
@@ -137,6 +143,8 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     campaignCharacters: campaignCharacterRepository,
   } = createCharacterSheetRepositories(connection.getDb());
 
+  const referenceRepositories = createReferenceRepositories(connection.getDb());
+
   const unitOfWork = new MysqlUnitOfWork(connection);
 
   const passwordHasher = new PasswordHasherServiceImpl();
@@ -165,6 +173,7 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     sessionRepository,
     characterSheetRepository,
     campaignCharacterRepository,
+    referenceRepositories,
     unitOfWork,
     passwordHasher,
     tokenProvider,
@@ -196,77 +205,6 @@ function buildCampaignController(services: AuthServices, logger: Logger): Campai
   );
 
   return new CampaignController(createCampaign, listMyCampaigns, deleteCampaign);
-}
-
-/**
- * Assemble le controller des fiches de personnage (CRUD des fiches).
- *
- * @param services - Les services partagés produits par {@link buildServices}.
- * @param logger - Le logger applicatif.
- * @returns Le controller fiches câblé.
- */
-function buildCharacterSheetController(
-  services: AuthServices,
-  logger: Logger,
-): CharacterSheetController {
-  const createCharacterSheet = new CreateCharacterSheetUseCaseImpl(
-    services.idGenerator,
-    services.unitOfWork,
-    logger,
-  );
-  const listMyCharacterSheets = new ListMyCharacterSheetsUseCaseImpl(
-    services.characterSheetRepository,
-  );
-  const deleteCharacterSheet = new DeleteCharacterSheetUseCaseImpl(
-    services.characterSheetRepository,
-    services.unitOfWork,
-    logger,
-  );
-  const getCharacterSheet = new GetCharacterSheetUseCaseImpl(
-    services.characterSheetRepository,
-    logger,
-  );
-  const updateCharacterSheet = new UpdateCharacterSheetUseCaseImpl(
-    services.characterSheetRepository,
-    services.unitOfWork,
-    logger,
-  );
-  const getSheetCampaigns = new GetSheetCampaignsUseCaseImpl(
-    services.characterSheetRepository,
-    services.campaignCharacterRepository,
-    logger,
-  );
-
-  return new CharacterSheetController(
-    createCharacterSheet,
-    listMyCharacterSheets,
-    deleteCharacterSheet,
-    getCharacterSheet,
-    updateCharacterSheet,
-    getSheetCampaigns,
-  );
-}
-
-/**
- * Assemble le controller dédié à l'export PDF des fiches.
- *
- * Controller distinct du CRUD (`CharacterSheetController`, déjà au plafond de dépendances).
- *
- * @param services - Les services partagés produits par {@link buildServices}.
- * @param logger - Le logger applicatif.
- * @returns Le controller d'export PDF câblé.
- */
-function buildCharacterSheetExportController(
-  services: AuthServices,
-  logger: Logger,
-): CharacterSheetExportController {
-  return new CharacterSheetExportController(
-    new ExportCharacterSheetPdfUseCaseImpl(
-      services.characterSheetRepository,
-      services.pdfGenerator,
-      logger,
-    ),
-  );
 }
 
 /**
@@ -368,6 +306,7 @@ export interface HttpControllers {
   readonly session: SessionController;
   readonly characterSheet: CharacterSheetController;
   readonly characterSheetExport: CharacterSheetExportController;
+  readonly reference: ReferenceController;
 }
 
 /**
@@ -418,6 +357,14 @@ export function buildHttpApp(
     authMiddleware,
     buildCharacterSheetExportRoutes(controllers.characterSheetExport),
   );
+  // Liaisons N‑N fiche ↔ éléments de référence (`/character-sheets/:id/:type`) : routeur dédié.
+  app.use(
+    "/character-sheets",
+    authMiddleware,
+    buildSheetReferenceLinkRoutes(controllers.reference),
+  );
+  // Catalogue des éléments de référence créés par l'utilisateur.
+  app.use("/reference", authMiddleware, buildReferenceCatalogueRoutes(controllers.reference));
 
   // Le middleware d'erreurs doit être enregistré en dernier.
   app.use(buildErrorHandler(logger));
@@ -460,8 +407,25 @@ async function bootstrap(): Promise<void> {
     unitOfWork: services.unitOfWork,
     logger,
   });
-  const characterSheetController = buildCharacterSheetController(services, logger);
-  const characterSheetExportController = buildCharacterSheetExportController(services, logger);
+  const characterSheetDeps = {
+    characterSheetRepository: services.characterSheetRepository,
+    campaignCharacterRepository: services.campaignCharacterRepository,
+    formationRepository: services.referenceRepositories.formations,
+    peupleRepository: services.referenceRepositories.peoples,
+    pdfGenerator: services.pdfGenerator,
+    idGenerator: services.idGenerator,
+    unitOfWork: services.unitOfWork,
+    logger,
+  };
+  const characterSheetController = buildCharacterSheetController(characterSheetDeps);
+  const characterSheetExportController = buildCharacterSheetExportController(characterSheetDeps);
+  const referenceController = buildReferenceController({
+    characterSheetRepository: services.characterSheetRepository,
+    references: services.referenceRepositories,
+    idGenerator: services.idGenerator,
+    unitOfWork: services.unitOfWork,
+    logger,
+  });
   const authMiddleware = buildAuthMiddleware(services.tokenProvider);
 
   const app = buildHttpApp(
@@ -473,6 +437,7 @@ async function bootstrap(): Promise<void> {
       session: sessionController,
       characterSheet: characterSheetController,
       characterSheetExport: characterSheetExportController,
+      reference: referenceController,
     },
     authMiddleware,
     logger,
