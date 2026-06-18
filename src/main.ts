@@ -78,6 +78,14 @@ import {
   buildReferenceCatalogueRoutes,
   buildSheetReferenceLinkRoutes,
 } from "@presentation/http/features/reference/routes/referenceRoutes";
+// Presentation — feature friend-group
+import { GroupController } from "@presentation/http/features/friend-group/controllers/GroupController";
+import { InvitationController } from "@presentation/http/features/friend-group/controllers/InvitationController";
+import { buildGroupControllers } from "@presentation/http/features/friend-group/buildGroupControllers";
+import { buildGroupRoutes } from "@presentation/http/features/friend-group/routes/groupRoutes";
+import { buildInvitationRoutes } from "@presentation/http/features/friend-group/routes/invitationRoutes";
+// Infrastructure — friend-group
+import { createFriendGroupRepositories } from "@infrastructure/persistence/mysql/features/friend-group/createFriendGroupRepositories";
 // Presentation — shared middlewares
 import { requestIdMiddleware } from "@presentation/http/shared/middlewares/requestIdMiddleware";
 import { buildHttpLoggerMiddleware } from "@presentation/http/shared/middlewares/httpLoggerMiddleware";
@@ -108,6 +116,7 @@ interface AuthServices {
   characterSheetRepository: CharacterSheetRepository;
   campaignCharacterRepository: CampaignCharacterRepository;
   referenceRepositories: ReturnType<typeof createReferenceRepositories>;
+  friendGroupRepositories: ReturnType<typeof createFriendGroupRepositories>;
   unitOfWork: MysqlUnitOfWork;
   passwordHasher: PasswordHasherServiceImpl;
   tokenProvider: TokenProviderService;
@@ -144,6 +153,7 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
   } = createCharacterSheetRepositories(connection.getDb());
 
   const referenceRepositories = createReferenceRepositories(connection.getDb());
+  const friendGroupRepositories = createFriendGroupRepositories(connection.getDb());
 
   const unitOfWork = new MysqlUnitOfWork(connection);
 
@@ -174,6 +184,7 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     characterSheetRepository,
     campaignCharacterRepository,
     referenceRepositories,
+    friendGroupRepositories,
     unitOfWork,
     passwordHasher,
     tokenProvider,
@@ -307,6 +318,8 @@ export interface HttpControllers {
   readonly characterSheet: CharacterSheetController;
   readonly characterSheetExport: CharacterSheetExportController;
   readonly reference: ReferenceController;
+  readonly group: GroupController;
+  readonly invitation: InvitationController;
 }
 
 /**
@@ -365,6 +378,9 @@ export function buildHttpApp(
   );
   // Catalogue des éléments de référence créés par l'utilisateur.
   app.use("/reference", authMiddleware, buildReferenceCatalogueRoutes(controllers.reference));
+
+  app.use("/groups", authMiddleware, buildGroupRoutes(controllers.group, controllers.invitation));
+  app.use("/invitations", authMiddleware, buildInvitationRoutes(controllers.invitation));
 
   // Le middleware d'erreurs doit être enregistré en dernier.
   app.use(buildErrorHandler(logger));
@@ -426,6 +442,15 @@ async function bootstrap(): Promise<void> {
     unitOfWork: services.unitOfWork,
     logger,
   });
+  const { group: groupController, invitation: invitationController } = buildGroupControllers({
+    friendGroupRepository: services.friendGroupRepositories.friendGroups,
+    groupMemberRepository: services.friendGroupRepositories.groupMembers,
+    groupInvitationRepository: services.friendGroupRepositories.groupInvitations,
+    credentialRepository: services.credentialRepository,
+    idGenerator: services.idGenerator,
+    unitOfWork: services.unitOfWork,
+    logger,
+  });
   const authMiddleware = buildAuthMiddleware(services.tokenProvider);
 
   const app = buildHttpApp(
@@ -438,6 +463,8 @@ async function bootstrap(): Promise<void> {
       characterSheet: characterSheetController,
       characterSheetExport: characterSheetExportController,
       reference: referenceController,
+      group: groupController,
+      invitation: invitationController,
     },
     authMiddleware,
     logger,

@@ -43,6 +43,7 @@ import {
   FakeTokenProvider,
   FakeCharacterSheetPdfGenerator,
 } from "../application/fakes";
+import { buildGroupControllers } from "@presentation/http/features/friend-group/buildGroupControllers";
 
 /**
  * Construit une application Express identique à la production mais câblée sur des doublures
@@ -168,6 +169,16 @@ export function buildTestApp(): {
     logger,
   });
 
+  const { group: groupController, invitation: invitationController } = buildGroupControllers({
+    friendGroupRepository: repos.friendGroups,
+    groupMemberRepository: repos.groupMembers,
+    groupInvitationRepository: repos.groupInvitations,
+    credentialRepository: repos.credentials,
+    idGenerator,
+    unitOfWork,
+    logger,
+  });
+
   const authMiddleware = buildAuthMiddleware(tokenProvider);
 
   const app = buildHttpApp(
@@ -180,6 +191,8 @@ export function buildTestApp(): {
       characterSheet: characterSheetController,
       characterSheetExport: characterSheetExportController,
       reference: referenceController,
+      group: groupController,
+      invitation: invitationController,
     },
     authMiddleware,
     logger,

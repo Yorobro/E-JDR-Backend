@@ -14,6 +14,11 @@ import { SheetCampaignView } from "@application/features/character-sheet/abstrac
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import {
+  FakeFriendGroupRepository,
+  FakeGroupMemberRepository,
+  FakeGroupInvitationRepository,
+} from "./friendGroupFakes";
+import {
   RefreshTokenRepository,
   StoredRefreshToken,
 } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
@@ -352,6 +357,9 @@ export function buildFakeTransactionalRepositories(overrides?: {
   sheetArmures: FakeSheetReferenceLinkRepository;
   sheetCompetences: FakeSheetReferenceLinkRepository;
   sheetEquipements: FakeSheetReferenceLinkRepository;
+  friendGroups: FakeFriendGroupRepository;
+  groupMembers: FakeGroupMemberRepository;
+  groupInvitations: FakeGroupInvitationRepository;
 } {
   const characterSheets = overrides?.characterSheets ?? new FakeCharacterSheetRepository();
   // La liaison résout les fiches via le repo de fiches (reproduit le JOIN MySQL).
@@ -390,8 +398,22 @@ export function buildFakeTransactionalRepositories(overrides?: {
     sheetArmures: new FakeSheetReferenceLinkRepository(armures),
     sheetCompetences: new FakeSheetReferenceLinkRepository(competences),
     sheetEquipements: new FakeSheetReferenceLinkRepository(equipements),
+    friendGroups: new FakeFriendGroupRepository(),
+    groupMembers: new FakeGroupMemberRepository(),
+    groupInvitations: new FakeGroupInvitationRepository(),
   };
 }
+
+// Doublures de la feature friend-group : définies dans `friendGroupFakes.ts`,
+// re-exportées ici pour que les tests les importent depuis `./fakes` comme les autres.
+export {
+  FakeFriendGroupRepository,
+  FakeGroupMemberRepository,
+  FakeGroupInvitationRepository,
+  buildTestFriendGroup,
+  buildTestMembership,
+  buildTestInvitation,
+} from "./friendGroupFakes";
 
 // Les fabriques de données de test (entités domaine pré-construites) vivent dans `builders.ts`
 // (module séparé pour la lisibilité et la taille) ; re-exportées ici pour les imports existants.

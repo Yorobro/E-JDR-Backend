@@ -3,3 +3,4 @@ export * from "./campaign.schema";
 export * from "./session.schema";
 export * from "./character-sheet.schema";
 export * from "./reference.schema";
+export * from "./friend-group.schema";

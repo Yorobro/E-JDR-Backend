@@ -19,6 +19,9 @@ import {
   SheetCompetenceLinkRepository,
   SheetEquipementLinkRepository,
 } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
+import { FriendGroupRepository } from "@application/features/friend-group/abstractions/repositories/FriendGroupRepository";
+import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
+import { GroupInvitationRepository } from "@application/features/friend-group/abstractions/repositories/GroupInvitationRepository";
 
 /**
  * Jeu de repositories liés à une même transaction, fournis au callback d'un `UnitOfWork`.
@@ -46,6 +49,10 @@ export interface TransactionalRepositories {
   readonly sheetArmures: SheetArmureLinkRepository;
   readonly sheetCompetences: SheetCompetenceLinkRepository;
   readonly sheetEquipements: SheetEquipementLinkRepository;
+  // Groupes d'amis.
+  readonly friendGroups: FriendGroupRepository;
+  readonly groupMembers: GroupMemberRepository;
+  readonly groupInvitations: GroupInvitationRepository;
 }
 
 /**
