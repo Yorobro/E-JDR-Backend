@@ -45,14 +45,6 @@ import {
 } from "../application/fakes";
 import { buildGroupControllers } from "@presentation/http/features/friend-group/buildGroupControllers";
 
-/**
- * Construit une application Express identique à la production mais câblée sur des doublures
- * en mémoire (aucune base de données ni cryptographie réelle).
- *
- * Factorise le câblage commun aux tests d'intégration HTTP (auth + campaign + character-sheet).
- *
- * @returns L'application Express et les repos fakes (pour inspection/seed dans les tests).
- */
 export function buildTestApp(): {
   app: Application;
   repos: ReturnType<typeof buildFakeTransactionalRepositories>;
@@ -106,9 +98,25 @@ export function buildTestApp(): {
     new GetCurrentUserUseCaseImpl(userRepository, credentialRepository),
   );
 
+  // Group controllers sont construits en premier pour exposer groupAccessService.
+  const {
+    group: groupController,
+    invitation: invitationController,
+    groupAccessService,
+  } = buildGroupControllers({
+    friendGroupRepository: repos.friendGroups,
+    groupMemberRepository: repos.groupMembers,
+    groupInvitationRepository: repos.groupInvitations,
+    campaignRepository: repos.campaigns,
+    credentialRepository: repos.credentials,
+    idGenerator,
+    unitOfWork,
+    logger,
+  });
+
   const campaignController = new CampaignController(
-    new CreateCampaignUseCaseImpl(idGenerator, unitOfWork, logger),
-    new ListMyCampaignsUseCaseImpl(repos.campaigns),
+    new CreateCampaignUseCaseImpl(idGenerator, groupAccessService, unitOfWork, logger),
+    new ListMyCampaignsUseCaseImpl(repos.campaigns, groupAccessService),
     new DeleteCampaignUseCaseImpl(repos.campaigns, unitOfWork, logger),
   );
 
@@ -139,6 +147,7 @@ export function buildTestApp(): {
       repos.characterSheets,
       repos.formations,
       repos.peoples,
+      groupAccessService,
       unitOfWork,
       logger,
     ),
@@ -165,16 +174,7 @@ export function buildTestApp(): {
     characterSheetRepository: repos.characterSheets,
     references: repos,
     idGenerator,
-    unitOfWork,
-    logger,
-  });
-
-  const { group: groupController, invitation: invitationController } = buildGroupControllers({
-    friendGroupRepository: repos.friendGroups,
-    groupMemberRepository: repos.groupMembers,
-    groupInvitationRepository: repos.groupInvitations,
-    credentialRepository: repos.credentials,
-    idGenerator,
+    groupAccessService,
     unitOfWork,
     logger,
   });

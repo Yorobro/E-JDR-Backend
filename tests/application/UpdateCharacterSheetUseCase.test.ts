@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { UpdateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/UpdateCharacterSheetUseCaseImpl";
+import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
@@ -9,6 +10,7 @@ import {
   buildFakeTransactionalRepositories,
   buildTestCharacterSheet,
   buildTestReferenceItem,
+  buildTestMembership,
 } from "./fakes";
 
 describe("UpdateCharacterSheetUseCaseImpl", () => {
@@ -17,10 +19,13 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
+    const groupAccessService = new GroupAccessServiceImpl(txRepos.groupMembers);
+    txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "owner-1" }));
     useCase = new UpdateCharacterSheetUseCaseImpl(
       txRepos.characterSheets,
       txRepos.formations,
       txRepos.peoples,
+      groupAccessService,
       new FakeUnitOfWork(txRepos),
       new FakeLogger(),
     );
@@ -28,8 +33,7 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
 
   it("met à jour le nom et les champs détaillés (dont la formation N‑1), en préservant id/ownerId/createdAt", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
-    // La formation référencée doit exister et appartenir au propriétaire.
-    txRepos.peoples.seed(buildTestReferenceItem("peuple-1", "owner-1", "Dúnedain"));
+    txRepos.peoples.seed(buildTestReferenceItem("peuple-1", "group-1", "Dúnedain"));
 
     const result = await useCase.execute({
       characterSheetId: "s-1",
@@ -55,7 +59,7 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
 
   it("refuse (REFERENCE_ITEM_NOT_FOUND) une formation/peuple d'un autre propriétaire", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
-    txRepos.peoples.seed(buildTestReferenceItem("peuple-x", "autre", "Elfe"));
+    txRepos.peoples.seed(buildTestReferenceItem("peuple-x", "group-autre", "Elfe"));
 
     const result = await useCase.execute({
       characterSheetId: "s-1",

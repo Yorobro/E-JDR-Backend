@@ -4,14 +4,6 @@ import type { Application } from "express";
 
 import { buildTestApp } from "./buildTestApp";
 
-/**
- * Tests d'intégration HTTP des routes campaign.
- *
- * Montent la pile Express réelle (via {@link buildTestApp}) avec des doublures en mémoire.
- * L'authentification est réelle (middleware + cookies) : on s'inscrit d'abord pour obtenir
- * une session, puis on agit sur `/campaigns`. On valide les codes HTTP, l'usage de l'identité
- * de session comme MJ (jamais du corps), et le rejet d'un nom invalide ou d'un accès anonyme.
- */
 describe("Campaign routes (intégration HTTP)", () => {
   let app: Application;
 
@@ -26,10 +18,20 @@ describe("Campaign routes (intégration HTTP)", () => {
     return agent;
   }
 
+  /** Crée un groupe et renvoie son ID. */
+  async function createGroup(
+    agent: ReturnType<typeof request.agent>,
+    name = "Mon groupe",
+  ): Promise<string> {
+    const res = await agent.post("/groups").send({ name });
+    return res.body.id as string;
+  }
+
   it("POST /campaigns crée une campagne (201) pour l'utilisateur authentifié", async () => {
     const agent = await authenticate();
+    const groupId = await createGroup(agent);
 
-    const res = await agent.post("/campaigns").send({ name: "La Quête du Dragon" });
+    const res = await agent.post("/campaigns").send({ name: "La Quête du Dragon", groupId });
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ name: "La Quête du Dragon" });
@@ -37,16 +39,17 @@ describe("Campaign routes (intégration HTTP)", () => {
     expect(typeof res.body.createdAt).toBe("string");
   });
 
-  it("GET /campaigns ne renvoie que les campagnes de l'utilisateur courant", async () => {
+  it("GET /campaigns ne renvoie que les campagnes du groupe", async () => {
     const mj = await authenticate("mj@test.com");
-    await mj.post("/campaigns").send({ name: "Alpha" });
-    await mj.post("/campaigns").send({ name: "Beta" });
+    const mjGroupId = await createGroup(mj, "Groupe MJ");
+    await mj.post("/campaigns").send({ name: "Alpha", groupId: mjGroupId });
+    await mj.post("/campaigns").send({ name: "Beta", groupId: mjGroupId });
 
-    // Un autre utilisateur, avec ses propres campagnes.
     const autre = await authenticate("autre@test.com");
-    await autre.post("/campaigns").send({ name: "Gamma" });
+    const autreGroupId = await createGroup(autre, "Groupe Autre");
+    await autre.post("/campaigns").send({ name: "Gamma", groupId: autreGroupId });
 
-    const res = await mj.get("/campaigns");
+    const res = await mj.get(`/campaigns?groupId=${mjGroupId}`);
 
     expect(res.status).toBe(200);
     expect(res.body.campaigns).toHaveLength(2);
@@ -58,20 +61,21 @@ describe("Campaign routes (intégration HTTP)", () => {
 
   it("POST /campaigns avec un nom vide renvoie 400 (INVALID_CAMPAIGN_NAME)", async () => {
     const agent = await authenticate();
+    const groupId = await createGroup(agent);
 
-    const res = await agent.post("/campaigns").send({ name: "   " });
+    const res = await agent.post("/campaigns").send({ name: "   ", groupId });
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe("INVALID_CAMPAIGN_NAME");
   });
 
-  it("POST /campaigns avec un corps vide renvoie 400 (sans 500)", async () => {
+  it("POST /campaigns avec un corps vide renvoie 400 (NOT_GROUP_MEMBER)", async () => {
     const agent = await authenticate();
 
     const res = await agent.post("/campaigns").send({});
 
-    expect(res.status).toBe(400);
-    expect(res.body.code).toBe("INVALID_CAMPAIGN_NAME");
+    // groupId absent → requireMember sur undefined → NOT_GROUP_MEMBER
+    expect(res.status).toBe(403);
   });
 
   it("POST /campaigns sans cookie renvoie 401 (UNAUTHENTICATED)", async () => {
@@ -90,13 +94,14 @@ describe("Campaign routes (intégration HTTP)", () => {
 
   it("DELETE /campaigns/:id supprime la campagne du propriétaire (204) puis elle disparaît", async () => {
     const agent = await authenticate();
-    const created = await agent.post("/campaigns").send({ name: "À supprimer" });
+    const groupId = await createGroup(agent);
+    const created = await agent.post("/campaigns").send({ name: "À supprimer", groupId });
     const id = created.body.id as string;
 
     const del = await agent.delete(`/campaigns/${id}`);
     expect(del.status).toBe(204);
 
-    const list = await agent.get("/campaigns");
+    const list = await agent.get(`/campaigns?groupId=${groupId}`);
     expect(list.body.campaigns).toHaveLength(0);
   });
 
@@ -111,7 +116,8 @@ describe("Campaign routes (intégration HTTP)", () => {
 
   it("DELETE /campaigns/:id renvoie 403 si la campagne appartient à un autre MJ", async () => {
     const mj = await authenticate("mj@test.com");
-    const created = await mj.post("/campaigns").send({ name: "Privée" });
+    const mjGroupId = await createGroup(mj, "Groupe MJ");
+    const created = await mj.post("/campaigns").send({ name: "Privée", groupId: mjGroupId });
     const id = created.body.id as string;
 
     const autre = await authenticate("autre@test.com");
@@ -120,8 +126,7 @@ describe("Campaign routes (intégration HTTP)", () => {
     expect(res.status).toBe(403);
     expect(res.body.code).toBe("CAMPAIGN_ACCESS_DENIED");
 
-    // La campagne existe toujours pour son propriétaire.
-    const list = await mj.get("/campaigns");
+    const list = await mj.get(`/campaigns?groupId=${mjGroupId}`);
     expect(list.body.campaigns).toHaveLength(1);
   });
 

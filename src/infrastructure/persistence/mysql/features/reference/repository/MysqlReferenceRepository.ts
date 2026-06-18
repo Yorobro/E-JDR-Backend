@@ -3,10 +3,6 @@ import { ReferenceRepository } from "@application/features/reference/abstraction
 import { ReferenceDao } from "@infrastructure/persistence/mysql/features/reference/dao/ReferenceDao";
 import { ReferenceMapper } from "@infrastructure/persistence/mysql/features/reference/mappers/ReferenceMapper";
 
-/**
- * Implémentation MySQL **générique** du port `ReferenceRepository` : assemble un `ReferenceDao`
- * (lié à une table donnée) et le `ReferenceMapper`. Une instance par catégorie de référence.
- */
 export class MysqlReferenceRepository implements ReferenceRepository {
   constructor(private readonly dao: ReferenceDao) {}
 
@@ -14,8 +10,8 @@ export class MysqlReferenceRepository implements ReferenceRepository {
     await this.dao.insert(ReferenceMapper.toRow(item));
   }
 
-  public async findByOwnerId(ownerId: string): Promise<ReferenceItem[]> {
-    const rows = await this.dao.findByOwnerId(ownerId);
+  public async findByGroupId(groupId: string): Promise<ReferenceItem[]> {
+    const rows = await this.dao.findByGroupId(groupId);
     return rows.map((row) => ReferenceMapper.toDomain(row));
   }
 
@@ -24,8 +20,8 @@ export class MysqlReferenceRepository implements ReferenceRepository {
     return row === null ? null : ReferenceMapper.toDomain(row);
   }
 
-  public async existsByOwnerAndName(ownerId: string, name: string): Promise<boolean> {
-    return this.dao.existsByOwnerAndName(ownerId, name);
+  public async existsByGroupAndName(groupId: string, name: string): Promise<boolean> {
+    return this.dao.existsByGroupAndName(groupId, name);
   }
 
   public async deleteById(id: string): Promise<void> {

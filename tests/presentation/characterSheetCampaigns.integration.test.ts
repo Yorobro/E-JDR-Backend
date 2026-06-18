@@ -25,9 +25,19 @@ describe("GET /character-sheets/:id/campaigns (intégration HTTP)", () => {
     return agent;
   }
 
+  /** Crée un groupe et renvoie son ID. */
+  async function createGroup(
+    agent: ReturnType<typeof request.agent>,
+    name = "Mon groupe",
+  ): Promise<string> {
+    const res = await agent.post("/groups").send({ name });
+    return res.body.id as string;
+  }
+
   it("renvoie les campagnes rattachées à la fiche avec le pseudo du MJ (200)", async () => {
     const mj = await authenticate("mj@test.com", "MJ");
-    const campaign = await mj.post("/campaigns").send({ name: "La campagne du MJ" });
+    const groupId = await createGroup(mj);
+    const campaign = await mj.post("/campaigns").send({ name: "La campagne du MJ", groupId });
 
     const player = await authenticate("player@test.com", "Joueur");
     const sheet = await player.post("/character-sheets").send({ name: "Legolas" });

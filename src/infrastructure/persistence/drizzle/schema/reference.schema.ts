@@ -7,13 +7,13 @@ import {
   primaryKey,
   unique,
 } from "drizzle-orm/mysql-core";
-import { users } from "./auth.schema";
+import { friendGroups } from "./friend-group.schema";
 import { characterSheets } from "./character-sheet.schema";
 
 /**
- * Tables des **éléments de référence créés par l'utilisateur** : formations, peuples, armes,
- * armures, compétences, équipements. Chaque élément appartient à un utilisateur (`owner_id`),
- * porte un `name` unique par propriétaire, et sert de catalogue dans lequel les fiches piochent.
+ * Tables des **éléments de référence appartenant à un groupe** : formations, peuples, armes,
+ * armures, compétences, équipements. Chaque élément appartient à un groupe (`group_id`),
+ * porte un `name` unique par groupe, et sert de catalogue partagé dans lequel les fiches piochent.
  *
  * - formations / peoples : référencés en **N‑1** par `character_sheets.formation_id` / `peuple_id`
  *   (cf. `character-sheet.schema.ts`), avec `ON DELETE set null`.
@@ -28,41 +28,41 @@ import { characterSheets } from "./character-sheet.schema";
 /** Modèle commun à toutes les tables de référence (un par type). */
 const referenceColumns = {
   id: char("id", { length: 36 }).primaryKey(),
-  owner_id: char("owner_id", { length: 36 })
+  group_id: char("group_id", { length: 36 })
     .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+    .references(() => friendGroups.id, { onDelete: "cascade" }),
   name: varchar("name", { length: 120 }).notNull(),
   created_at: datetime("created_at", { mode: "date" }).notNull(),
 };
 
 export const formations = mysqlTable("formations", referenceColumns, (t) => [
-  unique("uq_formations_owner_name").on(t.owner_id, t.name),
-  index("idx_formations_owner_id").on(t.owner_id),
+  unique("uq_formations_group_name").on(t.group_id, t.name),
+  index("idx_formations_group_id").on(t.group_id),
 ]);
 
 export const peoples = mysqlTable("peoples", referenceColumns, (t) => [
-  unique("uq_peoples_owner_name").on(t.owner_id, t.name),
-  index("idx_peoples_owner_id").on(t.owner_id),
+  unique("uq_peoples_group_name").on(t.group_id, t.name),
+  index("idx_peoples_group_id").on(t.group_id),
 ]);
 
 export const armes = mysqlTable("armes", referenceColumns, (t) => [
-  unique("uq_armes_owner_name").on(t.owner_id, t.name),
-  index("idx_armes_owner_id").on(t.owner_id),
+  unique("uq_armes_group_name").on(t.group_id, t.name),
+  index("idx_armes_group_id").on(t.group_id),
 ]);
 
 export const armures = mysqlTable("armures", referenceColumns, (t) => [
-  unique("uq_armures_owner_name").on(t.owner_id, t.name),
-  index("idx_armures_owner_id").on(t.owner_id),
+  unique("uq_armures_group_name").on(t.group_id, t.name),
+  index("idx_armures_group_id").on(t.group_id),
 ]);
 
 export const competences = mysqlTable("competences", referenceColumns, (t) => [
-  unique("uq_competences_owner_name").on(t.owner_id, t.name),
-  index("idx_competences_owner_id").on(t.owner_id),
+  unique("uq_competences_group_name").on(t.group_id, t.name),
+  index("idx_competences_group_id").on(t.group_id),
 ]);
 
 export const equipements = mysqlTable("equipements", referenceColumns, (t) => [
-  unique("uq_equipements_owner_name").on(t.owner_id, t.name),
-  index("idx_equipements_owner_id").on(t.owner_id),
+  unique("uq_equipements_group_name").on(t.group_id, t.name),
+  index("idx_equipements_group_id").on(t.group_id),
 ]);
 
 // Tables de jointure N‑N. Noms volontairement **courts** (`sheet_*`, colonne `sheet_id`) :

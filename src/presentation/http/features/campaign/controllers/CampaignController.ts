@@ -4,36 +4,19 @@ import { ListMyCampaignsUseCase } from "@application/features/campaign/abstracti
 import { DeleteCampaignUseCase } from "@application/features/campaign/abstractions/usecases/DeleteCampaignUseCase";
 import { CampaignHttpMapper } from "@presentation/http/features/campaign/mappers/CampaignHttpMapper";
 
-/**
- * Controller HTTP de la feature campaign.
- *
- * Monté derrière le middleware d'authentification : `req.user` est donc toujours renseigné.
- * Le maître du jeu (`gameMasterId`) est **toujours** pris de la session (`req.user`), jamais
- * du corps de la requête. Comme les autres controllers, il ne dépend que des interfaces de
- * use cases et délègue la traduction des erreurs au `CampaignHttpMapper`.
- */
 export class CampaignController {
-  /**
-   * @param createCampaign - Use case de création de campagne.
-   * @param listMyCampaigns - Use case de listing des campagnes du MJ courant.
-   */
   constructor(
     private readonly createCampaign: CreateCampaignUseCase,
     private readonly listMyCampaigns: ListMyCampaignsUseCase,
     private readonly deleteCampaign: DeleteCampaignUseCase,
   ) {}
 
-  /**
-   * `POST /campaigns` — crée une campagne dont l'utilisateur authentifié est le maître du jeu.
-   *
-   * @param req - La requête (`name` dans le corps, identité dans `req.user`).
-   * @param res - La réponse.
-   * @param next - Relais vers le middleware d'erreurs pour les exceptions techniques.
-   */
+  /** `POST /campaigns` — crée une campagne dans le groupe indiqué. */
   public create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const body = req.body as { name?: unknown };
+      const body = req.body as { name?: unknown; groupId?: unknown };
       const result = await this.createCampaign.execute({
+        groupId: body.groupId as string,
         gameMasterId: req.user!.userId,
         name: body.name as string,
       });
@@ -52,16 +35,13 @@ export class CampaignController {
     }
   };
 
-  /**
-   * `GET /campaigns` — liste les campagnes dont l'utilisateur authentifié est le maître du jeu.
-   *
-   * @param req - La requête (identité dans `req.user`).
-   * @param res - La réponse.
-   * @param next - Relais vers le middleware d'erreurs pour les exceptions techniques.
-   */
+  /** `GET /campaigns?groupId=…` — liste les campagnes du groupe (membre requis). */
   public list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await this.listMyCampaigns.execute({ gameMasterId: req.user!.userId });
+      const result = await this.listMyCampaigns.execute({
+        groupId: (req.query.groupId as string) ?? "",
+        userId: req.user!.userId,
+      });
 
       if (result.isFailure) {
         res
@@ -81,17 +61,9 @@ export class CampaignController {
     }
   };
 
-  /**
-   * `DELETE /campaigns/:id` — supprime une campagne si l'utilisateur en est le maître du jeu.
-   *
-   * @param req - La requête (`id` dans les paramètres de route, identité dans `req.user`).
-   * @param res - La réponse (`204 No Content` en cas de succès).
-   * @param next - Relais vers le middleware d'erreurs pour les exceptions techniques.
-   */
+  /** `DELETE /campaigns/:id` — supprime une campagne si l'utilisateur en est le maître du jeu. */
   public remove = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // Le paramètre de route `:id` est toujours présent au runtime ; le typage Express
-      // le déclare optionnel, d'où le repli sur "" (traité comme introuvable → 404).
       const result = await this.deleteCampaign.execute({
         campaignId: req.params.id ?? "",
         gameMasterId: req.user!.userId,

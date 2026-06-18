@@ -28,22 +28,13 @@ export interface LinkUseCases {
   readonly list: ListSheetReferencesUseCase;
 }
 
-/**
- * Controller HTTP **générique** de la feature référence : dispatche sur le segment de type
- * (`:type` ∈ formations|peoples|armes|armures|competences|equipements) vers le bon jeu de use
- * cases. Évite six controllers quasi identiques. Monté derrière le middleware d'auth :
- * `req.user` est garanti, l'identité venant toujours de la session.
- *
- * @param catalogues - Use cases catalogue par type (les 6).
- * @param links - Use cases de liaison par type liable (les 4).
- */
 export class ReferenceController {
   constructor(
     private readonly catalogues: Record<string, CatalogueUseCases>,
     private readonly links: Record<string, LinkUseCases>,
   ) {}
 
-  /** `POST /reference/:type` — crée un élément dans le catalogue du type. */
+  /** `POST /reference/:type` — crée un élément dans le catalogue du groupe (admin requis). */
   public create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const uc = this.catalogues[req.params.type ?? ""];
@@ -51,9 +42,10 @@ export class ReferenceController {
         res.status(404).json({ code: "REFERENCE_ITEM_NOT_FOUND", message: "Type inconnu." });
         return;
       }
-      const body = req.body as { name?: unknown };
+      const body = req.body as { name?: unknown; groupId?: unknown };
       const result = await uc.create.execute({
-        ownerId: req.user!.userId,
+        groupId: body.groupId as string,
+        actorId: req.user!.userId,
         name: body.name as string,
       });
       ReferenceController.respondItem(res, result, 201);
@@ -62,7 +54,7 @@ export class ReferenceController {
     }
   };
 
-  /** `GET /reference/:type` — liste les éléments du type appartenant à l'utilisateur. */
+  /** `GET /reference/:type?groupId=…` — liste les éléments du groupe (membre requis). */
   public list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const uc = this.catalogues[req.params.type ?? ""];
@@ -70,14 +62,17 @@ export class ReferenceController {
         res.status(404).json({ code: "REFERENCE_ITEM_NOT_FOUND", message: "Type inconnu." });
         return;
       }
-      const result = await uc.list.execute({ ownerId: req.user!.userId });
+      const result = await uc.list.execute({
+        groupId: (req.query.groupId as string) ?? "",
+        actorId: req.user!.userId,
+      });
       ReferenceController.respondList(res, result);
     } catch (error) {
       next(error);
     }
   };
 
-  /** `DELETE /reference/:type/:id` — supprime un élément du catalogue. */
+  /** `DELETE /reference/:type/:id` — supprime un élément du catalogue (admin requis). */
   public remove = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const uc = this.catalogues[req.params.type ?? ""];
@@ -87,7 +82,7 @@ export class ReferenceController {
       }
       const result = await uc.remove.execute({
         itemId: req.params.id ?? "",
-        ownerId: req.user!.userId,
+        actorId: req.user!.userId,
       });
       if (result.isFailure) {
         ReferenceController.fail(res, result.error);
@@ -164,7 +159,6 @@ export class ReferenceController {
     }
   };
 
-  /** Répond avec un élément sérialisé (createdAt → ISO) et le statut donné, ou délègue l'échec. */
   private static respondItem(
     res: Response,
     result: Result<ReferenceItemView, AppError>,
@@ -177,7 +171,6 @@ export class ReferenceController {
     res.status(okStatus).json(ReferenceController.serialize(result.value));
   }
 
-  /** Répond avec la liste d'éléments sérialisés (sous la clé `items`), ou délègue l'échec. */
   private static respondList(res: Response, result: Result<ReferenceItemView[], AppError>): void {
     if (result.isFailure) {
       ReferenceController.fail(res, result.error);
@@ -186,14 +179,12 @@ export class ReferenceController {
     res.status(200).json({ items: result.value.map(ReferenceController.serialize) });
   }
 
-  /** Émet une réponse d'erreur (statut HTTP + code/message applicatifs). */
   private static fail(res: Response, error: AppError): void {
     res
       .status(ReferenceHttpMapper.statusFor(error))
       .json({ code: error.code, message: error.message });
   }
 
-  /** Sérialise une vue d'élément (date → ISO). */
   private static serialize(view: ReferenceItemView): {
     id: string;
     name: string;

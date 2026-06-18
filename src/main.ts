@@ -29,6 +29,7 @@ import { CampaignCharacterRepository } from "@application/features/character-she
 // Application — ports services
 import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
 import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 // Application — implémentations
 import { Logger } from "@application/shared/Logger";
@@ -202,13 +203,21 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
  * @param logger - Le logger applicatif.
  * @returns Le controller campaign câblé.
  */
-function buildCampaignController(services: AuthServices, logger: Logger): CampaignController {
+function buildCampaignController(
+  services: AuthServices,
+  groupAccessService: GroupAccessService,
+  logger: Logger,
+): CampaignController {
   const createCampaign = new CreateCampaignUseCaseImpl(
     services.idGenerator,
+    groupAccessService,
     services.unitOfWork,
     logger,
   );
-  const listMyCampaigns = new ListMyCampaignsUseCaseImpl(services.campaignRepository);
+  const listMyCampaigns = new ListMyCampaignsUseCaseImpl(
+    services.campaignRepository,
+    groupAccessService,
+  );
   const deleteCampaign = new DeleteCampaignUseCaseImpl(
     services.campaignRepository,
     services.unitOfWork,
@@ -414,7 +423,25 @@ async function bootstrap(): Promise<void> {
   const userController = new UserController(
     new GetCurrentUserUseCaseImpl(services.userRepository, services.credentialRepository),
   );
-  const campaignController = buildCampaignController(services, logger);
+
+  // buildGroupControllers est construit en premier pour exposer groupAccessService,
+  // dont dépendent les controllers campaign et reference.
+  const {
+    group: groupController,
+    invitation: invitationController,
+    groupAccessService,
+  } = buildGroupControllers({
+    friendGroupRepository: services.friendGroupRepositories.friendGroups,
+    groupMemberRepository: services.friendGroupRepositories.groupMembers,
+    groupInvitationRepository: services.friendGroupRepositories.groupInvitations,
+    campaignRepository: services.campaignRepository,
+    credentialRepository: services.credentialRepository,
+    idGenerator: services.idGenerator,
+    unitOfWork: services.unitOfWork,
+    logger,
+  });
+
+  const campaignController = buildCampaignController(services, groupAccessService, logger);
   const campaignCharacterController = buildCampaignCharacterController(services, logger);
   const sessionController = buildSessionController({
     campaignRepository: services.campaignRepository,
@@ -428,6 +455,7 @@ async function bootstrap(): Promise<void> {
     campaignCharacterRepository: services.campaignCharacterRepository,
     formationRepository: services.referenceRepositories.formations,
     peupleRepository: services.referenceRepositories.peoples,
+    groupAccessService,
     pdfGenerator: services.pdfGenerator,
     idGenerator: services.idGenerator,
     unitOfWork: services.unitOfWork,
@@ -439,15 +467,7 @@ async function bootstrap(): Promise<void> {
     characterSheetRepository: services.characterSheetRepository,
     references: services.referenceRepositories,
     idGenerator: services.idGenerator,
-    unitOfWork: services.unitOfWork,
-    logger,
-  });
-  const { group: groupController, invitation: invitationController } = buildGroupControllers({
-    friendGroupRepository: services.friendGroupRepositories.friendGroups,
-    groupMemberRepository: services.friendGroupRepositories.groupMembers,
-    groupInvitationRepository: services.friendGroupRepositories.groupInvitations,
-    credentialRepository: services.credentialRepository,
-    idGenerator: services.idGenerator,
+    groupAccessService,
     unitOfWork: services.unitOfWork,
     logger,
   });

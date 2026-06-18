@@ -2,11 +2,6 @@ import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 
-/**
- * Doublures en mémoire de la feature référence, extraites de `fakes.ts` (taille de fichier).
- * Re-exportées par `fakes.ts` pour ne pas casser les imports existants.
- */
-
 /** Catalogue d'éléments de référence en mémoire (indexé par id), partagé par les 6 types. */
 export class FakeReferenceRepository implements ReferenceRepository {
   private readonly items = new Map<string, ReferenceItem>();
@@ -15,17 +10,17 @@ export class FakeReferenceRepository implements ReferenceRepository {
     this.items.set(item.id, item);
   }
 
-  public async findByOwnerId(ownerId: string): Promise<ReferenceItem[]> {
-    return [...this.items.values()].filter((item) => item.isOwnedBy(ownerId));
+  public async findByGroupId(groupId: string): Promise<ReferenceItem[]> {
+    return [...this.items.values()].filter((item) => item.isInGroup(groupId));
   }
 
   public async findById(id: string): Promise<ReferenceItem | null> {
     return this.items.get(id) ?? null;
   }
 
-  public async existsByOwnerAndName(ownerId: string, name: string): Promise<boolean> {
+  public async existsByGroupAndName(groupId: string, name: string): Promise<boolean> {
     return [...this.items.values()].some(
-      (item) => item.isOwnedBy(ownerId) && item.name.value === name,
+      (item) => item.isInGroup(groupId) && item.name.value === name,
     );
   }
 

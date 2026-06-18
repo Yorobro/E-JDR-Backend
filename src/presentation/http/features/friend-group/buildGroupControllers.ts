@@ -2,9 +2,11 @@ import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
+import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { FriendGroupRepository } from "@application/features/friend-group/abstractions/repositories/FriendGroupRepository";
 import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { GroupInvitationRepository } from "@application/features/friend-group/abstractions/repositories/GroupInvitationRepository";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
 import { CreateGroupUseCaseImpl } from "@application/features/friend-group/usecases/CreateGroupUseCaseImpl";
 import { GetGroupUseCaseImpl } from "@application/features/friend-group/usecases/GetGroupUseCaseImpl";
@@ -26,6 +28,7 @@ export interface GroupControllerDeps {
   friendGroupRepository: FriendGroupRepository;
   groupMemberRepository: GroupMemberRepository;
   groupInvitationRepository: GroupInvitationRepository;
+  campaignRepository: CampaignRepository;
   credentialRepository: CredentialRepository;
   idGenerator: IdGeneratorService;
   unitOfWork: UnitOfWork;
@@ -35,6 +38,7 @@ export interface GroupControllerDeps {
 export function buildGroupControllers(deps: GroupControllerDeps): {
   group: GroupController;
   invitation: InvitationController;
+  groupAccessService: GroupAccessService;
 } {
   const groupAccessService = new GroupAccessServiceImpl(deps.groupMemberRepository);
 
@@ -48,6 +52,7 @@ export function buildGroupControllers(deps: GroupControllerDeps): {
     new ListMyGroupsUseCaseImpl(deps.friendGroupRepository, deps.groupMemberRepository),
     new DeleteGroupUseCaseImpl(
       deps.friendGroupRepository,
+      deps.campaignRepository,
       groupAccessService,
       deps.unitOfWork,
       deps.logger,
@@ -81,5 +86,5 @@ export function buildGroupControllers(deps: GroupControllerDeps): {
     new DeclineInvitationUseCaseImpl(deps.groupInvitationRepository, deps.unitOfWork, deps.logger),
   );
 
-  return { group: groupController, invitation: invitationController };
+  return { group: groupController, invitation: invitationController, groupAccessService };
 }

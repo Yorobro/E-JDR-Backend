@@ -8,6 +8,7 @@ import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { ReferenceItemNotFoundError } from "@application/features/reference/errors/ReferenceItemNotFoundError";
 import { ReferenceNameAlreadyUsedError } from "@application/features/reference/errors/ReferenceNameAlreadyUsedError";
@@ -34,15 +35,14 @@ function toView(item: ReferenceItem): ReferenceItemView {
 /**
  * Use case **générique** de création d'un élément de référence.
  *
- * Une instance par catégorie : le `repository` (lecture, pour l'anti-doublon) et le `selectRepo`
- * (écriture transactionnelle) pointent tous deux vers la même table. Valide le nom (VO), refuse
- * un doublon de nom pour ce propriétaire (`existsByOwnerAndName`), puis persiste via le UnitOfWork.
+ * Seuls les admins du groupe peuvent créer des entrées de catalogue.
  */
 export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCase {
   constructor(
     private readonly repository: ReferenceRepository,
     private readonly selectRepo: RepoSelector,
     private readonly idGenerator: IdGeneratorService,
+    private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
   ) {}
@@ -50,6 +50,12 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
   public async execute(
     command: CreateReferenceItemCommand,
   ): Promise<Result<ReferenceItemView, AppError>> {
+    const accessResult = await this.groupAccessService.requireAdmin(
+      command.actorId,
+      command.groupId,
+    );
+    if (accessResult.isFailure) return Result.failure(accessResult.error);
+
     let name: ReferenceName;
     try {
       name = ReferenceName.create(command.name);
@@ -60,13 +66,13 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
       throw error;
     }
 
-    if (await this.repository.existsByOwnerAndName(command.ownerId, name.value)) {
+    if (await this.repository.existsByGroupAndName(command.groupId, name.value)) {
       return Result.failure(new ReferenceNameAlreadyUsedError());
     }
 
     const item = ReferenceItem.create({
       id: this.idGenerator.generate(),
-      ownerId: command.ownerId,
+      groupId: command.groupId,
       name,
       createdAt: new Date(),
     });
@@ -75,44 +81,52 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
       await this.selectRepo(repos).save(item);
     });
 
-    this.logger.info("Élément de référence créé", { itemId: item.id, ownerId: item.ownerId });
+    this.logger.info("Élément de référence créé", { itemId: item.id, groupId: item.groupId });
 
     return Result.success(toView(item));
   }
 }
 
-/** Use case **générique** « lister mes éléments de référence ». Lecture pure. */
+/** Use case **générique** « lister les éléments de référence d'un groupe ». Lecture pure. */
 export class ListReferenceItemsUseCaseImpl implements ListReferenceItemsUseCase {
-  constructor(private readonly repository: ReferenceRepository) {}
+  constructor(
+    private readonly repository: ReferenceRepository,
+    private readonly groupAccessService: GroupAccessService,
+  ) {}
 
   public async execute(
     query: ListReferenceItemsQuery,
   ): Promise<Result<ReferenceItemView[], AppError>> {
-    const items = await this.repository.findByOwnerId(query.ownerId);
+    const accessResult = await this.groupAccessService.requireMember(query.actorId, query.groupId);
+    if (accessResult.isFailure) return Result.failure(accessResult.error);
+
+    const items = await this.repository.findByGroupId(query.groupId);
     return Result.success(items.map(toView));
   }
 }
 
 /**
- * Use case **générique** de suppression d'un élément de référence. Charge l'élément, vérifie la
- * propriété (`isOwnedBy`), puis supprime via le UnitOfWork. La suppression d'un élément référencé
- * met automatiquement à `null` les fiches (FK `ON DELETE set null`) ou retire les liaisons N‑N
- * (FK `cascade`) — géré par la base.
+ * Use case **générique** de suppression d'un élément de référence.
+ *
+ * Seuls les admins du groupe peuvent supprimer des entrées de catalogue.
  */
 export class DeleteReferenceItemUseCaseImpl implements DeleteReferenceItemUseCase {
   constructor(
     private readonly repository: ReferenceRepository,
     private readonly selectRepo: RepoSelector,
+    private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
   ) {}
 
   public async execute(command: DeleteReferenceItemCommand): Promise<Result<void, AppError>> {
     const item = await this.repository.findById(command.itemId);
-    // Inexistant OU non possédé : même réponse 404 (ne pas révéler l'existence d'un élément d'autrui).
-    if (item === null || !item.isOwnedBy(command.ownerId)) {
+    if (item === null) {
       return Result.failure(new ReferenceItemNotFoundError());
     }
+
+    const accessResult = await this.groupAccessService.requireAdmin(command.actorId, item.groupId);
+    if (accessResult.isFailure) return Result.failure(new ReferenceItemNotFoundError());
 
     await this.unitOfWork.execute(async (repos) => {
       await this.selectRepo(repos).deleteById(item.id);
@@ -120,7 +134,7 @@ export class DeleteReferenceItemUseCaseImpl implements DeleteReferenceItemUseCas
 
     this.logger.info("Élément de référence supprimé", {
       itemId: item.id,
-      ownerId: command.ownerId,
+      groupId: item.groupId,
     });
 
     return Result.success(undefined);

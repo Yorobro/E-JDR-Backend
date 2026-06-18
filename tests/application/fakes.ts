@@ -126,8 +126,12 @@ export class FakeCampaignRepository implements CampaignRepository {
     this.campaigns.set(campaign.id, campaign);
   }
 
-  public async findByGameMasterId(gameMasterId: string): Promise<Campaign[]> {
-    return [...this.campaigns.values()].filter((campaign) => campaign.isGameMaster(gameMasterId));
+  public async findByGroupId(groupId: string): Promise<Campaign[]> {
+    return [...this.campaigns.values()].filter((campaign) => campaign.groupId === groupId);
+  }
+
+  public async existsByGroupId(groupId: string): Promise<boolean> {
+    return [...this.campaigns.values()].some((campaign) => campaign.groupId === groupId);
   }
 
   public async findById(id: string): Promise<Campaign | null> {

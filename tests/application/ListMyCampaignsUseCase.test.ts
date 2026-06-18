@@ -1,39 +1,57 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { ListMyCampaignsUseCaseImpl } from "@application/features/campaign/usecases/ListMyCampaignsUseCaseImpl";
-import { FakeCampaignRepository, buildTestCampaign } from "./fakes";
+import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
+import {
+  FakeCampaignRepository,
+  FakeGroupMemberRepository,
+  buildTestCampaign,
+  buildTestMembership,
+} from "./fakes";
 
 describe("ListMyCampaignsUseCaseImpl", () => {
-  let repo: FakeCampaignRepository;
+  let campaignRepo: FakeCampaignRepository;
+  let memberRepo: FakeGroupMemberRepository;
   let useCase: ListMyCampaignsUseCaseImpl;
 
   beforeEach(() => {
-    repo = new FakeCampaignRepository();
-    useCase = new ListMyCampaignsUseCaseImpl(repo);
+    campaignRepo = new FakeCampaignRepository();
+    memberRepo = new FakeGroupMemberRepository();
+    const groupAccessService = new GroupAccessServiceImpl(memberRepo);
+    useCase = new ListMyCampaignsUseCaseImpl(campaignRepo, groupAccessService);
+    // user-1 est membre de group-1
+    memberRepo.seed(buildTestMembership({ groupId: "group-1", userId: "user-1" }));
   });
 
-  it("ne renvoie que les campagnes du maître du jeu demandé", async () => {
-    repo.seed(buildTestCampaign("c-1", "mj-1", "Alpha"));
-    repo.seed(buildTestCampaign("c-2", "mj-1", "Beta"));
-    repo.seed(buildTestCampaign("c-3", "mj-2", "Gamma"));
+  it("ne renvoie que les campagnes du groupe demandé", async () => {
+    campaignRepo.seed(buildTestCampaign("c-1", "mj-1", "Alpha", "group-1"));
+    campaignRepo.seed(buildTestCampaign("c-2", "mj-1", "Beta", "group-1"));
+    campaignRepo.seed(buildTestCampaign("c-3", "mj-1", "Gamma", "group-2"));
 
-    const result = await useCase.execute({ gameMasterId: "mj-1" });
+    const result = await useCase.execute({ groupId: "group-1", userId: "user-1" });
 
     expect(result.isSuccess).toBe(true);
     expect(result.value).toHaveLength(2);
     expect(result.value.map((c) => c.name).sort()).toEqual(["Alpha", "Beta"]);
   });
 
-  it("renvoie une liste vide si le MJ n'a aucune campagne", async () => {
-    const result = await useCase.execute({ gameMasterId: "inconnu" });
+  it("renvoie une liste vide si le groupe n'a aucune campagne", async () => {
+    const result = await useCase.execute({ groupId: "group-1", userId: "user-1" });
 
     expect(result.isSuccess).toBe(true);
     expect(result.value).toEqual([]);
   });
 
-  it("projette chaque campagne en résumé (id, name string, createdAt)", async () => {
-    repo.seed(buildTestCampaign("c-1", "mj-1", "Alpha"));
+  it("échoue avec NOT_GROUP_MEMBER si l'utilisateur n'est pas dans le groupe", async () => {
+    const result = await useCase.execute({ groupId: "group-1", userId: "outsider" });
 
-    const result = await useCase.execute({ gameMasterId: "mj-1" });
+    expect(result.isFailure).toBe(true);
+    expect(result.error.code).toBe("NOT_GROUP_MEMBER");
+  });
+
+  it("projette chaque campagne en résumé (id, name string, createdAt)", async () => {
+    campaignRepo.seed(buildTestCampaign("c-1", "mj-1", "Alpha", "group-1"));
+
+    const result = await useCase.execute({ groupId: "group-1", userId: "user-1" });
 
     expect(result.value[0]).toEqual({
       id: "c-1",

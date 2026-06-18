@@ -171,10 +171,20 @@ describe("Character sheet routes (intégration HTTP)", () => {
     });
   });
 
+  /** Crée un groupe puis une campagne ; renvoie la réponse complète de POST /campaigns. */
+  async function createCampaign(
+    agent: ReturnType<typeof request.agent>,
+    name = "Ma campagne",
+  ): Promise<{ body: { id: string } }> {
+    const grp = await agent.post("/groups").send({ name: "Groupe" });
+    const groupId = grp.body.id as string;
+    return agent.post("/campaigns").send({ name, groupId });
+  }
+
   describe("Liaison campagne↔fiches", () => {
     it("rattache la fiche d'un joueur à la campagne d'un MJ (201) puis la liste", async () => {
       const mj = await authenticate("mj@test.com");
-      const campaign = await mj.post("/campaigns").send({ name: "Ma campagne" });
+      const campaign = await createCampaign(mj, "Ma campagne");
 
       const player = await authenticate("player@test.com");
       const sheet = await player.post("/character-sheets").send({ name: "Legolas" });
@@ -192,7 +202,7 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
     it("refuse (409) que le MJ rattache une de ses fiches à sa propre campagne", async () => {
       const mj = await authenticate("mj@test.com");
-      const campaign = await mj.post("/campaigns").send({ name: "Ma campagne" });
+      const campaign = await createCampaign(mj, "Ma campagne");
       const sheet = await mj.post("/character-sheets").send({ name: "Fiche du MJ" });
 
       const res = await mj
@@ -205,7 +215,7 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
     it("refuse (409) un rattachement en double", async () => {
       const mj = await authenticate("mj@test.com");
-      const campaign = await mj.post("/campaigns").send({ name: "C" });
+      const campaign = await createCampaign(mj, "C");
       const player = await authenticate("player@test.com");
       const sheet = await player.post("/character-sheets").send({ name: "S" });
 
@@ -222,7 +232,7 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
     it("détache une fiche (204)", async () => {
       const mj = await authenticate("mj@test.com");
-      const campaign = await mj.post("/campaigns").send({ name: "C" });
+      const campaign = await createCampaign(mj, "C");
       const player = await authenticate("player@test.com");
       const sheet = await player.post("/character-sheets").send({ name: "S" });
       await mj
@@ -245,7 +255,7 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
     it("un non-MJ ne peut pas rattacher une fiche (403)", async () => {
       const mj = await authenticate("mj@test.com");
-      const campaign = await mj.post("/campaigns").send({ name: "C" });
+      const campaign = await createCampaign(mj, "C");
       const player = await authenticate("player@test.com");
       const sheet = await player.post("/character-sheets").send({ name: "S" });
 
@@ -259,7 +269,7 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
     it("le propriétaire (non-MJ) ne peut pas détacher sa fiche (403)", async () => {
       const mj = await authenticate("mj@test.com");
-      const campaign = await mj.post("/campaigns").send({ name: "C" });
+      const campaign = await createCampaign(mj, "C");
       const player = await authenticate("player@test.com");
       const sheet = await player.post("/character-sheets").send({ name: "S" });
       await mj
@@ -274,7 +284,7 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
     it("GET linkable-characters (MJ) liste les fiches des autres, exclut les siennes et les déjà liées", async () => {
       const mj = await authenticate("mj@test.com");
-      const campaign = await mj.post("/campaigns").send({ name: "C" });
+      const campaign = await createCampaign(mj, "C");
       // une fiche au MJ (doit être exclue)
       await mj.post("/character-sheets").send({ name: "Fiche MJ" });
 
@@ -297,7 +307,7 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
     it("GET linkable-characters par un non-MJ renvoie 403", async () => {
       const mj = await authenticate("mj@test.com");
-      const campaign = await mj.post("/campaigns").send({ name: "C" });
+      const campaign = await createCampaign(mj, "C");
       const intrus = await authenticate("intrus@test.com");
       const res = await intrus.get(`/campaigns/${campaign.body.id}/linkable-characters`);
       expect(res.status).toBe(403);

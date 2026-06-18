@@ -4,6 +4,7 @@ import {
   ListSheetReferencesUseCaseImpl,
   UnlinkSheetReferenceUseCaseImpl,
 } from "@application/features/reference/usecases/SheetReferenceLinkUseCaseImpls";
+import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 import { ReferenceItemNotFoundError } from "@application/features/reference/errors/ReferenceItemNotFoundError";
@@ -13,13 +14,17 @@ import {
   buildFakeTransactionalRepositories,
   buildTestCharacterSheet,
   buildTestReferenceItem,
+  buildTestMembership,
 } from "./fakes";
 
 describe("Sheet reference link use cases (génériques, testés sur `armes`)", () => {
   let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
+  let groupAccessService: GroupAccessServiceImpl;
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
+    groupAccessService = new GroupAccessServiceImpl(txRepos.groupMembers);
+    txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "u-1" }));
   });
 
   function linkUseCase(): LinkSheetReferenceUseCaseImpl {
@@ -28,6 +33,7 @@ describe("Sheet reference link use cases (génériques, testés sur `armes`)", (
       txRepos.armes,
       txRepos.sheetArmes,
       (repos) => repos.sheetArmes,
+      groupAccessService,
       new FakeUnitOfWork(txRepos),
       new FakeLogger(),
     );
@@ -35,7 +41,7 @@ describe("Sheet reference link use cases (génériques, testés sur `armes`)", (
 
   it("rattache un élément possédé à une fiche possédée", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "u-1"));
-    txRepos.armes.seed(buildTestReferenceItem("a-1", "u-1", "Épée"));
+    txRepos.armes.seed(buildTestReferenceItem("a-1", "group-1", "Épée"));
 
     const result = await linkUseCase().execute({
       sheetId: "s-1",
@@ -49,7 +55,7 @@ describe("Sheet reference link use cases (génériques, testés sur `armes`)", (
 
   it("est idempotent : re-rattacher ne crée pas de doublon ni d'erreur", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "u-1"));
-    txRepos.armes.seed(buildTestReferenceItem("a-1", "u-1", "Épée"));
+    txRepos.armes.seed(buildTestReferenceItem("a-1", "group-1", "Épée"));
     await linkUseCase().execute({ sheetId: "s-1", itemId: "a-1", actorUserId: "u-1" });
 
     const again = await linkUseCase().execute({
@@ -62,7 +68,7 @@ describe("Sheet reference link use cases (génériques, testés sur `armes`)", (
   });
 
   it("échoue (404) si la fiche n'existe pas", async () => {
-    txRepos.armes.seed(buildTestReferenceItem("a-1", "u-1", "Épée"));
+    txRepos.armes.seed(buildTestReferenceItem("a-1", "group-1", "Épée"));
     const result = await linkUseCase().execute({
       sheetId: "ghost",
       itemId: "a-1",
@@ -73,7 +79,7 @@ describe("Sheet reference link use cases (génériques, testés sur `armes`)", (
 
   it("échoue (403) si la fiche appartient à un autre utilisateur", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "autre"));
-    txRepos.armes.seed(buildTestReferenceItem("a-1", "u-1", "Épée"));
+    txRepos.armes.seed(buildTestReferenceItem("a-1", "group-1", "Épée"));
     const result = await linkUseCase().execute({
       sheetId: "s-1",
       itemId: "a-1",
@@ -84,7 +90,7 @@ describe("Sheet reference link use cases (génériques, testés sur `armes`)", (
 
   it("échoue (404) si l'élément n'existe pas ou appartient à autrui", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "u-1"));
-    txRepos.armes.seed(buildTestReferenceItem("a-1", "autre", "Épée"));
+    txRepos.armes.seed(buildTestReferenceItem("a-1", "group-autre", "Épée"));
     const result = await linkUseCase().execute({
       sheetId: "s-1",
       itemId: "a-1",
@@ -95,8 +101,8 @@ describe("Sheet reference link use cases (génériques, testés sur `armes`)", (
 
   it("liste les éléments rattachés à une fiche possédée", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "u-1"));
-    txRepos.armes.seed(buildTestReferenceItem("a-1", "u-1", "Épée"));
-    txRepos.armes.seed(buildTestReferenceItem("a-2", "u-1", "Hache"));
+    txRepos.armes.seed(buildTestReferenceItem("a-1", "group-1", "Épée"));
+    txRepos.armes.seed(buildTestReferenceItem("a-2", "group-1", "Hache"));
     await linkUseCase().execute({ sheetId: "s-1", itemId: "a-1", actorUserId: "u-1" });
     await linkUseCase().execute({ sheetId: "s-1", itemId: "a-2", actorUserId: "u-1" });
 
@@ -111,7 +117,7 @@ describe("Sheet reference link use cases (génériques, testés sur `armes`)", (
 
   it("détache un élément (idempotent), fiche possédée", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "u-1"));
-    txRepos.armes.seed(buildTestReferenceItem("a-1", "u-1", "Épée"));
+    txRepos.armes.seed(buildTestReferenceItem("a-1", "group-1", "Épée"));
     await linkUseCase().execute({ sheetId: "s-1", itemId: "a-1", actorUserId: "u-1" });
 
     const useCase = new UnlinkSheetReferenceUseCaseImpl(

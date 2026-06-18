@@ -7,6 +7,7 @@ import { TransactionalRepositories, UnitOfWork } from "@application/shared/UnitO
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 import { ReferenceItemNotFoundError } from "@application/features/reference/errors/ReferenceItemNotFoundError";
@@ -40,6 +41,7 @@ export class LinkSheetReferenceUseCaseImpl implements LinkSheetReferenceUseCase 
     private readonly itemRepository: ReferenceRepository,
     private readonly linkRepository: SheetReferenceLinkRepository,
     private readonly selectLinkRepo: LinkRepoSelector,
+    private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
   ) {}
@@ -54,7 +56,14 @@ export class LinkSheetReferenceUseCaseImpl implements LinkSheetReferenceUseCase 
     }
 
     const item = await this.itemRepository.findById(command.itemId);
-    if (item === null || !item.isOwnedBy(command.actorUserId)) {
+    if (item === null) {
+      return Result.failure(new ReferenceItemNotFoundError());
+    }
+    const itemAccess = await this.groupAccessService.requireMember(
+      command.actorUserId,
+      item.groupId,
+    );
+    if (itemAccess.isFailure) {
       return Result.failure(new ReferenceItemNotFoundError());
     }
 

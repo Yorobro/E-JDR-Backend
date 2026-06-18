@@ -7,6 +7,8 @@ import { CampaignName } from "@domain/features/campaign/value-objects/CampaignNa
 export interface CampaignSnapshot {
   /** Identifiant unique de la campagne. */
   readonly id: string;
+  /** Identifiant du **groupe d'amis** auquel appartient la campagne. */
+  readonly groupId: string;
   /** Identifiant de l'utilisateur **maître du jeu** propriétaire de la campagne. */
   readonly gameMasterId: string;
   /** Nom de la campagne (value object garantissant la validité). */
@@ -46,6 +48,7 @@ export class Campaign {
    */
   public static create(params: {
     id: string;
+    groupId: string;
     gameMasterId: string;
     name: CampaignName;
     createdAt: Date;
@@ -66,6 +69,11 @@ export class Campaign {
   /** @returns L'identifiant unique de la campagne. */
   public get id(): string {
     return this.props.id;
+  }
+
+  /** @returns L'identifiant du groupe d'amis auquel appartient la campagne. */
+  public get groupId(): string {
+    return this.props.groupId;
   }
 
   /** @returns L'identifiant du maître du jeu propriétaire. */

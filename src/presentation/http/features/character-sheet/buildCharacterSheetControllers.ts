@@ -5,6 +5,7 @@ import { CharacterSheetRepository } from "@application/features/character-sheet/
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { CreateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CreateCharacterSheetUseCaseImpl";
 import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/character-sheet/usecases/ListMyCharacterSheetsUseCaseImpl";
 import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/DeleteCharacterSheetUseCaseImpl";
@@ -21,6 +22,7 @@ export interface CharacterSheetControllerDeps {
   readonly campaignCharacterRepository: CampaignCharacterRepository;
   readonly formationRepository: ReferenceRepository;
   readonly peupleRepository: ReferenceRepository;
+  readonly groupAccessService: GroupAccessService;
   readonly pdfGenerator: CharacterSheetPdfGenerator;
   readonly idGenerator: IdGeneratorService;
   readonly unitOfWork: UnitOfWork;
@@ -50,6 +52,7 @@ export function buildCharacterSheetController(
       deps.characterSheetRepository,
       deps.formationRepository,
       deps.peupleRepository,
+      deps.groupAccessService,
       deps.unitOfWork,
       deps.logger,
     ),

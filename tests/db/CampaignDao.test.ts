@@ -3,7 +3,7 @@ import { drizzle, MySql2Database } from "drizzle-orm/mysql2";
 import { Pool } from "mysql2/promise";
 import * as schema from "@infrastructure/persistence/drizzle/schema";
 import { CampaignDao } from "@infrastructure/persistence/mysql/features/campaign/dao/CampaignDao";
-import { createTestPool, clearAllTables, insertUser } from "./dbTestUtils";
+import { createTestPool, clearAllTables, insertUser, insertFriendGroup } from "./dbTestUtils";
 
 describe("CampaignDao (intégration MySQL via Drizzle)", () => {
   let pool: Pool;
@@ -23,10 +23,11 @@ describe("CampaignDao (intégration MySQL via Drizzle)", () => {
   beforeEach(async () => {
     await clearAllTables(pool);
     await insertUser(pool, "mj-1");
+    await insertFriendGroup(pool, "grp-1", "mj-1");
   });
 
   function row(id: string, name: string, createdAt: Date) {
-    return { id, game_master_id: "mj-1", name, created_at: createdAt };
+    return { id, group_id: "grp-1", game_master_id: "mj-1", name, created_at: createdAt };
   }
 
   it("insère puis relit par id", async () => {
@@ -37,10 +38,10 @@ describe("CampaignDao (intégration MySQL via Drizzle)", () => {
     expect(found?.created_at).toBeInstanceOf(Date);
   });
 
-  it("liste les campagnes d'un MJ, plus récentes d'abord", async () => {
+  it("liste les campagnes d'un groupe, plus récentes d'abord", async () => {
     await dao.insert(row("c-old", "Vieux", new Date("2026-01-01T10:00:00Z")));
     await dao.insert(row("c-new", "Neuf", new Date("2026-03-01T10:00:00Z")));
-    const list = await dao.findByGameMasterId("mj-1");
+    const list = await dao.findByGroupId("grp-1");
     expect(list.map((c) => c.id)).toEqual(["c-new", "c-old"]);
   });
 
@@ -56,7 +57,13 @@ describe("CampaignDao (intégration MySQL via Drizzle)", () => {
 
   it("rejette une campagne sans MJ existant (FK)", async () => {
     await expect(
-      dao.insert({ id: "c-x", game_master_id: "fantome", name: "X", created_at: new Date() }),
+      dao.insert({
+        id: "c-x",
+        group_id: "grp-1",
+        game_master_id: "fantome",
+        name: "X",
+        created_at: new Date(),
+      }),
     ).rejects.toThrow();
   });
 });
