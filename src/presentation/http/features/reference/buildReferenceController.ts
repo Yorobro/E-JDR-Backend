@@ -71,15 +71,15 @@ export function buildReferenceController(deps: ReferenceControllerDeps): Referen
     linkRepo: SheetReferenceLinkRepository,
     key: LinkKey,
   ): LinkUseCases => ({
-    link: new LinkSheetReferenceUseCaseImpl(
-      deps.characterSheetRepository,
-      itemRepo,
-      linkRepo,
-      (repos) => repos[key],
-      deps.groupAccessService,
-      deps.unitOfWork,
-      deps.logger,
-    ),
+    link: new LinkSheetReferenceUseCaseImpl({
+      characterSheetRepository: deps.characterSheetRepository,
+      itemRepository: itemRepo,
+      linkRepository: linkRepo,
+      selectLinkRepo: (repos) => repos[key],
+      groupAccessService: deps.groupAccessService,
+      unitOfWork: deps.unitOfWork,
+      logger: deps.logger,
+    }),
     unlink: new UnlinkSheetReferenceUseCaseImpl(
       deps.characterSheetRepository,
       (repos) => repos[key],

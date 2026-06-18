@@ -35,16 +35,35 @@ function toView(item: ReferenceItem): ReferenceItemView {
  * existe et appartient au demandeur, que l'élément existe et lui appartient aussi (on ne lie que
  * son propre catalogue), puis crée la liaison (idempotente : ré-attacher ne fait rien de plus).
  */
+/** Dépendances du use case de rattachement (regroupées pour rester sous la limite de paramètres). */
+export interface LinkSheetReferenceDeps {
+  readonly characterSheetRepository: CharacterSheetRepository;
+  readonly itemRepository: ReferenceRepository;
+  readonly linkRepository: SheetReferenceLinkRepository;
+  readonly selectLinkRepo: LinkRepoSelector;
+  readonly groupAccessService: GroupAccessService;
+  readonly unitOfWork: UnitOfWork;
+  readonly logger: Logger;
+}
+
 export class LinkSheetReferenceUseCaseImpl implements LinkSheetReferenceUseCase {
-  constructor(
-    private readonly characterSheetRepository: CharacterSheetRepository,
-    private readonly itemRepository: ReferenceRepository,
-    private readonly linkRepository: SheetReferenceLinkRepository,
-    private readonly selectLinkRepo: LinkRepoSelector,
-    private readonly groupAccessService: GroupAccessService,
-    private readonly unitOfWork: UnitOfWork,
-    private readonly logger: Logger,
-  ) {}
+  private readonly characterSheetRepository: CharacterSheetRepository;
+  private readonly itemRepository: ReferenceRepository;
+  private readonly linkRepository: SheetReferenceLinkRepository;
+  private readonly selectLinkRepo: LinkRepoSelector;
+  private readonly groupAccessService: GroupAccessService;
+  private readonly unitOfWork: UnitOfWork;
+  private readonly logger: Logger;
+
+  constructor(deps: LinkSheetReferenceDeps) {
+    this.characterSheetRepository = deps.characterSheetRepository;
+    this.itemRepository = deps.itemRepository;
+    this.linkRepository = deps.linkRepository;
+    this.selectLinkRepo = deps.selectLinkRepo;
+    this.groupAccessService = deps.groupAccessService;
+    this.unitOfWork = deps.unitOfWork;
+    this.logger = deps.logger;
+  }
 
   public async execute(command: LinkSheetReferenceCommand): Promise<Result<void, AppError>> {
     const sheet = await this.characterSheetRepository.findById(command.sheetId);

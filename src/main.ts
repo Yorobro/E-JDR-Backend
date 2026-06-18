@@ -29,7 +29,6 @@ import { CampaignCharacterRepository } from "@application/features/character-she
 // Application — ports services
 import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
 import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
-import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 // Application — implémentations
 import { Logger } from "@application/shared/Logger";
@@ -39,13 +38,6 @@ import { LoginUserUseCaseImpl } from "@application/features/auth/usecases/LoginU
 import { LogoutUserUseCaseImpl } from "@application/features/auth/usecases/LogoutUserUseCaseImpl";
 import { RefreshAccessTokenUseCaseImpl } from "@application/features/auth/usecases/RefreshAccessTokenUseCaseImpl";
 import { GetCurrentUserUseCaseImpl } from "@application/features/auth/usecases/GetCurrentUserUseCaseImpl";
-import { CreateCampaignUseCaseImpl } from "@application/features/campaign/usecases/CreateCampaignUseCaseImpl";
-import { ListMyCampaignsUseCaseImpl } from "@application/features/campaign/usecases/ListMyCampaignsUseCaseImpl";
-import { DeleteCampaignUseCaseImpl } from "@application/features/campaign/usecases/DeleteCampaignUseCaseImpl";
-import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/LinkCharacterToCampaignUseCaseImpl";
-import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
-import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
-import { ListLinkableCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListLinkableCharactersUseCaseImpl";
 
 // Presentation — feature auth
 import { AuthController } from "@presentation/http/features/auth/controllers/AuthController";
@@ -55,6 +47,10 @@ import { buildUserRoutes } from "@presentation/http/features/auth/routes/userRou
 // Presentation — feature campaign
 import { CampaignController } from "@presentation/http/features/campaign/controllers/CampaignController";
 import { CampaignCharacterController } from "@presentation/http/features/campaign/controllers/CampaignCharacterController";
+import {
+  buildCampaignController,
+  buildCampaignCharacterController,
+} from "@presentation/http/features/campaign/buildCampaignControllers";
 import { buildCampaignRoutes } from "@presentation/http/features/campaign/routes/campaignRoutes";
 // Presentation — feature session
 import { SessionController } from "@presentation/http/features/session/controllers/SessionController";
@@ -194,78 +190,6 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     authTokenService,
     pdfGenerator,
   };
-}
-
-/**
- * Assemble le controller campaign à partir des services déjà construits.
- *
- * @param services - Les services partagés produits par {@link buildServices}.
- * @param logger - Le logger applicatif.
- * @returns Le controller campaign câblé.
- */
-function buildCampaignController(
-  services: AuthServices,
-  groupAccessService: GroupAccessService,
-  logger: Logger,
-): CampaignController {
-  const createCampaign = new CreateCampaignUseCaseImpl(
-    services.idGenerator,
-    groupAccessService,
-    services.unitOfWork,
-    logger,
-  );
-  const listMyCampaigns = new ListMyCampaignsUseCaseImpl(
-    services.campaignRepository,
-    groupAccessService,
-  );
-  const deleteCampaign = new DeleteCampaignUseCaseImpl(
-    services.campaignRepository,
-    services.unitOfWork,
-    logger,
-  );
-
-  return new CampaignController(createCampaign, listMyCampaigns, deleteCampaign);
-}
-
-/**
- * Assemble le controller de la liaison campagne↔fiches (rattacher/détacher/lister).
- *
- * @param services - Les services partagés produits par {@link buildServices}.
- * @param logger - Le logger applicatif.
- * @returns Le controller de liaison câblé.
- */
-function buildCampaignCharacterController(
-  services: AuthServices,
-  logger: Logger,
-): CampaignCharacterController {
-  const linkCharacter = new LinkCharacterToCampaignUseCaseImpl(
-    services.campaignRepository,
-    services.characterSheetRepository,
-    services.campaignCharacterRepository,
-    services.unitOfWork,
-    logger,
-  );
-  const unlinkCharacter = new UnlinkCharacterFromCampaignUseCaseImpl(
-    services.campaignRepository,
-    services.characterSheetRepository,
-    services.unitOfWork,
-    logger,
-  );
-  const listCampaignCharacters = new ListCampaignCharactersUseCaseImpl(
-    services.campaignRepository,
-    services.campaignCharacterRepository,
-  );
-  const listLinkableCharacters = new ListLinkableCharactersUseCaseImpl(
-    services.campaignRepository,
-    services.characterSheetRepository,
-  );
-
-  return new CampaignCharacterController(
-    linkCharacter,
-    unlinkCharacter,
-    listCampaignCharacters,
-    listLinkableCharacters,
-  );
 }
 
 /**
@@ -419,13 +343,38 @@ async function bootstrap(): Promise<void> {
   // Construction unique de tous les services partagés (repos, adapters de sécurité, authTokenService).
   const services = buildServices(connection, config);
 
+  const controllers = buildControllers(services, config, logger);
+  const authMiddleware = buildAuthMiddleware(services.tokenProvider);
+
+  const app = buildHttpApp(controllers, authMiddleware, logger);
+
+  app.listen(config.port, () => {
+    logger.info("Serveur démarré", { port: config.port });
+  });
+}
+
+/**
+ * Assemble tous les controllers HTTP à partir des services partagés.
+ *
+ * Extrait de {@link bootstrap} pour garder ce dernier sous la limite de taille de fonction.
+ * `buildGroupControllers` est construit en premier car il expose le `groupAccessService` dont
+ * dépendent les controllers campaign, character-sheet et reference (scoping par groupe).
+ *
+ * @param services - Les services partagés produits par {@link buildServices}.
+ * @param config - La configuration applicative (cookies, environnement).
+ * @param logger - Le logger applicatif.
+ * @returns L'ensemble des controllers prêts à être montés par {@link buildHttpApp}.
+ */
+function buildControllers(
+  services: AuthServices,
+  config: AppConfig,
+  logger: Logger,
+): HttpControllers {
   const authController = buildAuthController(services, config, logger);
   const userController = new UserController(
     new GetCurrentUserUseCaseImpl(services.userRepository, services.credentialRepository),
   );
 
-  // buildGroupControllers est construit en premier pour exposer groupAccessService,
-  // dont dépendent les controllers campaign et reference.
   const {
     group: groupController,
     invitation: invitationController,
@@ -441,8 +390,15 @@ async function bootstrap(): Promise<void> {
     logger,
   });
 
-  const campaignController = buildCampaignController(services, groupAccessService, logger);
-  const campaignCharacterController = buildCampaignCharacterController(services, logger);
+  const campaignDeps = {
+    campaignRepository: services.campaignRepository,
+    characterSheetRepository: services.characterSheetRepository,
+    campaignCharacterRepository: services.campaignCharacterRepository,
+    groupAccessService,
+    idGenerator: services.idGenerator,
+    unitOfWork: services.unitOfWork,
+    logger,
+  };
   const sessionController = buildSessionController({
     campaignRepository: services.campaignRepository,
     sessionRepository: services.sessionRepository,
@@ -461,38 +417,26 @@ async function bootstrap(): Promise<void> {
     unitOfWork: services.unitOfWork,
     logger,
   };
-  const characterSheetController = buildCharacterSheetController(characterSheetDeps);
-  const characterSheetExportController = buildCharacterSheetExportController(characterSheetDeps);
-  const referenceController = buildReferenceController({
-    characterSheetRepository: services.characterSheetRepository,
-    references: services.referenceRepositories,
-    idGenerator: services.idGenerator,
-    groupAccessService,
-    unitOfWork: services.unitOfWork,
-    logger,
-  });
-  const authMiddleware = buildAuthMiddleware(services.tokenProvider);
 
-  const app = buildHttpApp(
-    {
-      auth: authController,
-      user: userController,
-      campaign: campaignController,
-      campaignCharacter: campaignCharacterController,
-      session: sessionController,
-      characterSheet: characterSheetController,
-      characterSheetExport: characterSheetExportController,
-      reference: referenceController,
-      group: groupController,
-      invitation: invitationController,
-    },
-    authMiddleware,
-    logger,
-  );
-
-  app.listen(config.port, () => {
-    logger.info("Serveur démarré", { port: config.port });
-  });
+  return {
+    auth: authController,
+    user: userController,
+    campaign: buildCampaignController(campaignDeps),
+    campaignCharacter: buildCampaignCharacterController(campaignDeps),
+    session: sessionController,
+    characterSheet: buildCharacterSheetController(characterSheetDeps),
+    characterSheetExport: buildCharacterSheetExportController(characterSheetDeps),
+    reference: buildReferenceController({
+      characterSheetRepository: services.characterSheetRepository,
+      references: services.referenceRepositories,
+      idGenerator: services.idGenerator,
+      groupAccessService,
+      unitOfWork: services.unitOfWork,
+      logger,
+    }),
+    group: groupController,
+    invitation: invitationController,
+  };
 }
 
 // Démarre le serveur uniquement lorsque ce fichier est exécuté directement

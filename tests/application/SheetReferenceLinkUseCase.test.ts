@@ -28,15 +28,15 @@ describe("Sheet reference link use cases (génériques, testés sur `armes`)", (
   });
 
   function linkUseCase(): LinkSheetReferenceUseCaseImpl {
-    return new LinkSheetReferenceUseCaseImpl(
-      txRepos.characterSheets,
-      txRepos.armes,
-      txRepos.sheetArmes,
-      (repos) => repos.sheetArmes,
+    return new LinkSheetReferenceUseCaseImpl({
+      characterSheetRepository: txRepos.characterSheets,
+      itemRepository: txRepos.armes,
+      linkRepository: txRepos.sheetArmes,
+      selectLinkRepo: (repos) => repos.sheetArmes,
       groupAccessService,
-      new FakeUnitOfWork(txRepos),
-      new FakeLogger(),
-    );
+      unitOfWork: new FakeUnitOfWork(txRepos),
+      logger: new FakeLogger(),
+    });
   }
 
   it("rattache un élément possédé à une fiche possédée", async () => {

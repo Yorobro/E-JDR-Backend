@@ -36,6 +36,20 @@
       "when": 1781775375076,
       "tag": "0004_pale_valeria_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1781824858092,
+      "tag": "0005_absent_doctor_faustus",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1781824885523,
+      "tag": "0006_military_kinsey_walden",
+      "breakpoints": true
     }
   ]
 }

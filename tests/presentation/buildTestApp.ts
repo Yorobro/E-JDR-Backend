@@ -117,7 +117,7 @@ export function buildTestApp(): {
   const campaignController = new CampaignController(
     new CreateCampaignUseCaseImpl(idGenerator, groupAccessService, unitOfWork, logger),
     new ListMyCampaignsUseCaseImpl(repos.campaigns, groupAccessService),
-    new DeleteCampaignUseCaseImpl(repos.campaigns, unitOfWork, logger),
+    new DeleteCampaignUseCaseImpl(repos.campaigns, groupAccessService, unitOfWork, logger),
   );
 
   const campaignCharacterController = new CampaignCharacterController(
