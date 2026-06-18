@@ -15,7 +15,7 @@ describe("GetCharacterSheetUseCaseImpl", () => {
 
   it("renvoie la fiche complète si le demandeur en est le propriétaire", async () => {
     txRepos.characterSheets.seed(
-      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", { peuple: "Dúnedain", vigueur: 6 }),
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", { peupleId: "peuple-1", vigueur: 6 }),
     );
 
     const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "owner-1" });
@@ -23,7 +23,7 @@ describe("GetCharacterSheetUseCaseImpl", () => {
     expect(result.isSuccess).toBe(true);
     expect(result.value.id).toBe("s-1");
     expect(result.value.name).toBe("Aragorn");
-    expect(result.value.peuple).toBe("Dúnedain");
+    expect(result.value.peupleId).toBe("peuple-1");
     expect(result.value.vigueur).toBe(6);
     expect(result.value.notes).toBeNull();
   });

@@ -7,6 +7,8 @@ import { CampaignName } from "@domain/features/campaign/value-objects/CampaignNa
 import { Session } from "@domain/features/session/entities/Session";
 import { SessionTitle } from "@domain/features/session/value-objects/SessionTitle";
 import { SessionDate } from "@domain/features/session/value-objects/SessionDate";
+import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem";
+import { ReferenceName } from "@domain/features/reference/value-objects/ReferenceName";
 import {
   CharacterSheet,
   CharacterSheetDetails,
@@ -85,6 +87,27 @@ export function buildTestSession(
     campaignId,
     title: SessionTitle.create(title),
     date: SessionDate.create(date).value,
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+  });
+}
+
+/**
+ * Aide de test : construit un élément de référence (formation, peuple, arme, …).
+ *
+ * @param id - L'identifiant de l'élément (par défaut "ref-1").
+ * @param ownerId - L'identifiant du propriétaire (par défaut "user-1").
+ * @param name - Le nom de l'élément (par défaut "Élément").
+ * @returns Une entité `ReferenceItem` prête pour les tests.
+ */
+export function buildTestReferenceItem(
+  id = "ref-1",
+  ownerId = "user-1",
+  name = "Élément",
+): ReferenceItem {
+  return ReferenceItem.create({
+    id,
+    ownerId,
+    name: ReferenceName.create(name),
     createdAt: new Date("2026-01-01T00:00:00Z"),
   });
 }

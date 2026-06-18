@@ -15,8 +15,11 @@ export class CharacterSheetHttpMapper {
     switch (error.code) {
       case "INVALID_CHARACTER_SHEET_NAME":
         return 400;
+      // REFERENCE_ITEM_NOT_FOUND : l'update de fiche valide formation_id/peuple_id ; un id de
+      // référence inconnu ou appartenant à autrui est traité comme « introuvable » (404).
       case "CHARACTER_SHEET_NOT_FOUND":
       case "CAMPAIGN_NOT_FOUND":
+      case "REFERENCE_ITEM_NOT_FOUND":
         return 404;
       case "CHARACTER_SHEET_ACCESS_DENIED":
         return 403;

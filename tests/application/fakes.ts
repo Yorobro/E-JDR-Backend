@@ -5,31 +5,18 @@ import { Campaign } from "@domain/features/campaign/entities/Campaign";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { Session } from "@domain/features/session/entities/Session";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
+import { FakeReferenceRepository, FakeSheetReferenceLinkRepository } from "./referenceFakes";
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 import { SheetCampaignView } from "@application/features/character-sheet/abstractions/repositories/SheetCampaignView";
 
-import { Logger } from "@application/shared/Logger";
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import {
   RefreshTokenRepository,
   StoredRefreshToken,
 } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
-import { PasswordHasherService } from "@application/features/auth/abstractions/services/PasswordHasherService";
-import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
-import { TokenHasherService } from "@application/features/auth/abstractions/services/TokenHasherService";
-import {
-  TokenProviderService,
-  SignedToken,
-  TokenPayload,
-} from "@application/features/auth/abstractions/services/TokenProviderService";
-import {
-  AuthTokens,
-  AuthTokenService,
-} from "@application/features/auth/abstractions/services/AuthTokenService";
-import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 import { UnitOfWork, TransactionalRepositories } from "@application/shared/UnitOfWork";
 
 /**
@@ -323,103 +310,6 @@ export class FakeCampaignCharacterRepository implements CampaignCharacterReposit
   }
 }
 
-/** Hasher de mot de passe factice : préfixe "hashed:" et compare en conséquence. */
-export class FakePasswordHasher implements PasswordHasherService {
-  public async hash(plainPassword: string): Promise<string> {
-    return `hashed:${plainPassword}`;
-  }
-
-  public async compare(plainPassword: string, hash: string): Promise<boolean> {
-    return hash === `hashed:${plainPassword}`;
-  }
-}
-
-/** Générateur d'identifiants déterministe (incrémental). */
-export class FakeIdGenerator implements IdGeneratorService {
-  private counter = 0;
-
-  public generate(): string {
-    this.counter += 1;
-    return `id-${this.counter}`;
-  }
-}
-
-/** Hasher de token déterministe factice. */
-export class FakeTokenHasher implements TokenHasherService {
-  public hash(token: string): string {
-    return `thash:${token}`;
-  }
-}
-
-/** Provider de tokens factice : encode le payload en JSON, validité contrôlable. */
-export class FakeTokenProvider implements TokenProviderService {
-  /** Permet de simuler un refresh token invalide dans les tests. */
-  public refreshTokenValid = true;
-
-  public signAccessToken(payload: TokenPayload): SignedToken {
-    return { token: `access:${JSON.stringify(payload)}`, expiresAt: new Date("2999-01-01") };
-  }
-
-  public signRefreshToken(payload: TokenPayload): SignedToken {
-    return { token: `refresh:${JSON.stringify(payload)}`, expiresAt: new Date("2999-01-01") };
-  }
-
-  public verifyAccessToken(token: string): TokenPayload | null {
-    return this.decode(token, "access:");
-  }
-
-  public verifyRefreshToken(token: string): TokenPayload | null {
-    if (!this.refreshTokenValid) {
-      return null;
-    }
-    return this.decode(token, "refresh:");
-  }
-
-  private decode(token: string, prefix: string): TokenPayload | null {
-    if (!token.startsWith(prefix)) {
-      return null;
-    }
-    return JSON.parse(token.slice(prefix.length)) as TokenPayload;
-  }
-}
-
-/** Service de tokens factice : produit une paire fixe et trace les identités servies. */
-export class FakeAuthTokenService implements AuthTokenService {
-  public readonly issuedFor: string[] = [];
-
-  public async issueTokens(
-    userId: string,
-    _email: string,
-    _refreshTokenRepo?: RefreshTokenRepository,
-  ): Promise<AuthTokens> {
-    this.issuedFor.push(userId);
-    return {
-      accessToken: `access-for-${userId}`,
-      accessTokenExpiresAt: new Date("2999-01-01"),
-      refreshToken: `refresh-for-${userId}`,
-      refreshTokenExpiresAt: new Date("2999-01-01"),
-    };
-  }
-}
-
-/** Générateur PDF factice : renvoie un Buffer commençant par l'en-tête PDF, sans rendu réel. */
-export class FakeCharacterSheetPdfGenerator implements CharacterSheetPdfGenerator {
-  public async generate(): Promise<Buffer> {
-    return Buffer.from("%PDF-fake");
-  }
-}
-
-/** Logger no-op pour les tests : absorbe silencieusement tous les appels. */
-export class FakeLogger implements Logger {
-  public info(): void {}
-  public warn(): void {}
-  public error(): void {}
-  public debug(): void {}
-  public child(): Logger {
-    return this;
-  }
-}
-
 /**
  * UnitOfWork factice : exécute le callback avec un bundle de repos en mémoire, sans
  * vraie transaction. Si le callback lève, l'erreur remonte telle quelle (les fakes ne
@@ -452,6 +342,16 @@ export function buildFakeTransactionalRepositories(overrides?: {
   sessions: FakeSessionRepository;
   characterSheets: FakeCharacterSheetRepository;
   campaignCharacters: FakeCampaignCharacterRepository;
+  formations: FakeReferenceRepository;
+  peoples: FakeReferenceRepository;
+  armes: FakeReferenceRepository;
+  armures: FakeReferenceRepository;
+  competences: FakeReferenceRepository;
+  equipements: FakeReferenceRepository;
+  sheetArmes: FakeSheetReferenceLinkRepository;
+  sheetArmures: FakeSheetReferenceLinkRepository;
+  sheetCompetences: FakeSheetReferenceLinkRepository;
+  sheetEquipements: FakeSheetReferenceLinkRepository;
 } {
   const characterSheets = overrides?.characterSheets ?? new FakeCharacterSheetRepository();
   // La liaison résout les fiches via le repo de fiches (reproduit le JOIN MySQL).
@@ -462,6 +362,16 @@ export function buildFakeTransactionalRepositories(overrides?: {
   const campaigns = overrides?.campaigns ?? new FakeCampaignRepository();
   // La liaison enrichit ses vues via campagnes + utilisateurs (reproduit le double JOIN MySQL).
   campaignCharacters.attachLookups(campaigns, users);
+
+  // Catalogues de référence (un par type) + liaisons N‑N (chacune branchée sur son catalogue
+  // pour que `findItemsBySheet` résolve les éléments, comme le JOIN SQL).
+  const formations = new FakeReferenceRepository();
+  const peoples = new FakeReferenceRepository();
+  const armes = new FakeReferenceRepository();
+  const armures = new FakeReferenceRepository();
+  const competences = new FakeReferenceRepository();
+  const equipements = new FakeReferenceRepository();
+
   return {
     users,
     credentials: overrides?.credentials ?? new FakeCredentialRepository(),
@@ -470,6 +380,16 @@ export function buildFakeTransactionalRepositories(overrides?: {
     sessions: overrides?.sessions ?? new FakeSessionRepository(),
     characterSheets,
     campaignCharacters,
+    formations,
+    peoples,
+    armes,
+    armures,
+    competences,
+    equipements,
+    sheetArmes: new FakeSheetReferenceLinkRepository(armes),
+    sheetArmures: new FakeSheetReferenceLinkRepository(armures),
+    sheetCompetences: new FakeSheetReferenceLinkRepository(competences),
+    sheetEquipements: new FakeSheetReferenceLinkRepository(equipements),
   };
 }
 
@@ -479,6 +399,23 @@ export {
   buildTestCharacterSheet,
   buildTestCampaign,
   buildTestSession,
+  buildTestReferenceItem,
   buildTestUser,
   buildTestCredential,
 } from "./builders";
+
+// Doublures de la feature référence : définies dans `referenceFakes.ts` (taille de fichier),
+// re-exportées ici pour que les tests les importent depuis `./fakes` comme les autres.
+export { FakeReferenceRepository, FakeSheetReferenceLinkRepository } from "./referenceFakes";
+
+// Doublures de services (hash/token/id/pdf/logger) : définies dans `serviceFakes.ts`,
+// re-exportées ici pour préserver les imports existants `from "./fakes"`.
+export {
+  FakePasswordHasher,
+  FakeIdGenerator,
+  FakeTokenHasher,
+  FakeTokenProvider,
+  FakeAuthTokenService,
+  FakeCharacterSheetPdfGenerator,
+  FakeLogger,
+} from "./serviceFakes";

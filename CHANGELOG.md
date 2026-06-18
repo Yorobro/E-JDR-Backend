@@ -1,3 +1,10 @@
+## 1.6.0 (2026-06-18)
+
+* Merge pull request #6 from Yorobro/feat/reference-elements ([f24fd83](https://github.com/Yorobro/E-JDR-Backend/commit/f24fd83)), closes [#6](https://github.com/Yorobro/E-JDR-Backend/issues/6)
+* Merge pull request #7 from Yorobro/chore/husky-prettier ([4bdadac](https://github.com/Yorobro/E-JDR-Backend/commit/4bdadac)), closes [#7](https://github.com/Yorobro/E-JDR-Backend/issues/7)
+* feat(reference): user-owned reference elements for character sheets ([c8ff616](https://github.com/Yorobro/E-JDR-Backend/commit/c8ff616))
+* chore(husky): check prettier formatting on staged files at commit ([6ac54cf](https://github.com/Yorobro/E-JDR-Backend/commit/6ac54cf))
+
 ## 1.5.0 (2026-06-17)
 
 * Merge pull request #5 from Yorobro/feat/sessions ([7344680](https://github.com/Yorobro/E-JDR-Backend/commit/7344680)), closes [#5](https://github.com/Yorobro/E-JDR-Backend/issues/5)

@@ -15,6 +15,9 @@ import { CharacterSheetDetail } from "@application/features/character-sheet/abst
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 import { toCharacterSheetDetail } from "@application/features/character-sheet/usecases/toCharacterSheetDetail";
+import { FormationRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
+import { PeupleRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
+import { ReferenceItemNotFoundError } from "@application/features/reference/errors/ReferenceItemNotFoundError";
 
 /** Longueur maximale des champs de texte court (alignée sur `VARCHAR(255)`). */
 const SHORT_TEXT_MAX_LENGTH = 255;
@@ -59,6 +62,8 @@ function nonNegativeInt(raw: number | null | undefined): number | null {
 export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseCase {
   constructor(
     private readonly characterSheetRepository: CharacterSheetRepository,
+    private readonly formationRepository: FormationRepository,
+    private readonly peupleRepository: PeupleRepository,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
   ) {}
@@ -110,7 +115,31 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
       throw error;
     }
 
-    const updated = sheet.withDetails({ name, sexe, purse, ...this.detailsFrom(command) });
+    // Les références N‑1 (formation/peuple), si fournies non-null, doivent exister ET appartenir
+    // au propriétaire de la fiche : on ne pioche que dans son propre catalogue.
+    const formationId = normalizeId(command.formationId);
+    const peupleId = normalizeId(command.peupleId);
+    if (
+      formationId !== null &&
+      !(await this.ownsItem(this.formationRepository, formationId, command.ownerId))
+    ) {
+      return Result.failure(new ReferenceItemNotFoundError());
+    }
+    if (
+      peupleId !== null &&
+      !(await this.ownsItem(this.peupleRepository, peupleId, command.ownerId))
+    ) {
+      return Result.failure(new ReferenceItemNotFoundError());
+    }
+
+    const updated = sheet.withDetails({
+      name,
+      sexe,
+      purse,
+      formationId,
+      peupleId,
+      ...this.detailsFrom(command),
+    });
 
     await this.unitOfWork.execute(async (repos) => {
       await repos.characterSheets.update(updated);
@@ -125,17 +154,15 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
   }
 
   /**
-   * Normalise les champs détaillés de la commande vers le format domaine, **hors** `sexe` et
-   * `purse` (value objects construits et validés à part dans {@link execute}).
+   * Normalise les champs détaillés de la commande vers le format domaine, **hors** `sexe`,
+   * `purse` et les références `formationId`/`peupleId` (traités à part dans {@link execute}).
    */
   private detailsFrom(command: UpdateCharacterSheetCommand): Partial<CharacterSheetDetails> {
     return {
-      formation: shortText(command.formation),
       niveau: nonNegativeInt(command.niveau),
-      peuple: shortText(command.peuple),
       tailleEtPoids: shortText(command.tailleEtPoids),
       age: nonNegativeInt(command.age),
-      apparence: shortText(command.apparence),
+      apparence: longText(command.apparence),
       dexterite: nonNegativeInt(command.dexterite),
       intelligence: nonNegativeInt(command.intelligence),
       perception: nonNegativeInt(command.perception),
@@ -144,12 +171,34 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
       pointsDeVie: nonNegativeInt(command.pointsDeVie),
       pointsDeMagie: nonNegativeInt(command.pointsDeMagie),
       protection: nonNegativeInt(command.protection),
-      competences: longText(command.competences),
-      armes: longText(command.armes),
-      armures: longText(command.armures),
-      equipement: longText(command.equipement),
       sortsEtMiracles: longText(command.sortsEtMiracles),
       notes: longText(command.notes),
     };
   }
+
+  /**
+   * Vérifie qu'un élément de référence existe et appartient au propriétaire donné.
+   *
+   * @param repository - Le repository de la catégorie concernée (formation/peuple).
+   * @param itemId - L'identifiant de l'élément à vérifier.
+   * @param ownerId - L'identifiant du propriétaire attendu.
+   * @returns `true` si l'élément existe et appartient à l'utilisateur.
+   */
+  private async ownsItem(
+    repository: { findById(id: string): Promise<{ isOwnedBy(userId: string): boolean } | null> },
+    itemId: string,
+    ownerId: string,
+  ): Promise<boolean> {
+    const item = await repository.findById(itemId);
+    return item !== null && item.isOwnedBy(ownerId);
+  }
+}
+
+/** Normalise un id de référence optionnel : trim, `null` si absent ou vide. */
+function normalizeId(raw: string | null | undefined): string | null {
+  if (raw === null || raw === undefined) {
+    return null;
+  }
+  const trimmed = raw.trim();
+  return trimmed.length === 0 ? null : trimmed;
 }

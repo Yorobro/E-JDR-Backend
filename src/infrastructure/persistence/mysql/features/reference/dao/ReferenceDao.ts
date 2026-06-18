@@ -1,0 +1,76 @@
+import { eq, and, desc } from "drizzle-orm";
+import { DrizzleExecutor } from "@infrastructure/persistence/drizzle/DrizzleExecutor";
+import {
+  armes,
+  armures,
+  competences,
+  equipements,
+  formations,
+  peoples,
+} from "@infrastructure/persistence/drizzle/schema";
+
+/**
+ * Une **table de référence** Drizzle (toutes ont la même forme : id, owner_id, name, created_at).
+ * Union des six tables concrètes, pour que le DAO générique accepte n'importe laquelle.
+ */
+export type ReferenceTable =
+  | typeof formations
+  | typeof peoples
+  | typeof armes
+  | typeof armures
+  | typeof competences
+  | typeof equipements;
+
+/** Ligne brute d'une table de référence (toutes partagent la même forme). */
+export type ReferenceRow = typeof formations.$inferSelect;
+
+/**
+ * DAO **générique** d'un catalogue d'éléments de référence : une instance par table, la table
+ * Drizzle ciblée étant passée au constructeur. Toutes les tables partageant les colonnes
+ * `id/owner_id/name/created_at`, un seul DAO couvre les six catégories.
+ */
+export class ReferenceDao {
+  constructor(
+    private readonly executor: DrizzleExecutor,
+    private readonly table: ReferenceTable,
+  ) {}
+
+  public async insert(row: {
+    id: string;
+    owner_id: string;
+    name: string;
+    created_at: Date;
+  }): Promise<void> {
+    await this.executor.insert(this.table).values(row);
+  }
+
+  public async findByOwnerId(ownerId: string): Promise<ReferenceRow[]> {
+    return this.executor
+      .select()
+      .from(this.table)
+      .where(eq(this.table.owner_id, ownerId))
+      .orderBy(desc(this.table.created_at));
+  }
+
+  public async findById(id: string): Promise<ReferenceRow | null> {
+    const rows = await this.executor
+      .select()
+      .from(this.table)
+      .where(eq(this.table.id, id))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
+  public async existsByOwnerAndName(ownerId: string, name: string): Promise<boolean> {
+    const rows = await this.executor
+      .select({ one: this.table.id })
+      .from(this.table)
+      .where(and(eq(this.table.owner_id, ownerId), eq(this.table.name, name)))
+      .limit(1);
+    return rows.length > 0;
+  }
+
+  public async deleteById(id: string): Promise<void> {
+    await this.executor.delete(this.table).where(eq(this.table.id, id));
+  }
+}

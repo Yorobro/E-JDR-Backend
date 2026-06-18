@@ -87,8 +87,8 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ id: created.body.id, name: "Aragorn" });
-      // Les champs détaillés sont présents et null à la création.
-      expect(res.body.peuple).toBeNull();
+      // Les champs détaillés sont présents et null à la création (formation/peuple = id de référence).
+      expect(res.body.peupleId).toBeNull();
       expect(res.body.vigueur).toBeNull();
       expect(res.body.notes).toBeNull();
     });
@@ -99,23 +99,21 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
       const put = await agent.put(`/character-sheets/${created.body.id}`).send({
         name: "Strider",
-        peuple: "Rôdeur",
         niveau: 5,
         age: 87,
         sexe: "M",
-        competences: "Pistage",
         vigueur: 7,
         notes: "Garde du Nord",
         purse: { gold: 1, silver: 50, copper: 0 },
       });
       expect(put.status).toBe(200);
-      expect(put.body).toMatchObject({ name: "Strider", peuple: "Rôdeur", niveau: 5, sexe: "M" });
+      expect(put.body).toMatchObject({ name: "Strider", niveau: 5, sexe: "M" });
       expect(put.body.purse).toEqual({ gold: 1, silver: 50, copper: 0 });
 
       const res = await agent.get(`/character-sheets/${created.body.id}`);
       expect(res.body.name).toBe("Strider");
       expect(res.body.vigueur).toBe(7);
-      expect(res.body.competences).toBe("Pistage");
+      expect(res.body.notes).toBe("Garde du Nord");
       expect(res.body.purse).toEqual({ gold: 1, silver: 50, copper: 0 });
     });
 

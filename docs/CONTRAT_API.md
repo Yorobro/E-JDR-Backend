@@ -310,14 +310,18 @@ Liste les fiches de l'utilisateur authentifié. Projection **légère** (nom seu
 ### GET /character-sheets/:id
 
 Détail **complet** d'une fiche (seul le propriétaire). **Réponse 200** : tous les champs —
-`{ "id", "ownerId", "name", "createdAt", "formation", "niveau", "peuple", "sexe",
+`{ "id", "ownerId", "name", "createdAt", "formationId", "niveau", "peupleId", "sexe",
 "tailleEtPoids", "age", "apparence", "dexterite", "intelligence", "perception", "social",
-"vigueur", "pointsDeVie", "pointsDeMagie", "protection", "purse", "competences", "armes",
-"armures", "equipement", "sortsEtMiracles", "notes" }`. Précisions de types :
+"vigueur", "pointsDeVie", "pointsDeMagie", "protection", "purse", "sortsEtMiracles", "notes" }`.
+Précisions de types :
+- `formationId`, `peupleId` : **id d'un élément de référence** du propriétaire (relation N‑1) ou `null`.
 - `niveau`, `age` : entiers (`number`) ou `null`.
 - `sexe` : `"M"` | `"F"` | `"NB"` | `null`.
 - `purse` : `{ "gold", "silver", "copper" }` (entiers bruts) ou `null` si aucune bourse.
 - les autres champs détaillés : texte ou `null`.
+
+Les **armes, armures, compétences et équipements** ne figurent **plus** ici : ce sont des
+relations N‑N gérées via `/character-sheets/:id/{type}` (cf. « Endpoints éléments de référence »).
 
 Champs détaillés `null` si non renseignés. Erreurs : `CHARACTER_SHEET_NOT_FOUND` (404),
 `CHARACTER_SHEET_ACCESS_DENIED` (403), `UNAUTHENTICATED` (401).
@@ -342,9 +346,11 @@ Exporte la fiche au format PDF (**seul le propriétaire**). **Réponse 200** : l
 Met à jour une fiche (seul le propriétaire). Saisie **souple** : seul `name` est requis (revalidé,
 max 120) ; les champs détaillés sont optionnels (texte borné, nombres entiers ≥ 0, normalisés
 côté serveur). **Corps** : `{ "name", + champs détaillés optionnels }` — dont `sexe` ∈ {M,F,NB},
-`niveau`/`age` entiers, et `purse: { gold, silver, copper }` (entiers ≥ 0). **Réponse 200** : la
-fiche complète (même forme que `GET /character-sheets/:id`). Erreurs : `INVALID_CHARACTER_SHEET_NAME`
-(400), `INVALID_SEX` (400), `INVALID_PURSE` (400), `CHARACTER_SHEET_NOT_FOUND` (404),
+`niveau`/`age` entiers, `purse: { gold, silver, copper }` (entiers ≥ 0), et **`formationId`/`peupleId`**
+(id d'un élément de référence du propriétaire, ou `null` pour vider). **Réponse 200** : la fiche
+complète (même forme que `GET /character-sheets/:id`). Erreurs : `INVALID_CHARACTER_SHEET_NAME`
+(400), `INVALID_SEX` (400), `INVALID_PURSE` (400), `REFERENCE_ITEM_NOT_FOUND` (404, si `formationId`/
+`peupleId` inconnu ou n'appartenant pas au demandeur), `CHARACTER_SHEET_NOT_FOUND` (404),
 `CHARACTER_SHEET_ACCESS_DENIED` (403), `UNAUTHENTICATED` (401).
 
 ### DELETE /character-sheets/:id
@@ -388,6 +394,56 @@ propriétaire n'est pas le MJ, en excluant les fiches déjà rattachées à la c
 ### DELETE /campaigns/:campaignId/characters/:characterSheetId
 
 Détache une fiche. **Réservé au MJ de la campagne.** **Réponse 204** (idempotent). Erreurs : `CAMPAIGN_NOT_FOUND`/`CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403, le demandeur n'est pas le MJ).
+
+---
+
+## Endpoints éléments de référence
+
+Chaque utilisateur gère son **catalogue** d'éléments réutilisables sur ses fiches : `formations`,
+`peoples` (peuples), `armes`, `armures`, `competences`, `equipements`. Chaque élément lui
+**appartient** (`ownerId` déduit de la session) et porte un `name` (≤ 120) **unique par
+propriétaire**. Toutes les routes sont protégées (cookie `access_token`).
+
+Le segment `:type` ∈ `formations|peoples|armes|armures|competences|equipements`. Un `:type`
+inconnu renvoie `REFERENCE_ITEM_NOT_FOUND` (404).
+
+### POST /reference/:type
+
+Crée un élément dans le catalogue du type. **Corps** : `{ "name": "Épée longue" }`.
+**Réponse 201** : `{ "id", "name", "createdAt" }`.
+
+| Code | HTTP | Sens |
+|---|---|---|
+| `INVALID_REFERENCE_NAME` | 400 | Nom absent, vide après normalisation, ou > 120 caractères |
+| `REFERENCE_NAME_ALREADY_USED` | 409 | Le propriétaire a déjà un élément de ce nom dans ce type |
+| `UNAUTHENTICATED` | 401 | Non authentifié |
+
+### GET /reference/:type
+
+Liste les éléments du type appartenant à l'utilisateur (des plus récents aux plus anciens).
+**Réponse 200** : `{ "items": [ { "id", "name", "createdAt" } ] }` (liste vide si aucun).
+
+### DELETE /reference/:type/:id
+
+Supprime un élément (seul le propriétaire). **Réponse 204**. Supprimer un élément référencé met
+les champs `formation_id`/`peuple_id` des fiches à `null` (N‑1, `ON DELETE set null`) et retire
+les liaisons N‑N (`ON DELETE cascade`). Erreurs : `REFERENCE_ITEM_NOT_FOUND` (404, inconnu **ou**
+n'appartenant pas au demandeur), `UNAUTHENTICATED` (401).
+
+### Liaison N‑N fiche ↔ éléments (armes/armures/competences/equipements)
+
+Sous `/character-sheets/:id/:type`, avec `:type` ∈ `armes|armures|competences|equipements`.
+**Réservé au propriétaire de la fiche** ; on ne lie que des éléments dont on est aussi propriétaire.
+
+- **POST `/character-sheets/:id/:type`** — rattache un élément. **Corps** : `{ "itemId": "uuid" }`.
+  **Réponse 201** (aucun corps ; idempotent). Erreurs : `CHARACTER_SHEET_NOT_FOUND` (404),
+  `REFERENCE_ITEM_NOT_FOUND` (404, élément inconnu/d'autrui), `CHARACTER_SHEET_ACCESS_DENIED` (403),
+  `UNAUTHENTICATED` (401).
+- **GET `/character-sheets/:id/:type`** — liste les éléments rattachés. **Réponse 200** :
+  `{ "items": [ { "id", "name", "createdAt" } ] }`. Erreurs : `CHARACTER_SHEET_NOT_FOUND` (404),
+  `CHARACTER_SHEET_ACCESS_DENIED` (403).
+- **DELETE `/character-sheets/:id/:type/:itemId`** — détache un élément (idempotent). **Réponse 204**.
+  Erreurs : `CHARACTER_SHEET_NOT_FOUND` (404), `CHARACTER_SHEET_ACCESS_DENIED` (403).
 
 ---
 

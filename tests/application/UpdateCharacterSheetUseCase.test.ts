@@ -8,6 +8,7 @@ import {
   FakeUnitOfWork,
   buildFakeTransactionalRepositories,
   buildTestCharacterSheet,
+  buildTestReferenceItem,
 } from "./fakes";
 
 describe("UpdateCharacterSheetUseCaseImpl", () => {
@@ -18,26 +19,30 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
     txRepos = buildFakeTransactionalRepositories();
     useCase = new UpdateCharacterSheetUseCaseImpl(
       txRepos.characterSheets,
+      txRepos.formations,
+      txRepos.peoples,
       new FakeUnitOfWork(txRepos),
       new FakeLogger(),
     );
   });
 
-  it("met à jour le nom et les champs détaillés, en préservant id/ownerId/createdAt", async () => {
+  it("met à jour le nom et les champs détaillés (dont la formation N‑1), en préservant id/ownerId/createdAt", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
+    // La formation référencée doit exister et appartenir au propriétaire.
+    txRepos.peoples.seed(buildTestReferenceItem("peuple-1", "owner-1", "Dúnedain"));
 
     const result = await useCase.execute({
       characterSheetId: "s-1",
       ownerId: "owner-1",
       name: "Strider",
-      peuple: "Rôdeur",
+      peupleId: "peuple-1",
       vigueur: 7,
       notes: "  Garde du Nord  ",
     });
 
     expect(result.isSuccess).toBe(true);
     expect(result.value.name).toBe("Strider");
-    expect(result.value.peuple).toBe("Rôdeur");
+    expect(result.value.peupleId).toBe("peuple-1");
     expect(result.value.vigueur).toBe(7);
     expect(result.value.notes).toBe("Garde du Nord"); // trim
     expect(result.value.id).toBe("s-1");
@@ -46,6 +51,21 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
     const persisted = await txRepos.characterSheets.findById("s-1");
     expect(persisted!.name.value).toBe("Strider");
     expect(persisted!.details.vigueur).toBe(7);
+  });
+
+  it("refuse (REFERENCE_ITEM_NOT_FOUND) une formation/peuple d'un autre propriétaire", async () => {
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
+    txRepos.peoples.seed(buildTestReferenceItem("peuple-x", "autre", "Elfe"));
+
+    const result = await useCase.execute({
+      characterSheetId: "s-1",
+      ownerId: "owner-1",
+      name: "Aragorn",
+      peupleId: "peuple-x",
+    });
+
+    expect(result.isFailure).toBe(true);
+    expect(result.error.code).toBe("REFERENCE_ITEM_NOT_FOUND");
   });
 
   it("normalise les entiers négatifs à 0", async () => {
@@ -61,7 +81,7 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
     expect(result.value.vigueur).toBe(0);
   });
 
-  it("met à jour sexe (VO), purse et competences", async () => {
+  it("met à jour sexe (VO) et purse", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
     const result = await useCase.execute({
       characterSheetId: "s-1",
@@ -70,14 +90,12 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
       niveau: 5,
       age: 87,
       sexe: "m",
-      competences: "Pistage, Survie",
       purse: { gold: 1, silver: 150, copper: 0 },
     });
     expect(result.isSuccess).toBe(true);
     expect(result.value.niveau).toBe(5);
     expect(result.value.age).toBe(87);
     expect(result.value.sexe).toBe("M");
-    expect(result.value.competences).toBe("Pistage, Survie");
     expect(result.value.purse).toEqual({ gold: 1, silver: 150, copper: 0 });
   });
 
