@@ -11,10 +11,10 @@ export interface CharacterSheetDetail {
   readonly ownerId: string;
   readonly name: string;
   readonly createdAt: Date;
-  // Identité (texte court, niveau/âge entiers)
-  readonly formation: string | null;
+  // Identité — formation/peuple = id de l'élément de référence (ou null), niveau/âge entiers
+  readonly formationId: string | null;
   readonly niveau: number | null;
-  readonly peuple: string | null;
+  readonly peupleId: string | null;
   readonly sexe: string | null;
   readonly tailleEtPoids: string | null;
   readonly age: number | null;
@@ -31,11 +31,8 @@ export interface CharacterSheetDetail {
   readonly protection: number | null;
   // Bourse (pièces brutes)
   readonly purse: PurseView | null;
-  // Zones de texte long
-  readonly competences: string | null;
-  readonly armes: string | null;
-  readonly armures: string | null;
-  readonly equipement: string | null;
+  // Zones de texte long restantes (armes/armures/compétences/équipement = listes liées, exposées
+  // à part par le use case de lecture des liaisons fiche↔référence).
   readonly sortsEtMiracles: string | null;
   readonly notes: string | null;
 }

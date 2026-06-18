@@ -31,7 +31,7 @@ describe("CharacterSheet (entité)", () => {
 
   it("create initialise les champs détaillés à null", () => {
     const sheet = build();
-    expect(sheet.details.peuple).toBeNull();
+    expect(sheet.details.peupleId).toBeNull();
     expect(sheet.details.vigueur).toBeNull();
     expect(sheet.details.notes).toBeNull();
   });
@@ -42,42 +42,40 @@ describe("CharacterSheet (entité)", () => {
       ownerId: "user-1",
       name: CharacterSheetName.create("Aragorn"),
       createdAt: new Date("2026-01-01T00:00:00Z"),
-      peuple: "Dúnedain",
+      peupleId: "peuple-1",
       niveau: 5,
       age: 87,
       sexe: Sex.create("M"),
       vigueur: 6,
-      competences: "Pistage",
       purse: Purse.create({ gold: 2 }),
     });
-    expect(sheet.details.peuple).toBe("Dúnedain");
+    expect(sheet.details.peupleId).toBe("peuple-1");
     expect(sheet.details.niveau).toBe(5);
     expect(sheet.details.age).toBe(87);
     expect(sheet.details.sexe?.value).toBe("M");
     expect(sheet.details.vigueur).toBe(6);
-    expect(sheet.details.competences).toBe("Pistage");
     expect(sheet.details.purse?.gold).toBe(2);
-    expect(sheet.details.formation).toBeNull();
+    expect(sheet.details.formationId).toBeNull();
   });
 
   it("withDetails produit une nouvelle instance sans muter l'originale", () => {
     const original = build();
     const updated = original.withDetails({
       name: CharacterSheetName.create("Strider"),
-      peuple: "Rôdeur",
+      peupleId: "peuple-2",
       vigueur: 7,
     });
 
     // L'originale est inchangée (immutabilité).
     expect(original.name.value).toBe("Aragorn");
-    expect(original.details.peuple).toBeNull();
+    expect(original.details.peupleId).toBeNull();
 
     // La nouvelle reflète les changements, identité technique préservée.
     expect(updated.id).toBe(original.id);
     expect(updated.ownerId).toBe(original.ownerId);
     expect(updated.createdAt.getTime()).toBe(original.createdAt.getTime());
     expect(updated.name.value).toBe("Strider");
-    expect(updated.details.peuple).toBe("Rôdeur");
+    expect(updated.details.peupleId).toBe("peuple-2");
     expect(updated.details.vigueur).toBe(7);
   });
 

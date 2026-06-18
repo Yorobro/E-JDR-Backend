@@ -31,18 +31,42 @@ function showPurse(detail: CharacterSheetDetail): string {
 }
 
 /**
+ * Données de référence **résolues** (noms) pour enrichir le PDF : la fiche ne porte que des id
+ * (formation/peuple) et des listes liées (armes…). Optionnel : à défaut, ces sections affichent "—".
+ */
+export interface CharacterSheetReferences {
+  readonly formationName: string | null;
+  readonly peupleName: string | null;
+  readonly armes: string[];
+  readonly armures: string[];
+  readonly competences: string[];
+  readonly equipements: string[];
+}
+
+/** Affiche une liste d'éléments liés en "a · b · c", "—" si vide. */
+function showList(items: string[]): string {
+  return items.length > 0 ? items.join(" · ") : "—";
+}
+
+/**
  * Construit les sections imprimables d'une fiche dans l'ordre métier :
  * Identité / Caractéristiques / Combat / Bourse / Armes / Armures / Compétences /
  * Équipement / Sorts & Miracles / Notes.
+ *
+ * Formation/peuple et armes/armures/compétences/équipements sont des **références** : leurs noms
+ * résolus sont fournis via [refs]. Sans [refs] (ex. export minimal), ces champs affichent "—".
  */
-export function buildCharacterSheetSections(detail: CharacterSheetDetail): PdfSection[] {
+export function buildCharacterSheetSections(
+  detail: CharacterSheetDetail,
+  refs?: CharacterSheetReferences,
+): PdfSection[] {
   return [
     {
       title: "Identité",
       fields: [
-        { label: "Formation", value: show(detail.formation) },
+        { label: "Formation", value: show(refs?.formationName) },
         { label: "Niveau", value: show(detail.niveau) },
-        { label: "Peuple", value: show(detail.peuple) },
+        { label: "Peuple", value: show(refs?.peupleName) },
         { label: "Sexe", value: show(detail.sexe) },
         { label: "Taille et poids", value: show(detail.tailleEtPoids) },
         { label: "Âge", value: show(detail.age) },
@@ -68,10 +92,16 @@ export function buildCharacterSheetSections(detail: CharacterSheetDetail): PdfSe
       ],
     },
     { title: "Bourse", fields: [{ label: "Pièces", value: showPurse(detail) }] },
-    { title: "Armes", fields: [{ label: "Armes", value: show(detail.armes) }] },
-    { title: "Armures", fields: [{ label: "Armures", value: show(detail.armures) }] },
-    { title: "Compétences", fields: [{ label: "Compétences", value: show(detail.competences) }] },
-    { title: "Équipement", fields: [{ label: "Équipement", value: show(detail.equipement) }] },
+    { title: "Armes", fields: [{ label: "Armes", value: showList(refs?.armes ?? []) }] },
+    { title: "Armures", fields: [{ label: "Armures", value: showList(refs?.armures ?? []) }] },
+    {
+      title: "Compétences",
+      fields: [{ label: "Compétences", value: showList(refs?.competences ?? []) }],
+    },
+    {
+      title: "Équipement",
+      fields: [{ label: "Équipement", value: showList(refs?.equipements ?? []) }],
+    },
     {
       title: "Sorts & Miracles",
       fields: [{ label: "Sorts & Miracles", value: show(detail.sortsEtMiracles) }],

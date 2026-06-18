@@ -5,6 +5,20 @@ import { CampaignRepository } from "@application/features/campaign/abstractions/
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
+import {
+  ArmeRepository,
+  ArmureRepository,
+  CompetenceRepository,
+  EquipementRepository,
+  FormationRepository,
+  PeupleRepository,
+} from "@application/features/reference/abstractions/repositories/ReferenceRepository";
+import {
+  SheetArmeLinkRepository,
+  SheetArmureLinkRepository,
+  SheetCompetenceLinkRepository,
+  SheetEquipementLinkRepository,
+} from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 
 /**
  * Jeu de repositories liés à une même transaction, fournis au callback d'un `UnitOfWork`.
@@ -20,6 +34,18 @@ export interface TransactionalRepositories {
   readonly sessions: SessionRepository;
   readonly characterSheets: CharacterSheetRepository;
   readonly campaignCharacters: CampaignCharacterRepository;
+  // Catalogues d'éléments de référence (un par type).
+  readonly formations: FormationRepository;
+  readonly peoples: PeupleRepository;
+  readonly armes: ArmeRepository;
+  readonly armures: ArmureRepository;
+  readonly competences: CompetenceRepository;
+  readonly equipements: EquipementRepository;
+  // Liaisons N‑N fiche ↔ éléments de référence (une par type liable).
+  readonly sheetArmes: SheetArmeLinkRepository;
+  readonly sheetArmures: SheetArmureLinkRepository;
+  readonly sheetCompetences: SheetCompetenceLinkRepository;
+  readonly sheetEquipements: SheetEquipementLinkRepository;
 }
 
 /**

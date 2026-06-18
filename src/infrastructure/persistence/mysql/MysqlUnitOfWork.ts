@@ -3,6 +3,7 @@ import { createAuthRepositories } from "@infrastructure/persistence/mysql/featur
 import { createCampaignRepositories } from "@infrastructure/persistence/mysql/features/campaign/createCampaignRepositories";
 import { createSessionRepositories } from "@infrastructure/persistence/mysql/features/session/createSessionRepositories";
 import { createCharacterSheetRepositories } from "@infrastructure/persistence/mysql/features/character-sheet/createCharacterSheetRepositories";
+import { createReferenceRepositories } from "@infrastructure/persistence/mysql/features/reference/createReferenceRepositories";
 import { UnitOfWork, TransactionalRepositories } from "@application/shared/UnitOfWork";
 
 /**
@@ -22,6 +23,7 @@ export class MysqlUnitOfWork implements UnitOfWork {
         ...createCampaignRepositories(tx),
         ...createSessionRepositories(tx),
         ...createCharacterSheetRepositories(tx),
+        ...createReferenceRepositories(tx),
       };
       return work(repos);
     });

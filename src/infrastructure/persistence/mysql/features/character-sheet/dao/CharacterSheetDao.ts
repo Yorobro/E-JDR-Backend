@@ -21,9 +21,9 @@ export class CharacterSheetDao {
       .update(characterSheets)
       .set({
         name: row.name,
-        formation: row.formation,
+        formation_id: row.formation_id,
         niveau: row.niveau,
-        peuple: row.peuple,
+        peuple_id: row.peuple_id,
         sexe: row.sexe,
         taille_et_poids: row.taille_et_poids,
         age: row.age,
@@ -39,10 +39,6 @@ export class CharacterSheetDao {
         purse_gold: row.purse_gold,
         purse_silver: row.purse_silver,
         purse_copper: row.purse_copper,
-        armures: row.armures,
-        armes: row.armes,
-        competences: row.competences,
-        equipement: row.equipement,
         sorts_et_miracles: row.sorts_et_miracles,
         notes: row.notes,
       })

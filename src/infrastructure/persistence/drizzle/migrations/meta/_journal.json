@@ -15,6 +15,20 @@
       "when": 1781715737954,
       "tag": "0001_smart_cerebro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1781732049938,
+      "tag": "0002_dashing_colonel_america",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1781732081639,
+      "tag": "0003_fearless_retro_girl",
+      "breakpoints": true
     }
   ]
 }

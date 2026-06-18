@@ -8,10 +8,11 @@ import { Purse } from "@domain/features/character-sheet/value-objects/Purse";
  * porté à part par {@link CharacterSheetName}). Aucune règle métier sur les valeurs.
  */
 export interface CharacterSheetDetails {
-  // Identité (texte, niveau/âge entiers, sexe contraint M/F/NB)
-  readonly formation: string | null;
+  // Identité — formation & peuple sont désormais des **références N‑1** vers les catalogues de
+  // l'utilisateur (id nullable). niveau/âge entiers, sexe contraint M/F/NB.
+  readonly formationId: string | null;
   readonly niveau: number | null;
-  readonly peuple: string | null;
+  readonly peupleId: string | null;
   readonly sexe: Sex | null;
   readonly tailleEtPoids: string | null;
   readonly age: number | null;
@@ -28,20 +29,17 @@ export interface CharacterSheetDetails {
   readonly protection: number | null;
   // Bourse (value object)
   readonly purse: Purse | null;
-  // Zones de texte long
-  readonly competences: string | null;
-  readonly armes: string | null;
-  readonly armures: string | null;
-  readonly equipement: string | null;
+  // Zones de texte long restantes (armes/armures/compétences/équipement sont passés en N‑N,
+  // gérés hors de cette entité via les liaisons fiche↔éléments de référence).
   readonly sortsEtMiracles: string | null;
   readonly notes: string | null;
 }
 
 /** Instantané « tout à null » des champs détaillés, utilisé comme base de création. */
 const EMPTY_DETAILS: CharacterSheetDetails = {
-  formation: null,
+  formationId: null,
   niveau: null,
-  peuple: null,
+  peupleId: null,
   sexe: null,
   tailleEtPoids: null,
   age: null,
@@ -55,10 +53,6 @@ const EMPTY_DETAILS: CharacterSheetDetails = {
   pointsDeMagie: null,
   protection: null,
   purse: null,
-  competences: null,
-  armes: null,
-  armures: null,
-  equipement: null,
   sortsEtMiracles: null,
   notes: null,
 };

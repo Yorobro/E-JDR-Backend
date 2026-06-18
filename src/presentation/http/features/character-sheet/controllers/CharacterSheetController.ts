@@ -12,9 +12,9 @@ import { CharacterSheetHttpMapper } from "@presentation/http/features/character-
 /** Corps brut accepté pour la mise à jour d'une fiche (validation souple côté use case). */
 interface UpdateCharacterSheetBody {
   name?: unknown;
-  formation?: unknown;
+  formationId?: unknown;
   niveau?: unknown;
-  peuple?: unknown;
+  peupleId?: unknown;
   sexe?: unknown;
   tailleEtPoids?: unknown;
   age?: unknown;
@@ -28,10 +28,6 @@ interface UpdateCharacterSheetBody {
   pointsDeMagie?: unknown;
   protection?: unknown;
   purse?: unknown;
-  competences?: unknown;
-  armes?: unknown;
-  armures?: unknown;
-  equipement?: unknown;
   sortsEtMiracles?: unknown;
   notes?: unknown;
 }
@@ -196,9 +192,9 @@ export class CharacterSheetController {
       characterSheetId,
       ownerId,
       name: text(body.name) ?? "",
-      formation: text(body.formation),
+      formationId: text(body.formationId),
       niveau: num(body.niveau),
-      peuple: text(body.peuple),
+      peupleId: text(body.peupleId),
       sexe: text(body.sexe),
       tailleEtPoids: text(body.tailleEtPoids),
       age: num(body.age),
@@ -212,10 +208,6 @@ export class CharacterSheetController {
       pointsDeMagie: num(body.pointsDeMagie),
       protection: num(body.protection),
       purse: toPurseCommand(body.purse),
-      competences: text(body.competences),
-      armes: text(body.armes),
-      armures: text(body.armures),
-      equipement: text(body.equipement),
       sortsEtMiracles: text(body.sortsEtMiracles),
       notes: text(body.notes),
     };

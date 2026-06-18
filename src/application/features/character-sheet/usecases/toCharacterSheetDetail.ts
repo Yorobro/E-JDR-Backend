@@ -9,9 +9,9 @@ export function toCharacterSheetDetail(sheet: CharacterSheet): CharacterSheetDet
     ownerId: sheet.ownerId,
     name: sheet.name.value,
     createdAt: sheet.createdAt,
-    formation: d.formation,
+    formationId: d.formationId,
     niveau: d.niveau,
-    peuple: d.peuple,
+    peupleId: d.peupleId,
     sexe: d.sexe?.value ?? null,
     tailleEtPoids: d.tailleEtPoids,
     age: d.age,
@@ -24,14 +24,10 @@ export function toCharacterSheetDetail(sheet: CharacterSheet): CharacterSheetDet
     pointsDeVie: d.pointsDeVie,
     pointsDeMagie: d.pointsDeMagie,
     protection: d.protection,
-    competences: d.competences,
     purse:
       d.purse != null
         ? { gold: d.purse.gold, silver: d.purse.silver, copper: d.purse.copper }
         : null,
-    armures: d.armures,
-    armes: d.armes,
-    equipement: d.equipement,
     sortsEtMiracles: d.sortsEtMiracles,
     notes: d.notes,
   };
