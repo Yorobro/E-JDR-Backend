@@ -9,6 +9,40 @@ import { ExportedCharacterSheetPdf } from "@application/features/character-sheet
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 import { toCharacterSheetDetail } from "@application/features/character-sheet/usecases/toCharacterSheetDetail";
+import { CharacterSheetReferenceResolver } from "@application/features/character-sheet/usecases/CharacterSheetReferenceResolver";
+import { buildCharacterSheetPdfReferences } from "@application/features/character-sheet/usecases/buildCharacterSheetPdfReferences";
+import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
+import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
+import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
+
+/**
+ * Dépendances du use case d'export PDF (objet pour rester sous la limite de paramètres de
+ * constructeur `ejdr/parameter-count`).
+ */
+export interface ExportCharacterSheetPdfDeps {
+  /** Fiches de personnage (lecture + contrôle de propriété). */
+  readonly characterSheetRepository: CharacterSheetRepository;
+  /** Générateur PDF (port « out »). */
+  readonly pdfGenerator: CharacterSheetPdfGenerator;
+  /** Journalisation applicative. */
+  readonly logger: Logger;
+  /** Catalogue des formations (résolution du nom + bonus). */
+  readonly formationRepository: ReferenceRepository;
+  /** Catalogue des peuples (résolution du nom + bonus). */
+  readonly peupleRepository: ReferenceRepository;
+  /** Catalogue des compétences (résolution des compétences liées à la formation). */
+  readonly competenceRepository: ReferenceRepository;
+  /** Liaison formation ↔ compétences. */
+  readonly formationCompetenceLink: FormationCompetenceLinkRepository;
+  /** Liaison fiche ↔ armes (noms des armes liées). */
+  readonly sheetArmes: SheetReferenceLinkRepository;
+  /** Liaison fiche ↔ armures (noms des armures liées). */
+  readonly sheetArmures: SheetReferenceLinkRepository;
+  /** Liaison fiche ↔ compétences (noms des compétences liées à la fiche). */
+  readonly sheetCompetences: SheetReferenceLinkRepository;
+  /** Liaison fiche ↔ équipements (noms des équipements liés). */
+  readonly sheetEquipements: SheetReferenceLinkRepository;
+}
 
 /**
  * Dérive un nom de fichier sûr à partir du nom de la fiche.
@@ -34,15 +68,35 @@ function toPdfFileName(name: string): string {
  * Use case d'export PDF d'une fiche de personnage.
  *
  * Charge la fiche, vérifie via le domaine que le demandeur en est le **propriétaire**
- * (`sheet.isOwnedBy`), projette la fiche complète puis délègue le rendu au générateur PDF.
+ * (`sheet.isOwnedBy`), projette la fiche complète, **résout** la formation/peuple et les listes
+ * liées (armes/armures/compétences/équipement) en noms, puis délègue le rendu au générateur PDF.
  * Lecture pure (sans `UnitOfWork`).
  */
 export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetPdfUseCase {
-  constructor(
-    private readonly characterSheetRepository: CharacterSheetRepository,
-    private readonly pdfGenerator: CharacterSheetPdfGenerator,
-    private readonly logger: Logger,
-  ) {}
+  private readonly characterSheetRepository: CharacterSheetRepository;
+  private readonly pdfGenerator: CharacterSheetPdfGenerator;
+  private readonly logger: Logger;
+  private readonly referenceResolver: CharacterSheetReferenceResolver;
+  private readonly sheetArmes: SheetReferenceLinkRepository;
+  private readonly sheetArmures: SheetReferenceLinkRepository;
+  private readonly sheetCompetences: SheetReferenceLinkRepository;
+  private readonly sheetEquipements: SheetReferenceLinkRepository;
+
+  constructor(deps: ExportCharacterSheetPdfDeps) {
+    this.characterSheetRepository = deps.characterSheetRepository;
+    this.pdfGenerator = deps.pdfGenerator;
+    this.logger = deps.logger;
+    this.referenceResolver = new CharacterSheetReferenceResolver({
+      formationRepository: deps.formationRepository,
+      peupleRepository: deps.peupleRepository,
+      competenceRepository: deps.competenceRepository,
+      formationCompetenceLink: deps.formationCompetenceLink,
+    });
+    this.sheetArmes = deps.sheetArmes;
+    this.sheetArmures = deps.sheetArmures;
+    this.sheetCompetences = deps.sheetCompetences;
+    this.sheetEquipements = deps.sheetEquipements;
+  }
 
   public async execute(
     query: ExportCharacterSheetPdfQuery,
@@ -62,7 +116,20 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
     }
 
     const detail = toCharacterSheetDetail(sheet);
-    const pdf = await this.pdfGenerator.generate(detail);
+    const resolved = await this.referenceResolver.resolve(
+      detail.formationId,
+      detail.peupleId,
+      sheet.groupId,
+    );
+    const lists = {
+      armes: await this.sheetArmes.findItemsBySheet(query.characterSheetId),
+      armures: await this.sheetArmures.findItemsBySheet(query.characterSheetId),
+      competences: await this.sheetCompetences.findItemsBySheet(query.characterSheetId),
+      equipements: await this.sheetEquipements.findItemsBySheet(query.characterSheetId),
+    };
+    const references = buildCharacterSheetPdfReferences(resolved, lists);
+
+    const pdf = await this.pdfGenerator.generate(detail, references);
     return Result.success({ pdf, fileName: toPdfFileName(detail.name) });
   }
 }

@@ -7,19 +7,30 @@ import {
   FakeCharacterSheetPdfGenerator,
   buildFakeTransactionalRepositories,
   buildTestCharacterSheet,
+  buildTestReferenceItem,
 } from "./fakes";
 
 describe("ExportCharacterSheetPdfUseCaseImpl", () => {
   let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
+  let pdfGenerator: FakeCharacterSheetPdfGenerator;
   let useCase: ExportCharacterSheetPdfUseCaseImpl;
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
-    useCase = new ExportCharacterSheetPdfUseCaseImpl(
-      txRepos.characterSheets,
-      new FakeCharacterSheetPdfGenerator(),
-      new FakeLogger(),
-    );
+    pdfGenerator = new FakeCharacterSheetPdfGenerator();
+    useCase = new ExportCharacterSheetPdfUseCaseImpl({
+      characterSheetRepository: txRepos.characterSheets,
+      pdfGenerator,
+      logger: new FakeLogger(),
+      formationRepository: txRepos.formations,
+      peupleRepository: txRepos.peoples,
+      competenceRepository: txRepos.competences,
+      formationCompetenceLink: txRepos.formationCompetences,
+      sheetArmes: txRepos.sheetArmes,
+      sheetArmures: txRepos.sheetArmures,
+      sheetCompetences: txRepos.sheetCompetences,
+      sheetEquipements: txRepos.sheetEquipements,
+    });
   });
 
   it("renvoie le PDF et un nom de fichier slugifié si le demandeur est le propriétaire", async () => {
@@ -44,5 +55,21 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
     const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "autre" });
 
     expect(result.error).toBeInstanceOf(CharacterSheetAccessDeniedError);
+  });
+
+  it("transmet au générateur des references résolues (nom de formation + armes liées)", async () => {
+    txRepos.formations.seed(buildTestReferenceItem("form-1", "group-1", "Guerrier"));
+    txRepos.armes.seed(buildTestReferenceItem("arme-1", "group-1", "Épée longue"));
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", { formationId: "form-1" }),
+    );
+    await txRepos.sheetArmes.link("s-1", "arme-1");
+
+    const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "owner-1" });
+
+    expect(result.isSuccess).toBe(true);
+    expect(pdfGenerator.lastReferences).not.toBeNull();
+    expect(pdfGenerator.lastReferences?.formationName).toBe("Guerrier");
+    expect(pdfGenerator.lastReferences?.armes).toEqual(["Épée longue"]);
   });
 });

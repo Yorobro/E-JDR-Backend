@@ -6,6 +6,7 @@ import { CampaignCharacterRepository } from "@application/features/character-she
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
+import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { CreateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CreateCharacterSheetUseCaseImpl";
 import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/character-sheet/usecases/ListMyCharacterSheetsUseCaseImpl";
@@ -25,6 +26,11 @@ export interface CharacterSheetControllerDeps {
   readonly peupleRepository: ReferenceRepository;
   readonly competenceRepository: ReferenceRepository;
   readonly formationCompetenceLinkRepository: FormationCompetenceLinkRepository;
+  /** Liaisons fiche ↔ éléments (noms des armes/armures/compétences/équipements liés, pour le PDF). */
+  readonly sheetArmesRepository: SheetReferenceLinkRepository;
+  readonly sheetArmuresRepository: SheetReferenceLinkRepository;
+  readonly sheetCompetencesRepository: SheetReferenceLinkRepository;
+  readonly sheetEquipementsRepository: SheetReferenceLinkRepository;
   readonly groupAccessService: GroupAccessService;
   readonly pdfGenerator: CharacterSheetPdfGenerator;
   readonly idGenerator: IdGeneratorService;
@@ -90,10 +96,18 @@ export function buildCharacterSheetExportController(
   deps: CharacterSheetControllerDeps,
 ): CharacterSheetExportController {
   return new CharacterSheetExportController(
-    new ExportCharacterSheetPdfUseCaseImpl(
-      deps.characterSheetRepository,
-      deps.pdfGenerator,
-      deps.logger,
-    ),
+    new ExportCharacterSheetPdfUseCaseImpl({
+      characterSheetRepository: deps.characterSheetRepository,
+      pdfGenerator: deps.pdfGenerator,
+      logger: deps.logger,
+      formationRepository: deps.formationRepository,
+      peupleRepository: deps.peupleRepository,
+      competenceRepository: deps.competenceRepository,
+      formationCompetenceLink: deps.formationCompetenceLinkRepository,
+      sheetArmes: deps.sheetArmesRepository,
+      sheetArmures: deps.sheetArmuresRepository,
+      sheetCompetences: deps.sheetCompetencesRepository,
+      sheetEquipements: deps.sheetEquipementsRepository,
+    }),
   );
 }
