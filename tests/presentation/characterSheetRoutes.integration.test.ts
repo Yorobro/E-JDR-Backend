@@ -158,9 +158,9 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ id: created.body.id, name: "Aragorn" });
-      // Les champs détaillés sont présents et null à la création (formation/peuple = id de référence).
+      // Les champs détaillés : les champs sans défaut sont null, les champs avec défaut ont leur valeur.
       expect(res.body.peupleId).toBeNull();
-      expect(res.body.vigueur).toBeNull();
+      expect(res.body.vigueur).toBe(0); // défaut à la création
       expect(res.body.notes).toBeNull();
       expect(res.body.formation).toBeNull(); // sans formation/peuple, les blocs résolus sont null
       expect(res.body.peuple).toBeNull();
