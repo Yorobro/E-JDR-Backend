@@ -6,6 +6,7 @@ import {
   CreateReferenceItemUseCase,
   DeleteReferenceItemUseCase,
   ListReferenceItemsUseCase,
+  UpdateReferenceItemUseCase,
 } from "@application/features/reference/abstractions/usecases/ReferenceCatalogueUseCases";
 import {
   LinkSheetReferenceUseCase,
@@ -18,6 +19,7 @@ import { ReferenceHttpMapper } from "@presentation/http/features/reference/mappe
 export interface CatalogueUseCases {
   readonly create: CreateReferenceItemUseCase;
   readonly list: ListReferenceItemsUseCase;
+  readonly update: UpdateReferenceItemUseCase;
   readonly remove: DeleteReferenceItemUseCase;
 }
 
@@ -80,6 +82,40 @@ export class ReferenceController {
         actorId: req.user!.userId,
       });
       ReferenceController.respondList(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /** `PUT /reference/:type/:id` — modifie un élément du catalogue (admin requis, remplacement complet). */
+  public update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const uc = this.catalogues[req.params.type ?? ""];
+      if (uc === undefined) {
+        res.status(404).json({ code: "REFERENCE_ITEM_NOT_FOUND", message: "Type inconnu." });
+        return;
+      }
+      const body = req.body as {
+        name?: unknown;
+        groupId?: unknown;
+        stat?: unknown;
+        bonus?: unknown;
+        protectionPoints?: unknown;
+        competenceIds?: unknown;
+      };
+      const result = await uc.update.execute({
+        itemId: req.params.id ?? "",
+        groupId: body.groupId as string,
+        actorId: req.user!.userId,
+        name: body.name as string,
+        stat: (body.stat as string | null | undefined) ?? null,
+        bonus: (body.bonus as number | null | undefined) ?? null,
+        protectionPoints: (body.protectionPoints as number | null | undefined) ?? null,
+        competenceIds: Array.isArray(body.competenceIds)
+          ? (body.competenceIds as string[])
+          : undefined,
+      });
+      ReferenceController.respondItem(res, result, 200);
     } catch (error) {
       next(error);
     }

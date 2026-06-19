@@ -12,6 +12,7 @@ export function buildReferenceCatalogueRoutes(controller: ReferenceController): 
   const router = Router();
   router.post("/:type", controller.create);
   router.get("/:type", controller.list);
+  router.put("/:type/:id", controller.update);
   router.delete("/:type/:id", controller.remove);
   return router;
 }

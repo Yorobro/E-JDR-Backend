@@ -12,4 +12,8 @@ export class MysqlFormationCompetenceLinkRepository implements FormationCompeten
   public async findCompetenceIdsByFormation(formationId: string): Promise<string[]> {
     return this.dao.findCompetenceIdsByFormation(formationId);
   }
+
+  public async deleteByFormation(formationId: string): Promise<void> {
+    await this.dao.deleteByFormation(formationId);
+  }
 }

@@ -24,4 +24,12 @@ export interface FormationCompetenceLinkRepository {
    * @returns Les identifiants des compétences liées (vide si aucune).
    */
   findCompetenceIdsByFormation(formationId: string): Promise<string[]>;
+
+  /**
+   * Supprime **tous** les liens d'une formation (remplacement complet des compétences lors d'une
+   * modification : on efface puis on réinsère la nouvelle liste, dans la même transaction).
+   *
+   * @param formationId - Identifiant de la formation dont les liens sont à supprimer.
+   */
+  deleteByFormation(formationId: string): Promise<void>;
 }

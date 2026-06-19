@@ -100,6 +100,23 @@ export class ReferenceDao {
     return rows.length > 0;
   }
 
+  public async update(row: {
+    id: string;
+    name: string;
+    stat?: string | null;
+    bonus?: number | null;
+    points_de_protection?: number | null;
+  }): Promise<void> {
+    // On ne met à jour que les champs mutables (`id`/`group_id`/`created_at` sont immuables).
+    // Cast : les colonnes spécifiques (`stat`/`bonus`, `points_de_protection`) n'existent que sur
+    // certaines tables ; absentes des autres types, elles sont ignorées (valeurs undefined).
+    const { id, ...mutable } = row;
+    await this.executor
+      .update(this.table)
+      .set(mutable as never)
+      .where(eq(this.table.id, id));
+  }
+
   public async deleteById(id: string): Promise<void> {
     await this.executor.delete(this.table).where(eq(this.table.id, id));
   }

@@ -24,4 +24,10 @@ export class FormationCompetenceLinkDao {
       .where(eq(formationCompetences.formation_id, formationId));
     return rows.map((row) => row.competenceId);
   }
+
+  public async deleteByFormation(formationId: string): Promise<void> {
+    await this.executor
+      .delete(formationCompetences)
+      .where(eq(formationCompetences.formation_id, formationId));
+  }
 }

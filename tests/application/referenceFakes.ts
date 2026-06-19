@@ -11,6 +11,11 @@ export class FakeReferenceRepository implements ReferenceRepository {
     this.items.set(item.id, item);
   }
 
+  public async update(item: ReferenceItem): Promise<void> {
+    // Remplace l'entité stockée par sa nouvelle version (même id).
+    this.items.set(item.id, item);
+  }
+
   public async findByGroupId(groupId: string): Promise<ReferenceItem[]> {
     return [...this.items.values()].filter((item) => item.isInGroup(groupId));
   }
@@ -99,5 +104,14 @@ export class FakeFormationCompetenceLinkRepository implements FormationCompetenc
   public async findCompetenceIdsByFormation(formationId: string): Promise<string[]> {
     const prefix = `${formationId}::`;
     return [...this.links].filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length));
+  }
+
+  public async deleteByFormation(formationId: string): Promise<void> {
+    const prefix = `${formationId}::`;
+    for (const k of [...this.links]) {
+      if (k.startsWith(prefix)) {
+        this.links.delete(k);
+      }
+    }
   }
 }
