@@ -141,16 +141,16 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
     }
 
     // Compétences à rattacher : pertinent uniquement pour les formations (deps présentes).
-    const competenceIds = this.formationDeps !== undefined ? (command.competenceIds ?? []) : [];
+    const formationDeps = this.formationDeps;
+    const competenceIds = formationDeps !== undefined ? (command.competenceIds ?? []) : [];
 
     // Chaque compétence doit exister dans le **même groupe** (portée + intégrité du lien).
-    for (const competenceId of competenceIds) {
-      const exists = await this.formationDeps!.competences.existsInGroup(
-        command.groupId,
-        competenceId,
-      );
-      if (!exists) {
-        return Result.failure(new ReferenceItemNotFoundError());
+    if (formationDeps !== undefined) {
+      for (const competenceId of competenceIds) {
+        const exists = await formationDeps.competences.existsInGroup(command.groupId, competenceId);
+        if (!exists) {
+          return Result.failure(new ReferenceItemNotFoundError());
+        }
       }
     }
 
@@ -164,8 +164,8 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
 
     await this.unitOfWork.execute(async (repos) => {
       await this.selectRepo(repos).save(item);
-      if (this.formationDeps !== undefined && competenceIds.length > 0) {
-        const links = this.formationDeps.formationCompetences(repos);
+      if (formationDeps !== undefined && competenceIds.length > 0) {
+        const links = formationDeps.formationCompetences(repos);
         for (const competenceId of competenceIds) {
           await links.link(item.id, competenceId, item.createdAt);
         }

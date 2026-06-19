@@ -92,7 +92,7 @@ export class FakeFormationCompetenceLinkRepository implements FormationCompetenc
     return `${formationId}::${competenceId}`;
   }
 
-  public async link(formationId: string, competenceId: string): Promise<void> {
+  public async link(formationId: string, competenceId: string, _createdAt: Date): Promise<void> {
     this.links.add(this.key(formationId, competenceId));
   }
 
