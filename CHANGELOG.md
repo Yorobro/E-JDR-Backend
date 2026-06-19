@@ -1,3 +1,8 @@
+## 1.10.0 (2026-06-19)
+
+* Merge pull request #11 from Yorobro/feat/reference-edit ([23c5bb2](https://github.com/Yorobro/E-JDR-Backend/commit/23c5bb2)), closes [#11](https://github.com/Yorobro/E-JDR-Backend/issues/11)
+* feat(reference): ajouter la modification d'un élément de référence ([aefbe20](https://github.com/Yorobro/E-JDR-Backend/commit/aefbe20))
+
 ## 1.9.0 (2026-06-19)
 
 * Merge pull request #10 from Yorobro/feat/pdf-character-sheet-layout ([6d45e18](https://github.com/Yorobro/E-JDR-Backend/commit/6d45e18)), closes [#10](https://github.com/Yorobro/E-JDR-Backend/issues/10)
