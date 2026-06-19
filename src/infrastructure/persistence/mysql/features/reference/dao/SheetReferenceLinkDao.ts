@@ -82,17 +82,23 @@ export class SheetReferenceLinkDao {
   public async findItemsBySheet(sheetId: string): Promise<ReferenceRow[]> {
     const refTable = this.binding.referenceTable;
     const join = this.binding.joinTable;
+    // Seule la table `armures` porte `points_de_protection` ; on ne le sélectionne que si la table
+    // liée possède la colonne (les autres catégories n'en ont pas). Indispensable pour que la
+    // somme des protections des armures liées soit correcte côté fiche.
+    const protectionColumn =
+      "points_de_protection" in refTable ? (refTable as typeof armures).points_de_protection : null;
     const rows = await this.executor
       .select({
         id: refTable.id,
         group_id: refTable.group_id,
         name: refTable.name,
         created_at: refTable.created_at,
+        ...(protectionColumn !== null ? { points_de_protection: protectionColumn } : {}),
       })
       .from(join)
       .innerJoin(refTable, eq(this.binding.itemIdColumn, refTable.id))
       .where(eq(join.sheet_id, sheetId))
       .orderBy(desc(join.created_at));
-    return rows;
+    return rows as ReferenceRow[];
   }
 }

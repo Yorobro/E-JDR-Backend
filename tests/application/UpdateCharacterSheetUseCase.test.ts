@@ -62,6 +62,28 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
     expect(persisted!.details.vigueur).toBe(7);
   });
 
+  it("ne persiste PAS pointsDeVie/protection envoyés par le client (valeurs dérivées)", async () => {
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", { vigueur: 4 }),
+    );
+
+    const result = await useCase.execute({
+      characterSheetId: "s-1",
+      ownerId: "owner-1",
+      name: "Aragorn",
+      vigueur: 4,
+      pointsDeVie: 999,
+      protection: 999,
+    });
+
+    expect(result.isSuccess).toBe(true);
+    // Les colonnes dérivées ne reflètent jamais l'input client (ici elles restent à null,
+    // état initial de la fiche) : elles seront recalculées à la lecture.
+    const persisted = await txRepos.characterSheets.findById("s-1");
+    expect(persisted!.details.pointsDeVie).toBeNull();
+    expect(persisted!.details.protection).toBeNull();
+  });
+
   it("refuse (REFERENCE_ITEM_NOT_FOUND) une formation/peuple d'un autre propriétaire", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
     txRepos.peoples.seed(buildTestReferenceItem("peuple-x", "group-autre", "Elfe"));

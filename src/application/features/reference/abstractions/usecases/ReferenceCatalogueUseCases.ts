@@ -31,6 +31,12 @@ export interface CreateReferenceItemCommand {
    * compétence doit exister dans le **même groupe**. Absent/vide ⇒ aucune compétence.
    */
   readonly competenceIds?: string[];
+  /**
+   * Points de protection (armures uniquement). Entier ≥ 0 ; une valeur négative est clampée à 0.
+   * `undefined`/`null` ⇒ non renseigné (traité comme le défaut 0 à l'usage). Ignoré pour les
+   * autres types.
+   */
+  readonly protectionPoints?: number | null;
 }
 
 /** Requête de listing des éléments d'un groupe. */

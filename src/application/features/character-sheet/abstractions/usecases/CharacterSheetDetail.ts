@@ -19,12 +19,19 @@ export interface CharacterSheetDetail {
   readonly tailleEtPoids: string | null;
   readonly age: number | null;
   readonly apparence: string | null;
-  // Caractéristiques (entiers)
+  // Caractéristiques de **base** (entiers, saisie souple ⇒ nullable). Inchangées par les bonus.
   readonly dexterite: number | null;
   readonly intelligence: number | null;
   readonly perception: number | null;
   readonly social: number | null;
   readonly vigueur: number | null;
+  // Caractéristiques **totales** (dérivées, jamais stockées) : base + bonus du peuple ciblant la
+  // stat + bonus de la formation ciblant la stat. Toujours un nombre (base nulle comptée 0).
+  readonly dexteriteTotale: number;
+  readonly intelligenceTotale: number;
+  readonly perceptionTotale: number;
+  readonly socialTotale: number;
+  readonly vigueurTotale: number;
   // Ressources de combat (entiers)
   readonly pointsDeVie: number | null;
   readonly pointsDeMagie: number | null;

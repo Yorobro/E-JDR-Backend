@@ -92,4 +92,56 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
     expect(pdfGenerator.lastReferences?.formationName).toBe("Guerrier");
     expect(pdfGenerator.lastReferences?.armes).toEqual(["Épée longue"]);
   });
+
+  it("imprime des PV et une protection DÉRIVÉS (calculés), pas les valeurs stockées", async () => {
+    txRepos.formations.seed(
+      buildTestReferenceItem("form-1", "group-1", "Guerrier", { stat: "vigueur", amount: 2 }),
+    );
+    // Deux armures liées : protection 3 + 1 = 4.
+    txRepos.armures.seed(buildTestReferenceItem("armure-1", "group-1", "Plastron", undefined, 3));
+    txRepos.armures.seed(buildTestReferenceItem("armure-2", "group-1", "Bouclier", undefined, 1));
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", {
+        formationId: "form-1",
+        vigueur: 5,
+        pointsDeVie: 999,
+        protection: 999,
+      }),
+    );
+    await txRepos.sheetArmures.link("s-1", "armure-1");
+    await txRepos.sheetArmures.link("s-1", "armure-2");
+
+    const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "owner-1" });
+
+    expect(result.isSuccess).toBe(true);
+    // 10 + (5 + 2) = 17 ; protection 3 + 1 = 4 ; les 999 stockés sont écrasés.
+    expect(pdfGenerator.lastDetail?.pointsDeVie).toBe(17);
+    expect(pdfGenerator.lastDetail?.protection).toBe(4);
+  });
+
+  it("imprime le TOTAL des caractéristiques (base + bonus formation/peuple), pas la base seule", async () => {
+    txRepos.formations.seed(
+      buildTestReferenceItem("form-1", "group-1", "Diplomate", { stat: "social", amount: 2 }),
+    );
+    txRepos.peoples.seed(
+      buildTestReferenceItem("peuple-1", "group-1", "Halfelin", { stat: "social", amount: 1 }),
+    );
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Frodon", {
+        social: 3,
+        dexterite: 4,
+        formationId: "form-1",
+        peupleId: "peuple-1",
+      }),
+    );
+
+    const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "owner-1" });
+
+    expect(result.isSuccess).toBe(true);
+    // Le PDF lit detail.social : il doit porter le total 3 + 2 + 1 = 6 (et non la base 3).
+    expect(pdfGenerator.lastDetail?.social).toBe(6);
+    expect(pdfGenerator.lastDetail?.socialTotale).toBe(6);
+    // Une stat sans bonus reste à sa base.
+    expect(pdfGenerator.lastDetail?.dexterite).toBe(4);
+  });
 });

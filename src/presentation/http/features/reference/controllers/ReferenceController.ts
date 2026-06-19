@@ -47,6 +47,7 @@ export class ReferenceController {
         groupId?: unknown;
         stat?: unknown;
         bonus?: unknown;
+        protectionPoints?: unknown;
         competenceIds?: unknown;
       };
       const result = await uc.create.execute({
@@ -55,6 +56,7 @@ export class ReferenceController {
         name: body.name as string,
         stat: (body.stat as string | null | undefined) ?? null,
         bonus: (body.bonus as number | null | undefined) ?? null,
+        protectionPoints: (body.protectionPoints as number | null | undefined) ?? null,
         competenceIds: Array.isArray(body.competenceIds)
           ? (body.competenceIds as string[])
           : undefined,
@@ -202,6 +204,7 @@ export class ReferenceController {
     createdAt: string;
     stat: string | null;
     bonus: number | null;
+    protectionPoints: number | null;
     competenceIds: string[];
   } {
     return {
@@ -210,6 +213,7 @@ export class ReferenceController {
       createdAt: view.createdAt.toISOString(),
       stat: view.stat,
       bonus: view.bonus,
+      protectionPoints: view.protectionPoints,
       competenceIds: view.competenceIds,
     };
   }

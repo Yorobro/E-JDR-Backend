@@ -20,6 +20,12 @@ export interface ReferenceItemSnapshot {
    * jamais de bonus et laissent ce champ à `null`.
    */
   readonly statBonus?: StatBonus | null;
+  /**
+   * Points de protection portés par l'élément (armures uniquement). Entier ≥ 0. `null` ou absent
+   * signifie « non renseigné » (les autres types n'en portent jamais). À l'usage (somme de
+   * protection d'une fiche), `null` est traité comme la valeur par défaut 0.
+   */
+  readonly protectionPoints?: number | null;
 }
 
 /**
@@ -56,8 +62,29 @@ export class ReferenceItem {
     name: ReferenceName;
     createdAt: Date;
     statBonus?: StatBonus | null;
+    protectionPoints?: number | null;
   }): ReferenceItem {
-    return new ReferenceItem(params);
+    return new ReferenceItem({
+      ...params,
+      protectionPoints: ReferenceItem.normalizeProtectionPoints(params.protectionPoints),
+    });
+  }
+
+  /**
+   * Normalise les points de protection : `null`/`undefined` ⇒ `null` (non renseigné, traité comme
+   * le défaut 0 à l'usage) ; toute valeur négative est **clampée à 0** (les points de protection
+   * sont, par définition, un entier ≥ 0). On choisit le clamp plutôt que le rejet pour rester
+   * simple et cohérent avec le « défaut 0 » : une saisie négative n'a pas de sens métier mais ne
+   * doit pas faire échouer la création.
+   *
+   * @param value - La valeur brute fournie à la création.
+   * @returns `null` si non renseignée, sinon un entier ≥ 0.
+   */
+  private static normalizeProtectionPoints(value: number | null | undefined): number | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    return Math.max(0, Math.trunc(value));
   }
 
   /**
@@ -96,6 +123,14 @@ export class ReferenceItem {
    */
   public get statBonus(): StatBonus | null {
     return this.props.statBonus ?? null;
+  }
+
+  /**
+   * @returns Les points de protection portés par l'élément (armures), ou `null` s'il n'en porte
+   *          pas (cas des autres types et des armures sans valeur renseignée).
+   */
+  public get protectionPoints(): number | null {
+    return this.props.protectionPoints ?? null;
   }
 
   /**

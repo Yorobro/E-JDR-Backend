@@ -58,6 +58,21 @@ const EMPTY_DETAILS: CharacterSheetDetails = {
 };
 
 /**
+ * Valeurs par défaut appliquées **uniquement à la création** d'une fiche (factory `create()`).
+ * Elles priment sur {@link EMPTY_DETAILS} mais sont surchargées par les params fournis.
+ */
+const CREATION_DEFAULTS: Partial<CharacterSheetDetails> = {
+  niveau: 1,
+  dexterite: 0,
+  intelligence: 0,
+  perception: 0,
+  social: 0,
+  vigueur: 0,
+  pointsDeMagie: 0,
+  purse: Purse.create({}),
+};
+
+/**
  * Données nécessaires pour reconstruire une `CharacterSheet` existante (ex : depuis la base).
  * Le nom est déjà un value object validé via {@link CharacterSheetName} ; les champs détaillés
  * sont des primitifs nullables ({@link CharacterSheetDetails}).
@@ -117,6 +132,7 @@ export class CharacterSheet {
   ): CharacterSheet {
     return new CharacterSheet({
       ...EMPTY_DETAILS,
+      ...CREATION_DEFAULTS,
       ...params,
     });
   }

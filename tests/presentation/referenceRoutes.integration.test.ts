@@ -42,6 +42,30 @@ describe("Reference routes (intégration HTTP)", () => {
     expect(list.body.items[0].name).toBe("Épée longue");
   });
 
+  it("POST /reference/armures avec points de protection : créé (201) et renvoyé en liste", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+
+    const created = await agent
+      .post("/reference/armures")
+      .send({ name: "Cotte de mailles", groupId, protectionPoints: 3 });
+    expect(created.status).toBe(201);
+    expect(created.body.protectionPoints).toBe(3);
+
+    const list = await agent.get(`/reference/armures?groupId=${groupId}`);
+    expect(list.status).toBe(200);
+    expect(list.body.items[0].protectionPoints).toBe(3);
+  });
+
+  it("POST /reference/armures sans points de protection : protectionPoints null", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+
+    const created = await agent.post("/reference/armures").send({ name: "Tunique", groupId });
+    expect(created.status).toBe(201);
+    expect(created.body.protectionPoints).toBeNull();
+  });
+
   it("POST /reference/armes avec un nom vide renvoie 400 (INVALID_REFERENCE_NAME)", async () => {
     const agent = await authenticate();
     const groupId = await createGroup(agent);
@@ -93,6 +117,32 @@ describe("Reference routes (intégration HTTP)", () => {
 
     const after = await agent.get(`/character-sheets/${sheetId}/armes`);
     expect(after.body.items).toHaveLength(0);
+  });
+
+  it("une armure liée remonte ses points de protection, et la fiche dérive sa protection", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+    const sheet = await agent.post("/character-sheets").send({ name: "Conan", groupId });
+    const sheetId = sheet.body.id as string;
+    const a1 = await agent
+      .post("/reference/armures")
+      .send({ name: "Plastron", groupId, protectionPoints: 3 });
+    const a2 = await agent
+      .post("/reference/armures")
+      .send({ name: "Bouclier", groupId, protectionPoints: 1 });
+    await agent.post(`/character-sheets/${sheetId}/armures`).send({ itemId: a1.body.id });
+    await agent.post(`/character-sheets/${sheetId}/armures`).send({ itemId: a2.body.id });
+
+    // Les armures liées exposent leurs points de protection (et non null).
+    const linked = await agent.get(`/character-sheets/${sheetId}/armures`);
+    const protections = linked.body.items
+      .map((i: { protectionPoints: number | null }) => i.protectionPoints)
+      .sort();
+    expect(protections).toEqual([1, 3]);
+
+    // La protection de la fiche est dérivée = somme des protections des armures liées.
+    const detail = await agent.get(`/character-sheets/${sheetId}`);
+    expect(detail.body.protection).toBe(4);
   });
 
   it("liaison N-1 : affecter une formation via PUT /character-sheets/:id (formationId)", async () => {

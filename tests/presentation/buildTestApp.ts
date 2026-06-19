@@ -149,6 +149,7 @@ export function buildTestApp(): {
       peupleRepository: repos.peoples,
       competenceRepository: repos.competences,
       formationCompetenceLink: repos.formationCompetences,
+      sheetArmures: repos.sheetArmures,
       groupAccessService,
       logger,
     }),

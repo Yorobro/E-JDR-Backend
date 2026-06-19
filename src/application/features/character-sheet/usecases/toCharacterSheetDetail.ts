@@ -21,6 +21,13 @@ export function toCharacterSheetDetail(sheet: CharacterSheet): CharacterSheetDet
     perception: d.perception,
     social: d.social,
     vigueur: d.vigueur,
+    // Totaux par défaut = base (sans bonus) ; le use case de lecture les recalcule avec les bonus
+    // formation/peuple résolus avant de renvoyer le détail (dérivés, jamais stockés).
+    dexteriteTotale: d.dexterite ?? 0,
+    intelligenceTotale: d.intelligence ?? 0,
+    perceptionTotale: d.perception ?? 0,
+    socialTotale: d.social ?? 0,
+    vigueurTotale: d.vigueur ?? 0,
     pointsDeVie: d.pointsDeVie,
     pointsDeMagie: d.pointsDeMagie,
     protection: d.protection,

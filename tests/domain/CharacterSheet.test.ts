@@ -44,11 +44,89 @@ describe("CharacterSheet (entité)", () => {
     expect(sheet.isOwnedBy("autre")).toBe(false);
   });
 
-  it("create initialise les champs détaillés à null", () => {
+  it("create initialise les champs sans défaut à null", () => {
     const sheet = build();
     expect(sheet.details.peupleId).toBeNull();
-    expect(sheet.details.vigueur).toBeNull();
     expect(sheet.details.notes).toBeNull();
+    expect(sheet.details.pointsDeVie).toBeNull();
+    expect(sheet.details.protection).toBeNull();
+  });
+
+  it("create applique les défauts (niveau=1, stats=0, PM=0)", () => {
+    const sheet = CharacterSheet.create({
+      id: "sheet-1",
+      ownerId: "user-1",
+      groupId: "group-1",
+      name: CharacterSheetName.create("Aragorn"),
+      createdAt: new Date("2026-01-01T00:00:00Z"),
+    });
+    expect(sheet.details.niveau).toBe(1);
+    expect(sheet.details.dexterite).toBe(0);
+    expect(sheet.details.intelligence).toBe(0);
+    expect(sheet.details.perception).toBe(0);
+    expect(sheet.details.social).toBe(0);
+    expect(sheet.details.vigueur).toBe(0);
+    expect(sheet.details.pointsDeMagie).toBe(0);
+    // bourse à 0 par défaut (or/argent/cuivre)
+    expect(sheet.details.purse?.gold).toBe(0);
+    expect(sheet.details.purse?.silver).toBe(0);
+    expect(sheet.details.purse?.copper).toBe(0);
+    // les autres restent null
+    expect(sheet.details.pointsDeVie).toBeNull();
+    expect(sheet.details.protection).toBeNull();
+    expect(sheet.details.notes).toBeNull();
+  });
+
+  it("create respecte les valeurs fournies (priment sur les défauts)", () => {
+    const sheet = CharacterSheet.create({
+      id: "sheet-1",
+      ownerId: "user-1",
+      groupId: "group-1",
+      name: CharacterSheetName.create("Aragorn"),
+      createdAt: new Date("2026-01-01T00:00:00Z"),
+      niveau: 5,
+      vigueur: 3,
+    });
+    expect(sheet.details.niveau).toBe(5);
+    expect(sheet.details.vigueur).toBe(3);
+    // les défauts des autres champs sont toujours appliqués
+    expect(sheet.details.dexterite).toBe(0);
+    expect(sheet.details.pointsDeMagie).toBe(0);
+  });
+
+  it("restore ne force aucun défaut (null reste null)", () => {
+    const sheet = CharacterSheet.restore({
+      id: "sheet-9",
+      ownerId: "owner-9",
+      groupId: "group-9",
+      name: CharacterSheetName.create("Legolas"),
+      createdAt: new Date("2026-02-03T10:00:00Z"),
+      formationId: null,
+      niveau: null,
+      peupleId: null,
+      sexe: null,
+      tailleEtPoids: null,
+      age: null,
+      apparence: null,
+      dexterite: null,
+      intelligence: null,
+      perception: null,
+      social: null,
+      vigueur: null,
+      pointsDeVie: null,
+      pointsDeMagie: null,
+      protection: null,
+      purse: null,
+      sortsEtMiracles: null,
+      notes: null,
+    });
+    expect(sheet.details.niveau).toBeNull();
+    expect(sheet.details.dexterite).toBeNull();
+    expect(sheet.details.intelligence).toBeNull();
+    expect(sheet.details.perception).toBeNull();
+    expect(sheet.details.social).toBeNull();
+    expect(sheet.details.vigueur).toBeNull();
+    expect(sheet.details.pointsDeMagie).toBeNull();
   });
 
   it("create accepte des champs détaillés optionnels", () => {

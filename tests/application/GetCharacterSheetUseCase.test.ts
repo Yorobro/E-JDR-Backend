@@ -28,6 +28,7 @@ describe("GetCharacterSheetUseCaseImpl", () => {
       peupleRepository: txRepos.peoples,
       competenceRepository: txRepos.competences,
       formationCompetenceLink: txRepos.formationCompetences,
+      sheetArmures: txRepos.sheetArmures,
       groupAccessService,
       logger: new FakeLogger(),
     });
@@ -181,6 +182,98 @@ describe("GetCharacterSheetUseCaseImpl", () => {
       expect(result.isSuccess).toBe(true);
       expect(result.value.peupleId).toBe("peuple-1");
       expect(result.value.peuple).toBeNull();
+    });
+  });
+
+  describe("stats dérivées (PV et protection calculés à la lecture)", () => {
+    beforeEach(() => {
+      txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "owner-1" }));
+    });
+
+    it("calcule pointsDeVie=14 (10 + vigueur 4) et protection=3 (armure liée) en écrasant les valeurs stockées", async () => {
+      // La fiche porte des valeurs stockées « parasites » qui doivent être écrasées par le calcul.
+      txRepos.characterSheets.seed(
+        buildTestCharacterSheet("s-1", "owner-1", "Aragorn", {
+          vigueur: 4,
+          pointsDeVie: 999,
+          protection: 999,
+        }),
+      );
+      // Une armure de protection 3 liée à la fiche.
+      txRepos.armures.seed(
+        buildTestReferenceItem("armure-1", "group-1", "Cotte de mailles", undefined, 3),
+      );
+      await txRepos.sheetArmures.link("s-1", "armure-1");
+
+      const result = await useCase.execute({ characterSheetId: "s-1", userId: "owner-1" });
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.value.pointsDeVie).toBe(14);
+      expect(result.value.protection).toBe(3);
+    });
+
+    it("inclut les bonus de vigueur de la formation et du peuple dans les PV", async () => {
+      txRepos.formations.seed(
+        buildTestReferenceItem("form-1", "group-1", "Guerrier", { stat: "vigueur", amount: 2 }),
+      );
+      txRepos.peoples.seed(
+        buildTestReferenceItem("peuple-1", "group-1", "Nain", { stat: "vigueur", amount: 1 }),
+      );
+      txRepos.characterSheets.seed(
+        buildTestCharacterSheet("s-1", "owner-1", "Gimli", {
+          vigueur: 3,
+          formationId: "form-1",
+          peupleId: "peuple-1",
+        }),
+      );
+
+      const result = await useCase.execute({ characterSheetId: "s-1", userId: "owner-1" });
+
+      // 10 + (3 + 2 + 1) = 16 ; aucune armure ⇒ protection 0.
+      expect(result.value.pointsDeVie).toBe(16);
+      expect(result.value.protection).toBe(0);
+    });
+
+    it("expose la stat totale = base + bonus formation + bonus peuple ciblant cette stat (social)", async () => {
+      txRepos.formations.seed(
+        buildTestReferenceItem("form-1", "group-1", "Diplomate", { stat: "social", amount: 2 }),
+      );
+      txRepos.peoples.seed(
+        buildTestReferenceItem("peuple-1", "group-1", "Halfelin", { stat: "social", amount: 1 }),
+      );
+      txRepos.characterSheets.seed(
+        buildTestCharacterSheet("s-1", "owner-1", "Frodon", {
+          social: 3,
+          formationId: "form-1",
+          peupleId: "peuple-1",
+        }),
+      );
+
+      const result = await useCase.execute({ characterSheetId: "s-1", userId: "owner-1" });
+
+      // base 3 + formation +2 + peuple +1 = 6 ; la base reste inchangée.
+      expect(result.value.social).toBe(3);
+      expect(result.value.socialTotale).toBe(6);
+    });
+
+    it("renvoie une stat totale = base quand aucun bonus ne cible cette stat", async () => {
+      txRepos.peoples.seed(
+        buildTestReferenceItem("peuple-1", "group-1", "Elfe", { stat: "dexterite", amount: 1 }),
+      );
+      txRepos.characterSheets.seed(
+        buildTestCharacterSheet("s-1", "owner-1", "Legolas", {
+          dexterite: 5,
+          intelligence: 4,
+          peupleId: "peuple-1",
+        }),
+      );
+
+      const result = await useCase.execute({ characterSheetId: "s-1", userId: "owner-1" });
+
+      // dexterite reçoit le bonus du peuple (5 + 1 = 6) ; intelligence n'est ciblée par personne (4).
+      expect(result.value.dexteriteTotale).toBe(6);
+      expect(result.value.intelligenceTotale).toBe(4);
+      expect(result.value.intelligence).toBe(4);
     });
   });
 });

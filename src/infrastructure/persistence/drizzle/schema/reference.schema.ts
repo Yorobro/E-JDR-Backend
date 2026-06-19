@@ -78,10 +78,23 @@ export const armes = mysqlTable("armes", referenceColumns, (t) => [
   index("idx_armes_group_id").on(t.group_id),
 ]);
 
-export const armures = mysqlTable("armures", referenceColumns, (t) => [
-  unique("uq_armures_group_name").on(t.group_id, t.name),
-  index("idx_armures_group_id").on(t.group_id),
-]);
+// armures a ses propres colonnes inline (avec points_de_protection en plus, nullable)
+export const armures = mysqlTable(
+  "armures",
+  {
+    id: char("id", { length: 36 }).primaryKey(),
+    group_id: char("group_id", { length: 36 })
+      .notNull()
+      .references(() => friendGroups.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 120 }).notNull(),
+    created_at: datetime("created_at", { mode: "date" }).notNull(),
+    points_de_protection: int("points_de_protection"),
+  },
+  (t) => [
+    unique("uq_armures_group_name").on(t.group_id, t.name),
+    index("idx_armures_group_id").on(t.group_id),
+  ],
+);
 
 export const competences = mysqlTable("competences", referenceColumns, (t) => [
   unique("uq_competences_group_name").on(t.group_id, t.name),

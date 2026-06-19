@@ -17,6 +17,8 @@ export class ReferenceMapper {
       name: ReferenceName.create(row.name),
       createdAt: new Date(row.created_at),
       statBonus,
+      // points_de_protection n'est peuplé que pour les armures ; absent/null pour les autres.
+      protectionPoints: row.points_de_protection ?? null,
     });
   }
 
@@ -27,6 +29,7 @@ export class ReferenceMapper {
     created_at: Date;
     stat: string | null;
     bonus: number | null;
+    points_de_protection: number | null;
   } {
     const statBonus = item.statBonus;
     return {
@@ -36,6 +39,7 @@ export class ReferenceMapper {
       created_at: item.createdAt,
       stat: statBonus?.stat ?? null,
       bonus: statBonus?.amount ?? null,
+      points_de_protection: item.protectionPoints,
     };
   }
 }

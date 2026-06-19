@@ -66,7 +66,7 @@ export class PdfKitCharacterSheetPdfGenerator implements CharacterSheetPdfGenera
   ): void {
     const cols = computeColumns(doc);
     let y = this.renderHeader(doc, detail, references, cols);
-    y = this.renderStatColumns(doc, detail, references, cols, y + BLOCK_GAP);
+    y = this.renderStatColumns(doc, detail, cols, y + BLOCK_GAP);
     this.renderInventory(doc, detail, references, cols, y + BLOCK_GAP);
 
     doc.addPage();
@@ -111,11 +111,10 @@ export class PdfKitCharacterSheetPdfGenerator implements CharacterSheetPdfGenera
   private renderStatColumns(
     doc: PDFKit.PDFDocument,
     detail: CharacterSheetDetail,
-    references: CharacterSheetPdfReferences,
     cols: Columns,
     startY: number,
   ): number {
-    const leftBottom = this.renderCharacteristics(doc, detail, references, cols.left, startY);
+    const leftBottom = this.renderCharacteristics(doc, detail, cols.left, startY);
     const rightBottom = this.renderCombat(doc, detail, cols.right, startY);
     return Math.max(leftBottom, rightBottom);
   }
@@ -124,14 +123,14 @@ export class PdfKitCharacterSheetPdfGenerator implements CharacterSheetPdfGenera
   private renderCharacteristics(
     doc: PDFKit.PDFDocument,
     detail: CharacterSheetDetail,
-    references: CharacterSheetPdfReferences,
     zone: Columns["left"],
     startY: number,
   ): number {
     let y = this.renderColumnTitle(doc, "Caractéristiques", zone, startY);
     for (const spec of STATS) {
-      const bonus = references.statBonuses.find((b) => b.stat === spec.key)?.amount ?? null;
-      const value = formatStat(detail[spec.key], bonus);
+      // `detail[spec.key]` porte déjà le **total** (base + bonus formation/peuple) calculé en amont
+      // par le use case : on l'affiche tel quel, sans ré-annoter le bonus (sinon double comptage).
+      const value = formatStat(detail[spec.key], null);
       y +=
         drawStatBox(doc, { x: zone.x, y, width: zone.width, label: spec.label, value, hint: "" }) +
         BLOCK_GAP;
