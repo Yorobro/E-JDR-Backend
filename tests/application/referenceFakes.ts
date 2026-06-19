@@ -1,6 +1,7 @@
 import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
+import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
 
 /** Catalogue d'éléments de référence en mémoire (indexé par id), partagé par les 6 types. */
 export class FakeReferenceRepository implements ReferenceRepository {
@@ -22,6 +23,11 @@ export class FakeReferenceRepository implements ReferenceRepository {
     return [...this.items.values()].some(
       (item) => item.isInGroup(groupId) && item.name.value === name,
     );
+  }
+
+  public async existsInGroup(groupId: string, itemId: string): Promise<boolean> {
+    const item = this.items.get(itemId);
+    return item !== undefined && item.isInGroup(groupId);
   }
 
   public async deleteById(id: string): Promise<void> {
@@ -72,5 +78,26 @@ export class FakeSheetReferenceLinkRepository implements SheetReferenceLinkRepos
       }
     }
     return items;
+  }
+}
+
+/**
+ * Liaison formation ↔ compétences en mémoire. Stocke les paires `formationId::competenceId` et
+ * n'expose que les **identifiants** de compétences (le contrat du port).
+ */
+export class FakeFormationCompetenceLinkRepository implements FormationCompetenceLinkRepository {
+  private readonly links = new Set<string>();
+
+  private key(formationId: string, competenceId: string): string {
+    return `${formationId}::${competenceId}`;
+  }
+
+  public async link(formationId: string, competenceId: string): Promise<void> {
+    this.links.add(this.key(formationId, competenceId));
+  }
+
+  public async findCompetenceIdsByFormation(formationId: string): Promise<string[]> {
+    const prefix = `${formationId}::`;
+    return [...this.links].filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length));
   }
 }

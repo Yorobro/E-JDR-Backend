@@ -36,6 +36,7 @@ export interface ReferenceControllerDeps {
     | "sheetArmures"
     | "sheetCompetences"
     | "sheetEquipements"
+    | "formationCompetences"
   >;
   readonly idGenerator: IdGeneratorService;
   readonly groupAccessService: GroupAccessService;
@@ -47,24 +48,41 @@ type CatalogueKey = "formations" | "peoples" | "armes" | "armures" | "competence
 type LinkKey = "sheetArmes" | "sheetArmures" | "sheetCompetences" | "sheetEquipements";
 
 export function buildReferenceController(deps: ReferenceControllerDeps): ReferenceController {
-  const catalogue = (repo: ReferenceRepository, key: CatalogueKey): CatalogueUseCases => ({
-    create: new CreateReferenceItemUseCaseImpl(
-      repo,
-      (repos) => repos[key],
-      deps.idGenerator,
-      deps.groupAccessService,
-      deps.unitOfWork,
-      deps.logger,
-    ),
-    list: new ListReferenceItemsUseCaseImpl(repo, deps.groupAccessService),
-    remove: new DeleteReferenceItemUseCaseImpl(
-      repo,
-      (repos) => repos[key],
-      deps.groupAccessService,
-      deps.unitOfWork,
-      deps.logger,
-    ),
-  });
+  // Dépendances spécifiques aux formations : catalogue de compétences (vérification de portée) +
+  // liaison transactionnelle formation↔compétences. Branchées uniquement sur le catalogue
+  // `formations` ; les autres types passent `undefined`.
+  const formationCreateDeps = {
+    competences: deps.references.competences,
+    formationCompetences: (repos: TransactionalRepositories) => repos.formationCompetences,
+  };
+  const formationListDeps = { formationCompetences: deps.references.formationCompetences };
+
+  const catalogue = (repo: ReferenceRepository, key: CatalogueKey): CatalogueUseCases => {
+    const isFormations = key === "formations";
+    return {
+      create: new CreateReferenceItemUseCaseImpl({
+        repository: repo,
+        selectRepo: (repos) => repos[key],
+        idGenerator: deps.idGenerator,
+        groupAccessService: deps.groupAccessService,
+        unitOfWork: deps.unitOfWork,
+        logger: deps.logger,
+        formationDeps: isFormations ? formationCreateDeps : undefined,
+      }),
+      list: new ListReferenceItemsUseCaseImpl(
+        repo,
+        deps.groupAccessService,
+        isFormations ? formationListDeps : undefined,
+      ),
+      remove: new DeleteReferenceItemUseCaseImpl(
+        repo,
+        (repos) => repos[key],
+        deps.groupAccessService,
+        deps.unitOfWork,
+        deps.logger,
+      ),
+    };
+  };
 
   const link = (
     itemRepo: ReferenceRepository,

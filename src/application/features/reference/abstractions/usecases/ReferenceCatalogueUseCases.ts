@@ -2,7 +2,13 @@ import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { ReferenceItemView } from "@application/features/reference/abstractions/usecases/ReferenceItemView";
 
-/** Commande de création d'un élément de référence (catégorie portée par l'instance du use case). */
+/**
+ * Commande de création d'un élément de référence (catégorie portée par l'instance du use case).
+ *
+ * Les champs `stat`/`bonus`/`competenceIds` sont **optionnels** et ne concernent que certains
+ * types : `stat`/`bonus` pour les formations et peuples (bonus de statistique), `competenceIds`
+ * pour les formations uniquement. Les autres types (armes, armures, …) les laissent absents.
+ */
 export interface CreateReferenceItemCommand {
   /** Identifiant du groupe propriétaire du catalogue (issu du corps de la requête). */
   readonly groupId: string;
@@ -10,6 +16,21 @@ export interface CreateReferenceItemCommand {
   readonly actorId: string;
   /** Nom saisi (brut, revalidé via `ReferenceName`). */
   readonly name: string;
+  /**
+   * Statistique ciblée par le bonus (formations/peuples). `undefined`/`null` ⇒ aucun bonus.
+   * Revalidée via le value object `StatBonus`.
+   */
+  readonly stat?: string | null;
+  /**
+   * Montant du bonus (entier ≥ 1, défaut 1 si `stat` fournie sans montant). Ignoré si `stat`
+   * est absente.
+   */
+  readonly bonus?: number | null;
+  /**
+   * Identifiants des compétences à rattacher à la formation (formations uniquement). Chaque
+   * compétence doit exister dans le **même groupe**. Absent/vide ⇒ aucune compétence.
+   */
+  readonly competenceIds?: string[];
 }
 
 /** Requête de listing des éléments d'un groupe. */

@@ -11,6 +11,17 @@ export interface ReferenceRepository {
   /** Retourne `true` si le groupe possède déjà un élément du nom donné (unicité `group_id, name`). */
   existsByGroupAndName(groupId: string, name: string): Promise<boolean>;
 
+  /**
+   * Retourne `true` si l'élément d'identifiant `itemId` existe **et** appartient au groupe donné.
+   *
+   * Utilisé pour valider qu'une compétence référencée par une formation appartient bien au même
+   * groupe que la formation (sécurité de portée + intégrité du lien `formation_competences`).
+   *
+   * @param groupId - Identifiant du groupe attendu.
+   * @param itemId - Identifiant de l'élément à vérifier.
+   */
+  existsInGroup(groupId: string, itemId: string): Promise<boolean>;
+
   deleteById(id: string): Promise<void>;
 }
 

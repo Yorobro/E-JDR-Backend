@@ -5,7 +5,11 @@ import { Campaign } from "@domain/features/campaign/entities/Campaign";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { Session } from "@domain/features/session/entities/Session";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
-import { FakeReferenceRepository, FakeSheetReferenceLinkRepository } from "./referenceFakes";
+import {
+  FakeReferenceRepository,
+  FakeSheetReferenceLinkRepository,
+  FakeFormationCompetenceLinkRepository,
+} from "./referenceFakes";
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
@@ -368,6 +372,7 @@ export function buildFakeTransactionalRepositories(overrides?: {
   sheetArmures: FakeSheetReferenceLinkRepository;
   sheetCompetences: FakeSheetReferenceLinkRepository;
   sheetEquipements: FakeSheetReferenceLinkRepository;
+  formationCompetences: FakeFormationCompetenceLinkRepository;
   friendGroups: FakeFriendGroupRepository;
   groupMembers: FakeGroupMemberRepository;
   groupInvitations: FakeGroupInvitationRepository;
@@ -409,6 +414,7 @@ export function buildFakeTransactionalRepositories(overrides?: {
     sheetArmures: new FakeSheetReferenceLinkRepository(armures),
     sheetCompetences: new FakeSheetReferenceLinkRepository(competences),
     sheetEquipements: new FakeSheetReferenceLinkRepository(equipements),
+    formationCompetences: new FakeFormationCompetenceLinkRepository(),
     friendGroups: new FakeFriendGroupRepository(),
     groupMembers: new FakeGroupMemberRepository(),
     groupInvitations: new FakeGroupInvitationRepository(),
@@ -439,7 +445,11 @@ export {
 
 // Doublures de la feature référence : définies dans `referenceFakes.ts` (taille de fichier),
 // re-exportées ici pour que les tests les importent depuis `./fakes` comme les autres.
-export { FakeReferenceRepository, FakeSheetReferenceLinkRepository } from "./referenceFakes";
+export {
+  FakeReferenceRepository,
+  FakeSheetReferenceLinkRepository,
+  FakeFormationCompetenceLinkRepository,
+} from "./referenceFakes";
 
 // Doublures de services (hash/token/id/pdf/logger) : définies dans `serviceFakes.ts`,
 // re-exportées ici pour préserver les imports existants `from "./fakes"`.

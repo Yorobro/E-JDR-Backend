@@ -14,8 +14,10 @@ import {
 } from "@infrastructure/persistence/drizzle/schema";
 import { ReferenceDao } from "@infrastructure/persistence/mysql/features/reference/dao/ReferenceDao";
 import { SheetReferenceLinkDao } from "@infrastructure/persistence/mysql/features/reference/dao/SheetReferenceLinkDao";
+import { FormationCompetenceLinkDao } from "@infrastructure/persistence/mysql/features/reference/dao/FormationCompetenceLinkDao";
 import { MysqlReferenceRepository } from "@infrastructure/persistence/mysql/features/reference/repository/MysqlReferenceRepository";
 import { MysqlSheetReferenceLinkRepository } from "@infrastructure/persistence/mysql/features/reference/repository/MysqlSheetReferenceLinkRepository";
+import { MysqlFormationCompetenceLinkRepository } from "@infrastructure/persistence/mysql/features/reference/repository/MysqlFormationCompetenceLinkRepository";
 
 /** Sous-ensemble de `TransactionalRepositories` produit par ce module (catalogues + liaisons). */
 type ReferenceRepositories = Pick<
@@ -30,13 +32,14 @@ type ReferenceRepositories = Pick<
   | "sheetArmures"
   | "sheetCompetences"
   | "sheetEquipements"
+  | "formationCompetences"
 >;
 
 /**
- * Construit les 10 repositories de la feature référence (6 catalogues + 4 liaisons N‑N) sur un
- * `DrizzleExecutor` donné. Chaque repository est une instance du repository générique paramétrée
- * par la table Drizzle correspondante. Utilisé par le composition root (pool) et le `UnitOfWork`
- * (transaction), comme les autres factories.
+ * Construit les 11 repositories de la feature référence (6 catalogues + 4 liaisons fiche↔élément
+ * + 1 liaison formation↔compétences) sur un `DrizzleExecutor` donné. Chaque repository est une
+ * instance du repository générique paramétrée par la table Drizzle correspondante. Utilisé par le
+ * composition root (pool) et le `UnitOfWork` (transaction), comme les autres factories.
  */
 export function createReferenceRepositories(executor: DrizzleExecutor): ReferenceRepositories {
   return {
@@ -73,6 +76,9 @@ export function createReferenceRepositories(executor: DrizzleExecutor): Referenc
         itemIdColumn: sheetEquipements.equipement_id,
         referenceTable: equipements,
       }),
+    ),
+    formationCompetences: new MysqlFormationCompetenceLinkRepository(
+      new FormationCompetenceLinkDao(executor),
     ),
   };
 }

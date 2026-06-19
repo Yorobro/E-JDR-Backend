@@ -42,11 +42,22 @@ export class ReferenceController {
         res.status(404).json({ code: "REFERENCE_ITEM_NOT_FOUND", message: "Type inconnu." });
         return;
       }
-      const body = req.body as { name?: unknown; groupId?: unknown };
+      const body = req.body as {
+        name?: unknown;
+        groupId?: unknown;
+        stat?: unknown;
+        bonus?: unknown;
+        competenceIds?: unknown;
+      };
       const result = await uc.create.execute({
         groupId: body.groupId as string,
         actorId: req.user!.userId,
         name: body.name as string,
+        stat: (body.stat as string | null | undefined) ?? null,
+        bonus: (body.bonus as number | null | undefined) ?? null,
+        competenceIds: Array.isArray(body.competenceIds)
+          ? (body.competenceIds as string[])
+          : undefined,
       });
       ReferenceController.respondItem(res, result, 201);
     } catch (error) {
@@ -189,7 +200,17 @@ export class ReferenceController {
     id: string;
     name: string;
     createdAt: string;
+    stat: string | null;
+    bonus: number | null;
+    competenceIds: string[];
   } {
-    return { id: view.id, name: view.name, createdAt: view.createdAt.toISOString() };
+    return {
+      id: view.id,
+      name: view.name,
+      createdAt: view.createdAt.toISOString(),
+      stat: view.stat,
+      bonus: view.bonus,
+      competenceIds: view.competenceIds,
+    };
   }
 }

@@ -19,6 +19,7 @@ import {
   SheetCompetenceLinkRepository,
   SheetEquipementLinkRepository,
 } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
+import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
 import { FriendGroupRepository } from "@application/features/friend-group/abstractions/repositories/FriendGroupRepository";
 import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { GroupInvitationRepository } from "@application/features/friend-group/abstractions/repositories/GroupInvitationRepository";
@@ -49,6 +50,8 @@ export interface TransactionalRepositories {
   readonly sheetArmures: SheetArmureLinkRepository;
   readonly sheetCompetences: SheetCompetenceLinkRepository;
   readonly sheetEquipements: SheetEquipementLinkRepository;
+  // Liaison N‑N formation ↔ compétences.
+  readonly formationCompetences: FormationCompetenceLinkRepository;
   // Groupes d'amis.
   readonly friendGroups: FriendGroupRepository;
   readonly groupMembers: GroupMemberRepository;

@@ -24,6 +24,10 @@ export class MysqlReferenceRepository implements ReferenceRepository {
     return this.dao.existsByGroupAndName(groupId, name);
   }
 
+  public async existsInGroup(groupId: string, itemId: string): Promise<boolean> {
+    return this.dao.existsInGroup(groupId, itemId);
+  }
+
   public async deleteById(id: string): Promise<void> {
     await this.dao.deleteById(id);
   }

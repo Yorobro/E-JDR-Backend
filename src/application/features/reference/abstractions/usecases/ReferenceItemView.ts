@@ -9,4 +9,16 @@ export interface ReferenceItemView {
   readonly name: string;
   /** Date de création de l'élément. */
   readonly createdAt: Date;
+  /**
+   * Statistique ciblée par le bonus (formations/peuples), ou `null` si l'élément ne porte pas de
+   * bonus (toujours `null` pour les armes, armures, compétences, équipements).
+   */
+  readonly stat: string | null;
+  /** Montant du bonus de statistique, ou `null` si l'élément ne porte pas de bonus. */
+  readonly bonus: number | null;
+  /**
+   * Identifiants des compétences rattachées (formations uniquement). Tableau vide pour les autres
+   * types.
+   */
+  readonly competenceIds: string[];
 }

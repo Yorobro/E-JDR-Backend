@@ -31,6 +31,10 @@ export type ReferenceRow = {
   group_id: string;
   name: string;
   created_at: Date;
+  /** Présent uniquement pour formations/peoples ; `null`/absent pour les autres tables. */
+  stat?: string | null;
+  /** Présent uniquement pour formations/peoples ; `null`/absent pour les autres tables. */
+  bonus?: number | null;
 };
 
 /**
@@ -49,8 +53,12 @@ export class ReferenceDao {
     group_id: string;
     name: string;
     created_at: Date;
+    stat?: string | null;
+    bonus?: number | null;
   }): Promise<void> {
-    await this.executor.insert(this.table).values(row);
+    // Cast : les colonnes `stat`/`bonus` n'existent que sur formations/peoples. Sur les autres
+    // tables elles sont absentes du type mais simplement ignorées à l'insert (valeurs undefined).
+    await this.executor.insert(this.table).values(row as never);
   }
 
   public async findByGroupId(groupId: string): Promise<ReferenceRow[]> {
@@ -75,6 +83,15 @@ export class ReferenceDao {
       .select({ one: this.table.id })
       .from(this.table)
       .where(and(eq(this.table.group_id, groupId), eq(this.table.name, name)))
+      .limit(1);
+    return rows.length > 0;
+  }
+
+  public async existsInGroup(groupId: string, id: string): Promise<boolean> {
+    const rows = await this.executor
+      .select({ one: this.table.id })
+      .from(this.table)
+      .where(and(eq(this.table.id, id), eq(this.table.group_id, groupId)))
       .limit(1);
     return rows.length > 0;
   }

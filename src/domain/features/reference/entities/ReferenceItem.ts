@@ -1,4 +1,5 @@
 import { ReferenceName } from "@domain/features/reference/value-objects/ReferenceName";
+import { StatBonus } from "@domain/features/reference/value-objects/StatBonus";
 
 /**
  * Données nécessaires pour reconstruire un `ReferenceItem` existant (ex : depuis la base).
@@ -13,6 +14,12 @@ export interface ReferenceItemSnapshot {
   readonly name: ReferenceName;
   /** Date de création de l'élément. */
   readonly createdAt: Date;
+  /**
+   * Bonus de statistique optionnel porté par l'élément (formations et peuples uniquement).
+   * `null` ou absent signifie « aucun bonus ». Les autres types (armes, armures, …) ne portent
+   * jamais de bonus et laissent ce champ à `null`.
+   */
+  readonly statBonus?: StatBonus | null;
 }
 
 /**
@@ -48,6 +55,7 @@ export class ReferenceItem {
     groupId: string;
     name: ReferenceName;
     createdAt: Date;
+    statBonus?: StatBonus | null;
   }): ReferenceItem {
     return new ReferenceItem(params);
   }
@@ -80,6 +88,14 @@ export class ReferenceItem {
   /** @returns La date de création de l'élément. */
   public get createdAt(): Date {
     return this.props.createdAt;
+  }
+
+  /**
+   * @returns Le bonus de statistique porté par l'élément, ou `null` s'il n'en porte aucun
+   *          (cas des armes/armures/… et des formations/peuples sans bonus).
+   */
+  public get statBonus(): StatBonus | null {
+    return this.props.statBonus ?? null;
   }
 
   /**

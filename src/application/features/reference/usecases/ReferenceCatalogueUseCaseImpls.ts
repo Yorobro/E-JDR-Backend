@@ -1,5 +1,6 @@
 import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem";
 import { ReferenceName } from "@domain/features/reference/value-objects/ReferenceName";
+import { StatBonus } from "@domain/features/reference/value-objects/StatBonus";
 import { DomainError } from "@domain/shared/errors/DomainError";
 
 import { Result } from "@application/shared/Result";
@@ -10,6 +11,7 @@ import { IdGeneratorService } from "@application/features/auth/abstractions/serv
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
+import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
 import { ReferenceItemNotFoundError } from "@application/features/reference/errors/ReferenceItemNotFoundError";
 import { ReferenceNameAlreadyUsedError } from "@application/features/reference/errors/ReferenceNameAlreadyUsedError";
 import {
@@ -27,25 +29,91 @@ type RepoSelector = (
   repos: import("@application/shared/UnitOfWork").TransactionalRepositories,
 ) => ReferenceRepository;
 
-/** Projette une entité vers sa vue publique. */
-function toView(item: ReferenceItem): ReferenceItemView {
-  return { id: item.id, name: item.name.value, createdAt: item.createdAt };
+/**
+ * Dépendances **spécifiques aux formations** pour la création : le catalogue de compétences (pour
+ * vérifier que chaque compétence référencée appartient au même groupe) et la liaison N‑N
+ * formation ↔ compétences (pour poser les liens). Absentes pour les autres types.
+ */
+export interface FormationCreateDeps {
+  /** Catalogue de compétences du groupe (lecture : vérification de portée). */
+  readonly competences: ReferenceRepository;
+  /** Liaison transactionnelle formation ↔ compétences (sélection dans l'UoW). */
+  readonly formationCompetences: (
+    repos: import("@application/shared/UnitOfWork").TransactionalRepositories,
+  ) => FormationCompetenceLinkRepository;
+}
+
+/**
+ * Dépendances **spécifiques aux formations** pour la lecture : la liaison formation ↔ compétences
+ * (lecture pure) afin de renseigner `competenceIds` dans la vue. Absente pour les autres types.
+ */
+export interface FormationListDeps {
+  /** Liaison formation ↔ compétences (lecture pure). */
+  readonly formationCompetences: FormationCompetenceLinkRepository;
+}
+
+/** Projette une entité vers sa vue publique (sans compétences ⇒ tableau vide par défaut). */
+function toView(item: ReferenceItem, competenceIds: string[] = []): ReferenceItemView {
+  const statBonus = item.statBonus;
+  return {
+    id: item.id,
+    name: item.name.value,
+    createdAt: item.createdAt,
+    stat: statBonus?.stat ?? null,
+    bonus: statBonus?.amount ?? null,
+    competenceIds,
+  };
+}
+
+/**
+ * Dépendances du use case de création d'un élément de référence (regroupées dans un objet pour
+ * rester sous la limite de paramètres de constructeur).
+ */
+export interface CreateReferenceItemDeps {
+  /** Catalogue du type géré (lecture : unicité du nom). */
+  readonly repository: ReferenceRepository;
+  /** Sélectionne, dans la transaction, le catalogue du type géré (écriture). */
+  readonly selectRepo: RepoSelector;
+  /** Génère l'identifiant du nouvel élément. */
+  readonly idGenerator: IdGeneratorService;
+  /** Vérifie que l'acteur est admin du groupe. */
+  readonly groupAccessService: GroupAccessService;
+  /** Encapsule l'écriture (élément + liens) dans une transaction. */
+  readonly unitOfWork: UnitOfWork;
+  /** Journalisation applicative. */
+  readonly logger: Logger;
+  /**
+   * Dépendances spécifiques aux formations (compétences). Absentes pour les autres types : un
+   * `competenceIds` fourni serait alors ignoré.
+   */
+  readonly formationDeps?: FormationCreateDeps;
 }
 
 /**
  * Use case **générique** de création d'un élément de référence.
  *
- * Seuls les admins du groupe peuvent créer des entrées de catalogue.
+ * Seuls les admins du groupe peuvent créer des entrées de catalogue. Pour les formations, le bonus
+ * de statistique (`stat`/`bonus`) et les compétences liées sont gérés ; les autres types ignorent
+ * ces champs.
  */
 export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCase {
-  constructor(
-    private readonly repository: ReferenceRepository,
-    private readonly selectRepo: RepoSelector,
-    private readonly idGenerator: IdGeneratorService,
-    private readonly groupAccessService: GroupAccessService,
-    private readonly unitOfWork: UnitOfWork,
-    private readonly logger: Logger,
-  ) {}
+  private readonly repository: ReferenceRepository;
+  private readonly selectRepo: RepoSelector;
+  private readonly idGenerator: IdGeneratorService;
+  private readonly groupAccessService: GroupAccessService;
+  private readonly unitOfWork: UnitOfWork;
+  private readonly logger: Logger;
+  private readonly formationDeps?: FormationCreateDeps;
+
+  constructor(deps: CreateReferenceItemDeps) {
+    this.repository = deps.repository;
+    this.selectRepo = deps.selectRepo;
+    this.idGenerator = deps.idGenerator;
+    this.groupAccessService = deps.groupAccessService;
+    this.unitOfWork = deps.unitOfWork;
+    this.logger = deps.logger;
+    this.formationDeps = deps.formationDeps;
+  }
 
   public async execute(
     command: CreateReferenceItemCommand,
@@ -57,8 +125,10 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
     if (accessResult.isFailure) return Result.failure(accessResult.error);
 
     let name: ReferenceName;
+    let statBonus: StatBonus | null;
     try {
       name = ReferenceName.create(command.name);
+      statBonus = CreateReferenceItemUseCaseImpl.buildStatBonus(command);
     } catch (error) {
       if (error instanceof DomainError) {
         return Result.failure(new InvalidInputError(error.code, error.message));
@@ -70,28 +140,70 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
       return Result.failure(new ReferenceNameAlreadyUsedError());
     }
 
+    // Compétences à rattacher : pertinent uniquement pour les formations (deps présentes).
+    const competenceIds = this.formationDeps !== undefined ? (command.competenceIds ?? []) : [];
+
+    // Chaque compétence doit exister dans le **même groupe** (portée + intégrité du lien).
+    for (const competenceId of competenceIds) {
+      const exists = await this.formationDeps!.competences.existsInGroup(
+        command.groupId,
+        competenceId,
+      );
+      if (!exists) {
+        return Result.failure(new ReferenceItemNotFoundError());
+      }
+    }
+
     const item = ReferenceItem.create({
       id: this.idGenerator.generate(),
       groupId: command.groupId,
       name,
       createdAt: new Date(),
+      statBonus,
     });
 
     await this.unitOfWork.execute(async (repos) => {
       await this.selectRepo(repos).save(item);
+      if (this.formationDeps !== undefined && competenceIds.length > 0) {
+        const links = this.formationDeps.formationCompetences(repos);
+        for (const competenceId of competenceIds) {
+          await links.link(item.id, competenceId, item.createdAt);
+        }
+      }
     });
 
     this.logger.info("Élément de référence créé", { itemId: item.id, groupId: item.groupId });
 
-    return Result.success(toView(item));
+    return Result.success(toView(item, competenceIds));
+  }
+
+  /**
+   * Construit le bonus de statistique à partir de la commande, ou `null` si aucune stat fournie.
+   *
+   * @param command - La commande de création.
+   * @returns Le `StatBonus` validé, ou `null` (pas de bonus).
+   * @throws {DomainError} Si la stat ou le montant sont invalides (capté par `execute`).
+   */
+  private static buildStatBonus(command: CreateReferenceItemCommand): StatBonus | null {
+    if (command.stat === undefined || command.stat === null) {
+      return null;
+    }
+    return StatBonus.create({ stat: command.stat, amount: command.bonus });
   }
 }
 
 /** Use case **générique** « lister les éléments de référence d'un groupe ». Lecture pure. */
 export class ListReferenceItemsUseCaseImpl implements ListReferenceItemsUseCase {
+  /**
+   * @param repository - Catalogue du type géré (lecture).
+   * @param groupAccessService - Vérifie que l'acteur est membre du groupe.
+   * @param formationDeps - Dépendances spécifiques aux formations (liaison compétences). Absentes
+   *                        pour les autres types : `competenceIds` est alors toujours vide.
+   */
   constructor(
     private readonly repository: ReferenceRepository,
     private readonly groupAccessService: GroupAccessService,
+    private readonly formationDeps?: FormationListDeps,
   ) {}
 
   public async execute(
@@ -101,7 +213,18 @@ export class ListReferenceItemsUseCaseImpl implements ListReferenceItemsUseCase 
     if (accessResult.isFailure) return Result.failure(accessResult.error);
 
     const items = await this.repository.findByGroupId(query.groupId);
-    return Result.success(items.map(toView));
+
+    if (this.formationDeps === undefined) {
+      return Result.success(items.map((item) => toView(item)));
+    }
+
+    const links = this.formationDeps.formationCompetences;
+    const views: ReferenceItemView[] = [];
+    for (const item of items) {
+      const competenceIds = await links.findCompetenceIdsByFormation(item.id);
+      views.push(toView(item, competenceIds));
+    }
+    return Result.success(views);
   }
 }
 

@@ -25,7 +25,16 @@ import { ReferenceItemView } from "@application/features/reference/abstractions/
 type LinkRepoSelector = (repos: TransactionalRepositories) => SheetReferenceLinkRepository;
 
 function toView(item: ReferenceItem): ReferenceItemView {
-  return { id: item.id, name: item.name.value, createdAt: item.createdAt };
+  const statBonus = item.statBonus;
+  return {
+    id: item.id,
+    name: item.name.value,
+    createdAt: item.createdAt,
+    stat: statBonus?.stat ?? null,
+    bonus: statBonus?.amount ?? null,
+    // Types liables à une fiche (armes/armures/compétences/équipements) : pas de compétences liées.
+    competenceIds: [],
+  };
 }
 
 /**
