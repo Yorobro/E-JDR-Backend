@@ -21,8 +21,17 @@ export type ReferenceTable =
   | typeof competences
   | typeof equipements;
 
-/** Ligne brute d'une table de référence (toutes partagent la même forme). */
-export type ReferenceRow = typeof formations.$inferSelect;
+/**
+ * Ligne brute commune à toutes les tables de référence.
+ * Définie explicitement pour couvrir les six tables (dont formations/peoples qui ont des colonnes
+ * supplémentaires stat/bonus) sans introduire de mismatch de types dans le DAO générique.
+ */
+export type ReferenceRow = {
+  id: string;
+  group_id: string;
+  name: string;
+  created_at: Date;
+};
 
 /**
  * DAO **générique** d'un catalogue d'éléments de référence : une instance par table, la table

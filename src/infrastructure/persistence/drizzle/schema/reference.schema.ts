@@ -6,6 +6,7 @@ import {
   index,
   primaryKey,
   unique,
+  int,
 } from "drizzle-orm/mysql-core";
 import { friendGroups } from "./friend-group.schema";
 import { characterSheets } from "./character-sheet.schema";
@@ -35,15 +36,42 @@ const referenceColumns = {
   created_at: datetime("created_at", { mode: "date" }).notNull(),
 };
 
-export const formations = mysqlTable("formations", referenceColumns, (t) => [
-  unique("uq_formations_group_name").on(t.group_id, t.name),
-  index("idx_formations_group_id").on(t.group_id),
-]);
+// formations et peoples ont leurs propres colonnes inline (avec stat + bonus en plus)
+export const formations = mysqlTable(
+  "formations",
+  {
+    id: char("id", { length: 36 }).primaryKey(),
+    group_id: char("group_id", { length: 36 })
+      .notNull()
+      .references(() => friendGroups.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 120 }).notNull(),
+    created_at: datetime("created_at", { mode: "date" }).notNull(),
+    stat: varchar("stat", { length: 20 }),
+    bonus: int("bonus"),
+  },
+  (t) => [
+    unique("uq_formations_group_name").on(t.group_id, t.name),
+    index("idx_formations_group_id").on(t.group_id),
+  ],
+);
 
-export const peoples = mysqlTable("peoples", referenceColumns, (t) => [
-  unique("uq_peoples_group_name").on(t.group_id, t.name),
-  index("idx_peoples_group_id").on(t.group_id),
-]);
+export const peoples = mysqlTable(
+  "peoples",
+  {
+    id: char("id", { length: 36 }).primaryKey(),
+    group_id: char("group_id", { length: 36 })
+      .notNull()
+      .references(() => friendGroups.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 120 }).notNull(),
+    created_at: datetime("created_at", { mode: "date" }).notNull(),
+    stat: varchar("stat", { length: 20 }),
+    bonus: int("bonus"),
+  },
+  (t) => [
+    unique("uq_peoples_group_name").on(t.group_id, t.name),
+    index("idx_peoples_group_id").on(t.group_id),
+  ],
+);
 
 export const armes = mysqlTable("armes", referenceColumns, (t) => [
   unique("uq_armes_group_name").on(t.group_id, t.name),
@@ -134,5 +162,23 @@ export const sheetEquipements = mysqlTable(
   (t) => [
     primaryKey({ columns: [t.sheet_id, t.equipement_id] }),
     index("idx_sheet_equipements_equipement").on(t.equipement_id),
+  ],
+);
+
+// Table de jointure N‑N : une formation peut avoir plusieurs compétences associées.
+export const formationCompetences = mysqlTable(
+  "formation_competences",
+  {
+    formation_id: char("formation_id", { length: 36 })
+      .notNull()
+      .references(() => formations.id, { onDelete: "cascade" }),
+    competence_id: char("competence_id", { length: 36 })
+      .notNull()
+      .references(() => competences.id, { onDelete: "cascade" }),
+    created_at: datetime("created_at", { mode: "date" }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.formation_id, t.competence_id] }),
+    index("idx_formation_competences_competence").on(t.competence_id),
   ],
 );
