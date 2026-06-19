@@ -412,6 +412,8 @@ function buildControllers(
     campaignCharacterRepository: services.campaignCharacterRepository,
     formationRepository: services.referenceRepositories.formations,
     peupleRepository: services.referenceRepositories.peoples,
+    competenceRepository: services.referenceRepositories.competences,
+    formationCompetenceLinkRepository: services.referenceRepositories.formationCompetences,
     groupAccessService,
     pdfGenerator: services.pdfGenerator,
     idGenerator: services.idGenerator,

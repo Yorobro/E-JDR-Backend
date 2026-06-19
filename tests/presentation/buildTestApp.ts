@@ -143,7 +143,15 @@ export function buildTestApp(): {
     new CreateCharacterSheetUseCaseImpl(idGenerator, groupAccessService, unitOfWork, logger),
     new ListMyCharacterSheetsUseCaseImpl(repos.characterSheets, groupAccessService),
     new DeleteCharacterSheetUseCaseImpl(repos.characterSheets, unitOfWork, logger),
-    new GetCharacterSheetUseCaseImpl(repos.characterSheets, groupAccessService, logger),
+    new GetCharacterSheetUseCaseImpl({
+      characterSheetRepository: repos.characterSheets,
+      formationRepository: repos.formations,
+      peupleRepository: repos.peoples,
+      competenceRepository: repos.competences,
+      formationCompetenceLink: repos.formationCompetences,
+      groupAccessService,
+      logger,
+    }),
     new UpdateCharacterSheetUseCaseImpl(
       repos.characterSheets,
       repos.formations,

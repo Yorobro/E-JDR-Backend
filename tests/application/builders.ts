@@ -9,6 +9,7 @@ import { SessionTitle } from "@domain/features/session/value-objects/SessionTitl
 import { SessionDate } from "@domain/features/session/value-objects/SessionDate";
 import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem";
 import { ReferenceName } from "@domain/features/reference/value-objects/ReferenceName";
+import { StatBonus } from "@domain/features/reference/value-objects/StatBonus";
 import {
   CharacterSheet,
   CharacterSheetDetails,
@@ -101,18 +102,21 @@ export function buildTestSession(
  * @param id - L'identifiant de l'élément (par défaut "ref-1").
  * @param groupId - L'identifiant du groupe propriétaire (par défaut "group-1").
  * @param name - Le nom de l'élément (par défaut "Élément").
+ * @param statBonus - Bonus de statistique optionnel (`{ stat, amount }`) ; absent ⇒ aucun bonus.
  * @returns Une entité `ReferenceItem` prête pour les tests.
  */
 export function buildTestReferenceItem(
   id = "ref-1",
   groupId = "group-1",
   name = "Élément",
+  statBonus?: { stat: string; amount?: number | null },
 ): ReferenceItem {
   return ReferenceItem.create({
     id,
     groupId,
     name: ReferenceName.create(name),
     createdAt: new Date("2026-01-01T00:00:00Z"),
+    statBonus: statBonus !== undefined ? StatBonus.create(statBonus) : null,
   });
 }
 

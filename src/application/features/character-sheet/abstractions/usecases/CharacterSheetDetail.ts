@@ -35,6 +35,11 @@ export interface CharacterSheetDetail {
   // à part par le use case de lecture des liaisons fiche↔référence).
   readonly sortsEtMiracles: string | null;
   readonly notes: string | null;
+  // Éléments de référence résolus (lecture seule, pour l'affichage). `null` si la fiche ne porte
+  // pas l'id correspondant. Le bonus n'est PAS appliqué côté back : la fiche conserve ses stats de
+  // base inchangées ; le front affiche base + bonus + total.
+  readonly formation: ResolvedFormationView | null;
+  readonly peuple: ResolvedReferenceView | null;
 }
 
 /** Représentation publique de la bourse (pièces brutes, non normalisées). */
@@ -42,4 +47,27 @@ export interface PurseView {
   readonly gold: number;
   readonly silver: number;
   readonly copper: number;
+}
+
+/**
+ * Élément de référence résolu (nom + bonus de stat) joint à une fiche. Utilisé pour le peuple et
+ * comme base de la formation. `stat`/`bonus` sont `null` si l'élément ne porte pas de bonus.
+ */
+export interface ResolvedReferenceView {
+  readonly id: string;
+  readonly name: string;
+  readonly stat: string | null;
+  readonly bonus: number | null;
+}
+
+/** Formation résolue : un élément de référence enrichi des compétences qui lui sont rattachées. */
+export interface ResolvedFormationView extends ResolvedReferenceView {
+  /** Compétences liées à la formation (id + nom), résolues depuis le catalogue du groupe. */
+  readonly competences: ResolvedCompetenceView[];
+}
+
+/** Compétence rattachée à une formation (id + nom). */
+export interface ResolvedCompetenceView {
+  readonly id: string;
+  readonly name: string;
 }

@@ -162,6 +162,49 @@ describe("Character sheet routes (intégration HTTP)", () => {
       expect(res.body.peupleId).toBeNull();
       expect(res.body.vigueur).toBeNull();
       expect(res.body.notes).toBeNull();
+      expect(res.body.formation).toBeNull(); // sans formation/peuple, les blocs résolus sont null
+      expect(res.body.peuple).toBeNull();
+    });
+
+    it("GET /character-sheets/:id résout la formation (stat/bonus + compétences) et le peuple", async () => {
+      const agent = await authenticate("p@test.com");
+      const groupId = await createGroup(agent);
+      const created = await agent.post("/character-sheets").send({ name: "Gimli", groupId });
+
+      // Catalogue : compétence liée à la formation + formation avec bonus + peuple avec bonus.
+      const epee = await agent.post("/reference/competences").send({ name: "Épée", groupId });
+      const formation = await agent.post("/reference/formations").send({
+        name: "Guerrier",
+        groupId,
+        stat: "vigueur",
+        bonus: 2,
+        competenceIds: [epee.body.id],
+      });
+      const peuple = await agent
+        .post("/reference/peoples")
+        .send({ name: "Nain", groupId, stat: "vigueur", bonus: 1 });
+      await agent
+        .put(`/character-sheets/${created.body.id}`)
+        .send({ name: "Gimli", formationId: formation.body.id, peupleId: peuple.body.id });
+
+      const res = await agent.get(`/character-sheets/${created.body.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.formationId).toBe(formation.body.id); // id brut conservé (rétrocompat)
+      expect(res.body.formation).toEqual({
+        id: formation.body.id,
+        name: "Guerrier",
+        stat: "vigueur",
+        bonus: 2,
+        competences: [{ id: epee.body.id, name: "Épée" }],
+      });
+      expect(res.body.peuple).toEqual({
+        id: peuple.body.id,
+        name: "Nain",
+        stat: "vigueur",
+        bonus: 1,
+      });
+      // Les stats de base de la fiche ne sont PAS modifiées par le bonus (affichage côté front).
+      expect(res.body.vigueur).toBeNull();
     });
 
     it("GET la fiche d'un autre membre du même groupe réussit (200, visibilité groupe)", async () => {

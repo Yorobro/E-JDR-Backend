@@ -5,6 +5,7 @@ import { CharacterSheetRepository } from "@application/features/character-sheet/
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
+import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { CreateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CreateCharacterSheetUseCaseImpl";
 import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/character-sheet/usecases/ListMyCharacterSheetsUseCaseImpl";
@@ -22,6 +23,8 @@ export interface CharacterSheetControllerDeps {
   readonly campaignCharacterRepository: CampaignCharacterRepository;
   readonly formationRepository: ReferenceRepository;
   readonly peupleRepository: ReferenceRepository;
+  readonly competenceRepository: ReferenceRepository;
+  readonly formationCompetenceLinkRepository: FormationCompetenceLinkRepository;
   readonly groupAccessService: GroupAccessService;
   readonly pdfGenerator: CharacterSheetPdfGenerator;
   readonly idGenerator: IdGeneratorService;
@@ -52,11 +55,15 @@ export function buildCharacterSheetController(
       deps.unitOfWork,
       deps.logger,
     ),
-    new GetCharacterSheetUseCaseImpl(
-      deps.characterSheetRepository,
-      deps.groupAccessService,
-      deps.logger,
-    ),
+    new GetCharacterSheetUseCaseImpl({
+      characterSheetRepository: deps.characterSheetRepository,
+      formationRepository: deps.formationRepository,
+      peupleRepository: deps.peupleRepository,
+      competenceRepository: deps.competenceRepository,
+      formationCompetenceLink: deps.formationCompetenceLinkRepository,
+      groupAccessService: deps.groupAccessService,
+      logger: deps.logger,
+    }),
     new UpdateCharacterSheetUseCaseImpl(
       deps.characterSheetRepository,
       deps.formationRepository,
