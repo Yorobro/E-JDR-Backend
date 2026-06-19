@@ -119,6 +119,32 @@ describe("Reference routes (intégration HTTP)", () => {
     expect(after.body.items).toHaveLength(0);
   });
 
+  it("une armure liée remonte ses points de protection, et la fiche dérive sa protection", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+    const sheet = await agent.post("/character-sheets").send({ name: "Conan", groupId });
+    const sheetId = sheet.body.id as string;
+    const a1 = await agent
+      .post("/reference/armures")
+      .send({ name: "Plastron", groupId, protectionPoints: 3 });
+    const a2 = await agent
+      .post("/reference/armures")
+      .send({ name: "Bouclier", groupId, protectionPoints: 1 });
+    await agent.post(`/character-sheets/${sheetId}/armures`).send({ itemId: a1.body.id });
+    await agent.post(`/character-sheets/${sheetId}/armures`).send({ itemId: a2.body.id });
+
+    // Les armures liées exposent leurs points de protection (et non null).
+    const linked = await agent.get(`/character-sheets/${sheetId}/armures`);
+    const protections = linked.body.items
+      .map((i: { protectionPoints: number | null }) => i.protectionPoints)
+      .sort();
+    expect(protections).toEqual([1, 3]);
+
+    // La protection de la fiche est dérivée = somme des protections des armures liées.
+    const detail = await agent.get(`/character-sheets/${sheetId}`);
+    expect(detail.body.protection).toBe(4);
+  });
+
   it("liaison N-1 : affecter une formation via PUT /character-sheets/:id (formationId)", async () => {
     const agent = await authenticate();
     const groupId = await createGroup(agent);
