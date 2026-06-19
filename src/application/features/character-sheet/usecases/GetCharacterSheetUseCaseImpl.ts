@@ -5,17 +5,12 @@ import { GroupAccessService } from "@application/features/friend-group/abstracti
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { GetCharacterSheetQuery } from "@application/features/character-sheet/query/GetCharacterSheetQuery";
 import { GetCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/GetCharacterSheetUseCase";
-import {
-  CharacterSheetDetail,
-  ResolvedCompetenceView,
-  ResolvedFormationView,
-  ResolvedReferenceView,
-} from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
+import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { toCharacterSheetDetail } from "@application/features/character-sheet/usecases/toCharacterSheetDetail";
+import { CharacterSheetReferenceResolver } from "@application/features/character-sheet/usecases/CharacterSheetReferenceResolver";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
-import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem";
 
 /**
  * Dépendances du use case de lecture détaillée d'une fiche (regroupées dans un objet pour rester
@@ -49,19 +44,18 @@ export interface GetCharacterSheetDeps {
  */
 export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
   private readonly characterSheetRepository: CharacterSheetRepository;
-  private readonly formationRepository: ReferenceRepository;
-  private readonly peupleRepository: ReferenceRepository;
-  private readonly competenceRepository: ReferenceRepository;
-  private readonly formationCompetenceLink: FormationCompetenceLinkRepository;
+  private readonly referenceResolver: CharacterSheetReferenceResolver;
   private readonly groupAccessService: GroupAccessService;
   private readonly logger: Logger;
 
   constructor(deps: GetCharacterSheetDeps) {
     this.characterSheetRepository = deps.characterSheetRepository;
-    this.formationRepository = deps.formationRepository;
-    this.peupleRepository = deps.peupleRepository;
-    this.competenceRepository = deps.competenceRepository;
-    this.formationCompetenceLink = deps.formationCompetenceLink;
+    this.referenceResolver = new CharacterSheetReferenceResolver({
+      formationRepository: deps.formationRepository,
+      peupleRepository: deps.peupleRepository,
+      competenceRepository: deps.competenceRepository,
+      formationCompetenceLink: deps.formationCompetenceLink,
+    });
     this.groupAccessService = deps.groupAccessService;
     this.logger = deps.logger;
   }
@@ -85,71 +79,12 @@ export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
     }
 
     const detail = toCharacterSheetDetail(sheet);
-    const formation = await this.resolveFormation(detail.formationId, sheet.groupId);
-    const peuple = await this.resolvePeuple(detail.peupleId, sheet.groupId);
+    const { formation, peuple } = await this.referenceResolver.resolve(
+      detail.formationId,
+      detail.peupleId,
+      sheet.groupId,
+    );
 
     return Result.success({ ...detail, formation, peuple });
   }
-
-  /**
-   * Résout la formation active (nom + bonus + compétences liées), ou `null` si la fiche n'en porte
-   * pas, si l'id ne correspond plus à un élément existant, ou si l'élément résolu appartient à un
-   * **autre groupe** que la fiche (défense en profondeur : on ne révèle jamais un catalogue d'un
-   * groupe tiers, même si la fiche porte un id étranger).
-   */
-  private async resolveFormation(
-    formationId: string | null,
-    sheetGroupId: string,
-  ): Promise<ResolvedFormationView | null> {
-    if (formationId === null) {
-      return null;
-    }
-    const formation = await this.formationRepository.findById(formationId);
-    if (formation === null || !formation.isInGroup(sheetGroupId)) {
-      return null;
-    }
-    const competences = await this.resolveCompetences(formationId);
-    return { ...toReferenceView(formation), competences };
-  }
-
-  /**
-   * Résout le peuple actif (nom + bonus), ou `null` si la fiche n'en porte pas, si l'id ne
-   * correspond plus à un élément existant, ou si l'élément résolu appartient à un **autre groupe**
-   * que la fiche (défense en profondeur, voir {@link resolveFormation}).
-   */
-  private async resolvePeuple(
-    peupleId: string | null,
-    sheetGroupId: string,
-  ): Promise<ResolvedReferenceView | null> {
-    if (peupleId === null) {
-      return null;
-    }
-    const peuple = await this.peupleRepository.findById(peupleId);
-    return peuple === null || !peuple.isInGroup(sheetGroupId) ? null : toReferenceView(peuple);
-  }
-
-  /** Charge les compétences (id + nom) rattachées à la formation, en ignorant les ids orphelins. */
-  private async resolveCompetences(formationId: string): Promise<ResolvedCompetenceView[]> {
-    const competenceIds =
-      await this.formationCompetenceLink.findCompetenceIdsByFormation(formationId);
-    const competences: ResolvedCompetenceView[] = [];
-    for (const competenceId of competenceIds) {
-      const competence = await this.competenceRepository.findById(competenceId);
-      if (competence !== null) {
-        competences.push({ id: competence.id, name: competence.name.value });
-      }
-    }
-    return competences;
-  }
-}
-
-/** Projette un élément de référence vers sa vue résolue (id + nom + bonus de stat). */
-function toReferenceView(item: ReferenceItem): ResolvedReferenceView {
-  const statBonus = item.statBonus;
-  return {
-    id: item.id,
-    name: item.name.value,
-    stat: statBonus?.stat ?? null,
-    bonus: statBonus?.amount ?? null,
-  };
 }
