@@ -85,24 +85,27 @@ export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
     }
 
     const detail = toCharacterSheetDetail(sheet);
-    const formation = await this.resolveFormation(detail.formationId);
-    const peuple = await this.resolvePeuple(detail.peupleId);
+    const formation = await this.resolveFormation(detail.formationId, sheet.groupId);
+    const peuple = await this.resolvePeuple(detail.peupleId, sheet.groupId);
 
     return Result.success({ ...detail, formation, peuple });
   }
 
   /**
    * Résout la formation active (nom + bonus + compétences liées), ou `null` si la fiche n'en porte
-   * pas (ou si l'id ne correspond plus à un élément existant).
+   * pas, si l'id ne correspond plus à un élément existant, ou si l'élément résolu appartient à un
+   * **autre groupe** que la fiche (défense en profondeur : on ne révèle jamais un catalogue d'un
+   * groupe tiers, même si la fiche porte un id étranger).
    */
   private async resolveFormation(
     formationId: string | null,
+    sheetGroupId: string,
   ): Promise<ResolvedFormationView | null> {
     if (formationId === null) {
       return null;
     }
     const formation = await this.formationRepository.findById(formationId);
-    if (formation === null) {
+    if (formation === null || !formation.isInGroup(sheetGroupId)) {
       return null;
     }
     const competences = await this.resolveCompetences(formationId);
@@ -110,15 +113,19 @@ export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
   }
 
   /**
-   * Résout le peuple actif (nom + bonus), ou `null` si la fiche n'en porte pas (ou si l'id ne
-   * correspond plus à un élément existant).
+   * Résout le peuple actif (nom + bonus), ou `null` si la fiche n'en porte pas, si l'id ne
+   * correspond plus à un élément existant, ou si l'élément résolu appartient à un **autre groupe**
+   * que la fiche (défense en profondeur, voir {@link resolveFormation}).
    */
-  private async resolvePeuple(peupleId: string | null): Promise<ResolvedReferenceView | null> {
+  private async resolvePeuple(
+    peupleId: string | null,
+    sheetGroupId: string,
+  ): Promise<ResolvedReferenceView | null> {
     if (peupleId === null) {
       return null;
     }
     const peuple = await this.peupleRepository.findById(peupleId);
-    return peuple === null ? null : toReferenceView(peuple);
+    return peuple === null || !peuple.isInGroup(sheetGroupId) ? null : toReferenceView(peuple);
   }
 
   /** Charge les compétences (id + nom) rattachées à la formation, en ignorant les ids orphelins. */

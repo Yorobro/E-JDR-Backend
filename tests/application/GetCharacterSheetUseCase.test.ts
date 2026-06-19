@@ -144,5 +144,43 @@ describe("GetCharacterSheetUseCaseImpl", () => {
       expect(result.value.formation).toBeNull();
       expect(result.value.peuple).toBeNull();
     });
+
+    it("renvoie formation=null si la formation portée appartient à un autre groupe (défense en profondeur)", async () => {
+      // La formation existe mais dans « group-other », alors que la fiche est dans « group-1 ».
+      txRepos.formations.seed(
+        buildTestReferenceItem("form-1", "group-other", "Guerrier secret", {
+          stat: "vigueur",
+          amount: 9,
+        }),
+      );
+      txRepos.characterSheets.seed(
+        buildTestCharacterSheet("s-1", "owner-1", "Aragorn", { formationId: "form-1" }, "group-1"),
+      );
+
+      const result = await useCase.execute({ characterSheetId: "s-1", userId: "owner-1" });
+
+      expect(result.isSuccess).toBe(true);
+      // L'id brut reste exposé, mais le bloc résolu (nom/bonus/compétences du groupe tiers) est masqué.
+      expect(result.value.formationId).toBe("form-1");
+      expect(result.value.formation).toBeNull();
+    });
+
+    it("renvoie peuple=null si le peuple porté appartient à un autre groupe (défense en profondeur)", async () => {
+      txRepos.peoples.seed(
+        buildTestReferenceItem("peuple-1", "group-other", "Elfe secret", {
+          stat: "dexterite",
+          amount: 9,
+        }),
+      );
+      txRepos.characterSheets.seed(
+        buildTestCharacterSheet("s-1", "owner-1", "Legolas", { peupleId: "peuple-1" }, "group-1"),
+      );
+
+      const result = await useCase.execute({ characterSheetId: "s-1", userId: "owner-1" });
+
+      expect(result.isSuccess).toBe(true);
+      expect(result.value.peupleId).toBe("peuple-1");
+      expect(result.value.peuple).toBeNull();
+    });
   });
 });
