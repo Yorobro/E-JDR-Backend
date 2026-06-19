@@ -67,6 +67,10 @@ describe("CharacterSheet (entité)", () => {
     expect(sheet.details.social).toBe(0);
     expect(sheet.details.vigueur).toBe(0);
     expect(sheet.details.pointsDeMagie).toBe(0);
+    // bourse à 0 par défaut (or/argent/cuivre)
+    expect(sheet.details.purse?.gold).toBe(0);
+    expect(sheet.details.purse?.silver).toBe(0);
+    expect(sheet.details.purse?.copper).toBe(0);
     // les autres restent null
     expect(sheet.details.pointsDeVie).toBeNull();
     expect(sheet.details.protection).toBeNull();

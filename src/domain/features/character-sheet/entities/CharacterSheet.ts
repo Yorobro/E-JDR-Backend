@@ -69,6 +69,7 @@ const CREATION_DEFAULTS: Partial<CharacterSheetDetails> = {
   social: 0,
   vigueur: 0,
   pointsDeMagie: 0,
+  purse: Purse.create({}),
 };
 
 /**
