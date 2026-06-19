@@ -1,3 +1,21 @@
+## 1.7.0 (2026-06-19)
+
+* Merge pull request #8 from Yorobro/feat/friend-groups ([47263ab](https://github.com/Yorobro/E-JDR-Backend/commit/47263ab)), closes [#8](https://github.com/Yorobro/E-JDR-Backend/issues/8)
+* Merge remote-tracking branch 'origin/main' into feat/friend-groups ([ac602c2](https://github.com/Yorobro/E-JDR-Backend/commit/ac602c2))
+* docs: plan formations/peuples bonus (2026-06-19) ([12231ea](https://github.com/Yorobro/E-JDR-Backend/commit/12231ea))
+* docs(friend-groups): design spec for friend group ownership model ([8833239](https://github.com/Yorobro/E-JDR-Backend/commit/8833239))
+* fix(character-sheet): scope resolved formation/peuple to the sheet group ([c5835a3](https://github.com/Yorobro/E-JDR-Backend/commit/c5835a3))
+* fix(friend-groups): renvoyer myRole a la creation + exposer les pseudos ([4348df2](https://github.com/Yorobro/E-JDR-Backend/commit/4348df2))
+* feat(character-sheet): resolve active formation and peuple on sheet read ([9e32a2e](https://github.com/Yorobro/E-JDR-Backend/commit/9e32a2e))
+* feat(friend-groups): etape 2 - campaigns et catalogues appartiennent au groupe ([0a6eba2](https://github.com/Yorobro/E-JDR-Backend/commit/0a6eba2))
+* feat(friend-groups): etape 2 finalisee - migrations group_id + scoping ([2b7b2b9](https://github.com/Yorobro/E-JDR-Backend/commit/2b7b2b9))
+* feat(friend-groups): etape 3 - fiches appartenant a un groupe (back) ([5bf3b13](https://github.com/Yorobro/E-JDR-Backend/commit/5bf3b13))
+* feat(friend-groups): implement step 1 — group foundations (back) ([78692e2](https://github.com/Yorobro/E-JDR-Backend/commit/78692e2))
+* feat(reference): add StatBonus value object with allowed stats and bonus validation ([345fd10](https://github.com/Yorobro/E-JDR-Backend/commit/345fd10))
+* feat(reference): schema formations/peuples stat+bonus + table formation_competences (migration 0008) ([3f27a15](https://github.com/Yorobro/E-JDR-Backend/commit/3f27a15))
+* feat(reference): support stat bonus and formation-competence links in create/list ([60176cb](https://github.com/Yorobro/E-JDR-Backend/commit/60176cb))
+* refactor(reference): fix fake link signature + remove unjustified non-null assertion ([f61df55](https://github.com/Yorobro/E-JDR-Backend/commit/f61df55))
+
 ## 1.6.0 (2026-06-18)
 
 * Merge pull request #6 from Yorobro/feat/reference-elements ([f24fd83](https://github.com/Yorobro/E-JDR-Backend/commit/f24fd83)), closes [#6](https://github.com/Yorobro/E-JDR-Backend/issues/6)
