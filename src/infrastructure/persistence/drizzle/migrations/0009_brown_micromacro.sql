@@ -1,0 +1,1 @@
+ALTER TABLE `armures` ADD `points_de_protection` int;
