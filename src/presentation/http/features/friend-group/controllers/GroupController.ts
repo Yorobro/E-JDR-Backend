@@ -31,7 +31,9 @@ export class GroupController {
         return;
       }
       const { id, name, createdAt } = result.value;
-      res.status(201).json({ id, name, createdAt: createdAt.toISOString() });
+      // Le créateur est toujours administrateur du groupe : on renvoie myRole pour que la
+      // réponse de création soit symétrique avec GET /groups (le client lit ce champ).
+      res.status(201).json({ id, name, myRole: "ADMIN", createdAt: createdAt.toISOString() });
     } catch (error) {
       next(error);
     }
@@ -79,6 +81,7 @@ export class GroupController {
         createdAt: g.createdAt.toISOString(),
         members: g.members.map((m) => ({
           userId: m.userId,
+          pseudo: m.pseudo,
           role: m.role,
           createdAt: m.createdAt.toISOString(),
         })),

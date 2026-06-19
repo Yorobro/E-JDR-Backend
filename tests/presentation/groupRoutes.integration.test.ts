@@ -25,7 +25,7 @@ describe("Group routes (intégration HTTP)", () => {
     const res = await agent.post("/groups").send({ name: "Les Aventuriers" });
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ name: "Les Aventuriers" });
+    expect(res.body).toMatchObject({ name: "Les Aventuriers", myRole: "ADMIN" });
     expect(res.body.id).toBeDefined();
   });
 

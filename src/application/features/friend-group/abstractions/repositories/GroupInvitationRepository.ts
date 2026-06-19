@@ -6,6 +6,7 @@ export interface PendingInvitationView {
   groupId: string;
   groupName: string;
   invitedBy: string;
+  invitedByPseudo: string;
   createdAt: Date;
 }
 

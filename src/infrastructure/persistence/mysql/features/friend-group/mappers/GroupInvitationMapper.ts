@@ -42,6 +42,7 @@ export class GroupInvitationMapper {
       groupId: row.group_id,
       groupName: row.group_name,
       invitedBy: row.invited_by,
+      invitedByPseudo: row.invited_by_pseudo,
       createdAt: row.created_at,
     };
   }

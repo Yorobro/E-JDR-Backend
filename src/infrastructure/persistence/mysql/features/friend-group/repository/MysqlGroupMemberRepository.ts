@@ -1,6 +1,9 @@
 import { GroupMembership } from "@domain/features/friend-group/entities/GroupMembership";
 import { GroupRole } from "@domain/features/friend-group/value-objects/GroupRole";
-import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
+import {
+  GroupMemberRepository,
+  GroupMemberView,
+} from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { GroupMemberDao } from "@infrastructure/persistence/mysql/features/friend-group/dao/GroupMemberDao";
 import { GroupMemberMapper } from "@infrastructure/persistence/mysql/features/friend-group/mappers/GroupMemberMapper";
 
@@ -14,6 +17,16 @@ export class MysqlGroupMemberRepository implements GroupMemberRepository {
   public async findByGroupId(groupId: string): Promise<GroupMembership[]> {
     const rows = await this.dao.findByGroupId(groupId);
     return rows.map((row) => GroupMemberMapper.toDomain(row));
+  }
+
+  public async findViewsByGroupId(groupId: string): Promise<GroupMemberView[]> {
+    const rows = await this.dao.findViewsByGroupId(groupId);
+    return rows.map((row) => ({
+      userId: row.user_id,
+      pseudo: row.pseudo,
+      role: row.role,
+      createdAt: row.created_at,
+    }));
   }
 
   public async findByUserIdAndGroupId(

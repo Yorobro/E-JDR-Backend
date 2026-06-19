@@ -48,6 +48,7 @@ export class InvitationController {
           groupId: inv.groupId,
           groupName: inv.groupName,
           invitedBy: inv.invitedBy,
+          invitedByPseudo: inv.invitedByPseudo,
           createdAt: inv.createdAt.toISOString(),
         })),
       });

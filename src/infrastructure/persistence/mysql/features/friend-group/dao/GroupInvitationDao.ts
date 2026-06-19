@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { DrizzleExecutor } from "@infrastructure/persistence/drizzle/DrizzleExecutor";
-import { friendGroups, groupInvitations } from "@infrastructure/persistence/drizzle/schema";
+import { friendGroups, groupInvitations, users } from "@infrastructure/persistence/drizzle/schema";
 
 export type GroupInvitationRow = typeof groupInvitations.$inferSelect;
 
@@ -9,6 +9,7 @@ export interface PendingInvitationJoinRow {
   group_id: string;
   group_name: string;
   invited_by: string;
+  invited_by_pseudo: string;
   created_at: Date;
 }
 
@@ -62,10 +63,12 @@ export class GroupInvitationDao {
         group_id: groupInvitations.group_id,
         group_name: friendGroups.name,
         invited_by: groupInvitations.invited_by,
+        invited_by_pseudo: users.pseudo,
         created_at: groupInvitations.created_at,
       })
       .from(groupInvitations)
       .innerJoin(friendGroups, eq(groupInvitations.group_id, friendGroups.id))
+      .innerJoin(users, eq(groupInvitations.invited_by, users.id))
       .where(
         and(
           eq(groupInvitations.invited_user_id, invitedUserId),

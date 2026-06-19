@@ -1,8 +1,16 @@
 import { and, eq, count } from "drizzle-orm";
 import { DrizzleExecutor } from "@infrastructure/persistence/drizzle/DrizzleExecutor";
-import { groupMembers } from "@infrastructure/persistence/drizzle/schema";
+import { groupMembers, users } from "@infrastructure/persistence/drizzle/schema";
 
 export type GroupMemberRow = typeof groupMembers.$inferSelect;
+
+/** Vue d'un membre enrichie du pseudo (jointure users), pour l'affichage. */
+export interface GroupMemberViewRow {
+  user_id: string;
+  pseudo: string;
+  role: string;
+  created_at: Date;
+}
 
 export class GroupMemberDao {
   constructor(private readonly executor: DrizzleExecutor) {}
@@ -18,6 +26,20 @@ export class GroupMemberDao {
 
   public async findByGroupId(groupId: string): Promise<GroupMemberRow[]> {
     return this.executor.select().from(groupMembers).where(eq(groupMembers.group_id, groupId));
+  }
+
+  /** Membres d'un groupe avec leur pseudo (jointure users), pour l'affichage. */
+  public async findViewsByGroupId(groupId: string): Promise<GroupMemberViewRow[]> {
+    return this.executor
+      .select({
+        user_id: groupMembers.user_id,
+        pseudo: users.pseudo,
+        role: groupMembers.role,
+        created_at: groupMembers.created_at,
+      })
+      .from(groupMembers)
+      .innerJoin(users, eq(groupMembers.user_id, users.id))
+      .where(eq(groupMembers.group_id, groupId));
   }
 
   public async findByUserIdAndGroupId(

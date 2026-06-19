@@ -5,7 +5,10 @@ import { GroupRole } from "@domain/features/friend-group/value-objects/GroupRole
 import { GroupInvitation } from "@domain/features/friend-group/entities/GroupInvitation";
 import { InvitationStatus } from "@domain/features/friend-group/value-objects/InvitationStatus";
 import { FriendGroupRepository } from "@application/features/friend-group/abstractions/repositories/FriendGroupRepository";
-import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
+import {
+  GroupMemberRepository,
+  GroupMemberView,
+} from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import {
   GroupInvitationRepository,
   PendingInvitationView,
@@ -48,6 +51,17 @@ export class FakeGroupMemberRepository implements GroupMemberRepository {
 
   public async findByGroupId(groupId: string): Promise<GroupMembership[]> {
     return [...this.memberships.values()].filter((m) => m.groupId === groupId);
+  }
+
+  public async findViewsByGroupId(groupId: string): Promise<GroupMemberView[]> {
+    return [...this.memberships.values()]
+      .filter((m) => m.groupId === groupId)
+      .map((m) => ({
+        userId: m.userId,
+        pseudo: `pseudo-${m.userId}`,
+        role: m.role.value,
+        createdAt: m.createdAt,
+      }));
   }
 
   public async findByUserIdAndGroupId(
@@ -120,6 +134,7 @@ export class FakeGroupInvitationRepository implements GroupInvitationRepository 
         groupId: inv.groupId,
         groupName: "Groupe factice",
         invitedBy: inv.invitedBy,
+        invitedByPseudo: `pseudo-${inv.invitedBy}`,
         createdAt: inv.createdAt,
       }));
   }

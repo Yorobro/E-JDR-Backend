@@ -3,6 +3,7 @@ import { Result } from "@application/shared/Result";
 
 export interface GroupMemberView {
   userId: string;
+  pseudo: string;
   role: string;
   createdAt: Date;
 }

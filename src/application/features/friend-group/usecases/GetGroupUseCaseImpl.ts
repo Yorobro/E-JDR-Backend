@@ -26,7 +26,7 @@ export class GetGroupUseCaseImpl implements GetGroupUseCase {
     const group = await this.friendGroupRepository.findById(params.groupId);
     if (group === null) return Result.failure(new GroupNotFoundError());
 
-    const members = await this.groupMemberRepository.findByGroupId(params.groupId);
+    const members = await this.groupMemberRepository.findViewsByGroupId(params.groupId);
     const myMembership = members.find((m) => m.userId === params.userId);
 
     return Result.success({
@@ -35,10 +35,11 @@ export class GetGroupUseCaseImpl implements GetGroupUseCase {
       createdAt: group.createdAt,
       members: members.map((m) => ({
         userId: m.userId,
-        role: m.role.value,
+        pseudo: m.pseudo,
+        role: m.role,
         createdAt: m.createdAt,
       })),
-      myRole: myMembership?.role.value ?? "MEMBER",
+      myRole: myMembership?.role ?? "MEMBER",
     });
   }
 }
