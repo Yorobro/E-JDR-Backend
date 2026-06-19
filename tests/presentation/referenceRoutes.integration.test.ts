@@ -42,6 +42,30 @@ describe("Reference routes (intégration HTTP)", () => {
     expect(list.body.items[0].name).toBe("Épée longue");
   });
 
+  it("POST /reference/armures avec points de protection : créé (201) et renvoyé en liste", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+
+    const created = await agent
+      .post("/reference/armures")
+      .send({ name: "Cotte de mailles", groupId, protectionPoints: 3 });
+    expect(created.status).toBe(201);
+    expect(created.body.protectionPoints).toBe(3);
+
+    const list = await agent.get(`/reference/armures?groupId=${groupId}`);
+    expect(list.status).toBe(200);
+    expect(list.body.items[0].protectionPoints).toBe(3);
+  });
+
+  it("POST /reference/armures sans points de protection : protectionPoints null", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+
+    const created = await agent.post("/reference/armures").send({ name: "Tunique", groupId });
+    expect(created.status).toBe(201);
+    expect(created.body.protectionPoints).toBeNull();
+  });
+
   it("POST /reference/armes avec un nom vide renvoie 400 (INVALID_REFERENCE_NAME)", async () => {
     const agent = await authenticate();
     const groupId = await createGroup(agent);

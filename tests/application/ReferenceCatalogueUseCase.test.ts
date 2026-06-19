@@ -118,7 +118,61 @@ describe("Reference catalogue use cases (génériques, testés sur le type `arme
     expect(result.isSuccess).toBe(true);
     expect(result.value.stat).toBeNull();
     expect(result.value.bonus).toBeNull();
+    expect(result.value.protectionPoints).toBeNull();
     expect(result.value.competenceIds).toEqual([]);
+  });
+
+  it("crée une armure avec points de protection (la vue les renvoie)", async () => {
+    const result = await createUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Cotte de mailles",
+      protectionPoints: 3,
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.protectionPoints).toBe(3);
+  });
+
+  it("crée une armure sans points de protection (protectionPoints null)", async () => {
+    const result = await createUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Tunique",
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.protectionPoints).toBeNull();
+  });
+
+  it("clampe à 0 des points de protection négatifs", async () => {
+    const result = await createUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Armure cabossée",
+      protectionPoints: -5,
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.protectionPoints).toBe(0);
+  });
+
+  it("liste les armures avec leurs points de protection (round-trip via la vue)", async () => {
+    await createUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Plastron",
+      protectionPoints: 4,
+    });
+
+    const result = await new ListReferenceItemsUseCaseImpl(
+      txRepos.armes,
+      groupAccessService,
+    ).execute({ groupId: "group-1", actorId: "u-1" });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value).toHaveLength(1);
+    expect(result.value[0]!.protectionPoints).toBe(4);
   });
 
   it("supprime un élément du groupe si l'acteur en est admin", async () => {

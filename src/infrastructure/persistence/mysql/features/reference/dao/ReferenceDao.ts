@@ -35,6 +35,8 @@ export type ReferenceRow = {
   stat?: string | null;
   /** Présent uniquement pour formations/peoples ; `null`/absent pour les autres tables. */
   bonus?: number | null;
+  /** Présent uniquement pour les armures ; `null`/absent pour les autres tables. */
+  points_de_protection?: number | null;
 };
 
 /**
@@ -55,9 +57,11 @@ export class ReferenceDao {
     created_at: Date;
     stat?: string | null;
     bonus?: number | null;
+    points_de_protection?: number | null;
   }): Promise<void> {
-    // Cast : les colonnes `stat`/`bonus` n'existent que sur formations/peoples. Sur les autres
-    // tables elles sont absentes du type mais simplement ignorées à l'insert (valeurs undefined).
+    // Cast : les colonnes spécifiques (`stat`/`bonus` pour formations/peoples,
+    // `points_de_protection` pour armures) n'existent que sur certaines tables. Sur les autres
+    // elles sont absentes du type mais simplement ignorées à l'insert (valeurs undefined).
     await this.executor.insert(this.table).values(row as never);
   }
 

@@ -17,6 +17,11 @@ export interface ReferenceItemView {
   /** Montant du bonus de statistique, ou `null` si l'élément ne porte pas de bonus. */
   readonly bonus: number | null;
   /**
+   * Points de protection portés par l'élément (armures uniquement), ou `null` si l'élément n'en
+   * porte pas (toujours `null` pour les formations, peuples, armes, compétences, équipements).
+   */
+  readonly protectionPoints: number | null;
+  /**
    * Identifiants des compétences rattachées (formations uniquement). Tableau vide pour les autres
    * types.
    */

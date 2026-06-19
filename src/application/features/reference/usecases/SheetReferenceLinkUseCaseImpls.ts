@@ -32,6 +32,8 @@ function toView(item: ReferenceItem): ReferenceItemView {
     createdAt: item.createdAt,
     stat: statBonus?.stat ?? null,
     bonus: statBonus?.amount ?? null,
+    // Points de protection : peuplé pour les armures liées, `null` pour les autres types.
+    protectionPoints: item.protectionPoints,
     // Types liables à une fiche (armes/armures/compétences/équipements) : pas de compétences liées.
     competenceIds: [],
   };
