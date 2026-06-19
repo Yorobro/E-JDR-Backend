@@ -164,11 +164,20 @@ export function buildTestApp(): {
   );
 
   const characterSheetExportController = new CharacterSheetExportController(
-    new ExportCharacterSheetPdfUseCaseImpl(
-      repos.characterSheets,
-      new FakeCharacterSheetPdfGenerator(),
+    new ExportCharacterSheetPdfUseCaseImpl({
+      characterSheetRepository: repos.characterSheets,
+      pdfGenerator: new FakeCharacterSheetPdfGenerator(),
       logger,
-    ),
+      groupAccessService,
+      formationRepository: repos.formations,
+      peupleRepository: repos.peoples,
+      competenceRepository: repos.competences,
+      formationCompetenceLink: repos.formationCompetences,
+      sheetArmes: repos.sheetArmes,
+      sheetArmures: repos.sheetArmures,
+      sheetCompetences: repos.sheetCompetences,
+      sheetEquipements: repos.sheetEquipements,
+    }),
   );
 
   const sessionController = buildSessionController({

@@ -74,27 +74,27 @@ describe("Character sheet routes (intégration HTTP)", () => {
       expect(res.body.code).toBe("NOT_GROUP_MEMBER");
     });
 
-    it("GET /character-sheets renvoie toutes les fiches du groupe (visibilité groupe)", async () => {
+    it("GET /character-sheets ne renvoie que MES fiches du groupe (pas celles des autres membres)", async () => {
       const me = await authenticate("me@test.com");
       const groupId = await createGroup(me);
       await me.post("/character-sheets").send({ name: "Une", groupId });
       await me.post("/character-sheets").send({ name: "Deux", groupId });
 
-      // Un autre membre du même groupe crée aussi une fiche : elle doit être visible par tous.
+      // Fiche d'un autre membre du groupe : NE doit PAS apparaître (seules MES fiches sont listées).
       const mate = await authenticate("mate@test.com");
       await joinGroup(me, groupId, mate, "mate@test.com");
       await mate.post("/character-sheets").send({ name: "Trois", groupId });
 
-      // Une fiche dans un AUTRE groupe ne doit pas apparaître.
+      // Une fiche dans un AUTRE groupe ne doit pas apparaître non plus.
       const other = await authenticate("other@test.com");
       const otherGroupId = await createGroup(other, "Autre groupe");
       await other.post("/character-sheets").send({ name: "Autre", groupId: otherGroupId });
 
       const res = await me.get(`/character-sheets?groupId=${groupId}`);
       expect(res.status).toBe(200);
-      expect(res.body.characterSheets).toHaveLength(3);
+      expect(res.body.characterSheets).toHaveLength(2);
       const names = res.body.characterSheets.map((s: { name: string }) => s.name).sort();
-      expect(names).toEqual(["Deux", "Trois", "Une"]);
+      expect(names).toEqual(["Deux", "Une"]);
     });
 
     it("GET /character-sheets par un non-membre du groupe renvoie 403 (NOT_GROUP_MEMBER)", async () => {

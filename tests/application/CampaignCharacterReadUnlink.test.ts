@@ -26,9 +26,9 @@ describe("ListMyCharacterSheetsUseCaseImpl", () => {
       ),
     );
 
-  it("renvoie toutes les fiches du groupe (visibilité tout le groupe), quel que soit le propriétaire", async () => {
+  it("ne renvoie que MES fiches du groupe actif (pas celles des autres membres ni d'un autre groupe)", async () => {
     const txRepos = buildFakeTransactionalRepositories();
-    // u-1 et u-2 ont des fiches dans group-1 ; une autre fiche est dans group-2.
+    // u-1 a "A" dans group-1 et "C" dans group-2 ; u-2 a "B" dans group-1.
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "u-1", "A", {}, "group-1"));
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-2", "u-2", "B", {}, "group-1"));
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-3", "u-1", "C", {}, "group-2"));
@@ -37,7 +37,8 @@ describe("ListMyCharacterSheetsUseCaseImpl", () => {
     const result = await buildUseCase(txRepos).execute({ userId: "u-1", groupId: "group-1" });
 
     expect(result.isSuccess).toBe(true);
-    expect(result.value.map((s) => s.name).sort()).toEqual(["A", "B"]);
+    // Seule "A" : "B" appartient à un autre membre, "C" est dans un autre groupe.
+    expect(result.value.map((s) => s.name).sort()).toEqual(["A"]);
   });
 
   it("échoue avec NOT_GROUP_MEMBER si le demandeur n'est pas membre du groupe", async () => {

@@ -1,4 +1,5 @@
 import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
+import { CharacterSheetPdfReferences } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfReferences";
 
 /**
  * Port « out » de génération du PDF d'une fiche de personnage.
@@ -10,8 +11,9 @@ import { CharacterSheetDetail } from "@application/features/character-sheet/abst
 export interface CharacterSheetPdfGenerator {
   /**
    * Génère le PDF complet d'une fiche.
-   * @param detail - La projection complète de la fiche à imprimer.
+   * @param detail - La projection complète de la fiche à imprimer (stats, textes, ids bruts).
+   * @param references - Les références **résolues** (noms formation/peuple, listes liées, bonus).
    * @returns Le PDF sous forme de `Buffer`.
    */
-  generate(detail: CharacterSheetDetail): Promise<Buffer>;
+  generate(detail: CharacterSheetDetail, references: CharacterSheetPdfReferences): Promise<Buffer>;
 }
