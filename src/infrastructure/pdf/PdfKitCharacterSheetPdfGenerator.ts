@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
+import { CharacterSheetPdfReferences } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfReferences";
 import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
 import {
   buildCharacterSheetSections,
@@ -14,7 +15,10 @@ import {
  * l'événement `end` (document finalisé), jamais sur `data` (chunk partiel).
  */
 export class PdfKitCharacterSheetPdfGenerator implements CharacterSheetPdfGenerator {
-  public generate(detail: CharacterSheetDetail): Promise<Buffer> {
+  public generate(
+    detail: CharacterSheetDetail,
+    references: CharacterSheetPdfReferences,
+  ): Promise<Buffer> {
     return new Promise<Buffer>((resolve, reject) => {
       const doc = new PDFDocument({ size: "A4", margin: 50 });
       const chunks: Buffer[] = [];
@@ -23,16 +27,20 @@ export class PdfKitCharacterSheetPdfGenerator implements CharacterSheetPdfGenera
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      this.render(doc, detail);
+      this.render(doc, detail, references);
       doc.end();
     });
   }
 
   /** Écrit le titre (nom de la fiche) puis chaque section. */
-  private render(doc: PDFKit.PDFDocument, detail: CharacterSheetDetail): void {
+  private render(
+    doc: PDFKit.PDFDocument,
+    detail: CharacterSheetDetail,
+    references: CharacterSheetPdfReferences,
+  ): void {
     doc.fontSize(22).text(detail.name, { underline: true });
     doc.moveDown();
-    for (const section of buildCharacterSheetSections(detail)) {
+    for (const section of buildCharacterSheetSections(detail, references)) {
       this.renderSection(doc, section);
     }
   }

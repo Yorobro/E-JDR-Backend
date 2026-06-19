@@ -13,6 +13,8 @@ import {
   AuthTokenService,
 } from "@application/features/auth/abstractions/services/AuthTokenService";
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
+import { CharacterSheetPdfReferences } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfReferences";
+import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
 
 /**
  * Doublures de **services** (hash, tokens, id, pdf, logger), extraites de `fakes.ts` pour la
@@ -100,7 +102,17 @@ export class FakeAuthTokenService implements AuthTokenService {
 
 /** Générateur PDF factice : renvoie un Buffer commençant par l'en-tête PDF, sans rendu réel. */
 export class FakeCharacterSheetPdfGenerator implements CharacterSheetPdfGenerator {
-  public async generate(): Promise<Buffer> {
+  /** Dernier `detail` reçu par {@link generate} (pour inspection dans les tests). */
+  public lastDetail: CharacterSheetDetail | null = null;
+  /** Dernières `references` reçues par {@link generate} (pour inspection dans les tests). */
+  public lastReferences: CharacterSheetPdfReferences | null = null;
+
+  public async generate(
+    detail: CharacterSheetDetail,
+    references: CharacterSheetPdfReferences,
+  ): Promise<Buffer> {
+    this.lastDetail = detail;
+    this.lastReferences = references;
     return Buffer.from("%PDF-fake");
   }
 }

@@ -1,4 +1,5 @@
 import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
+import { CharacterSheetPdfReferences } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfReferences";
 
 /** Une ligne de rendu : libellé français + valeur déjà formatée ("—" si vide). */
 export interface PdfField {
@@ -31,17 +32,12 @@ function showPurse(detail: CharacterSheetDetail): string {
 }
 
 /**
- * Données de référence **résolues** (noms) pour enrichir le PDF : la fiche ne porte que des id
- * (formation/peuple) et des listes liées (armes…). Optionnel : à défaut, ces sections affichent "—".
+ * Données de référence **résolues** (noms) pour enrichir le PDF.
+ *
+ * Alias historique : la source unique du contrat est désormais {@link CharacterSheetPdfReferences}
+ * (couche application). Ce module le réutilise tel quel pour éviter toute duplication.
  */
-export interface CharacterSheetReferences {
-  readonly formationName: string | null;
-  readonly peupleName: string | null;
-  readonly armes: string[];
-  readonly armures: string[];
-  readonly competences: string[];
-  readonly equipements: string[];
-}
+export type CharacterSheetReferences = CharacterSheetPdfReferences;
 
 /** Affiche une liste d'éléments liés en "a · b · c", "—" si vide. */
 function showList(items: string[]): string {
