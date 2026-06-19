@@ -1,3 +1,14 @@
+## 1.8.0 (2026-06-19)
+
+* Merge pull request #9 from Yorobro/feat/pdf-character-sheet-layout ([31f6322](https://github.com/Yorobro/E-JDR-Backend/commit/31f6322)), closes [#9](https://github.com/Yorobro/E-JDR-Backend/issues/9)
+* feat(character-sheet): add CharacterSheetPdfReferences contract ([df50993](https://github.com/Yorobro/E-JDR-Backend/commit/df50993))
+* feat(character-sheet): load references for PDF export ([4d7a437](https://github.com/Yorobro/E-JDR-Backend/commit/4d7a437))
+* feat(character-sheet): mes fiches uniquement + export proprio ou MJ ([59c12e6](https://github.com/Yorobro/E-JDR-Backend/commit/59c12e6))
+* feat(pdf): add reusable pdfLayout drawing helpers ([502a50f](https://github.com/Yorobro/E-JDR-Backend/commit/502a50f))
+* feat(pdf): render character sheet as a two-page RPG layout ([93b1dc8](https://github.com/Yorobro/E-JDR-Backend/commit/93b1dc8))
+* fix(pdf): keep page 1 within A4 so the sheet fits two pages ([ac61d6a](https://github.com/Yorobro/E-JDR-Backend/commit/ac61d6a))
+* refactor(character-sheet): extract CharacterSheetReferenceResolver ([242278b](https://github.com/Yorobro/E-JDR-Backend/commit/242278b))
+
 ## 1.7.0 (2026-06-19)
 
 * Merge pull request #8 from Yorobro/feat/friend-groups ([47263ab](https://github.com/Yorobro/E-JDR-Backend/commit/47263ab)), closes [#8](https://github.com/Yorobro/E-JDR-Backend/issues/8)
