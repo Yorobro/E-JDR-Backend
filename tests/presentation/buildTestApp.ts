@@ -168,6 +168,7 @@ export function buildTestApp(): {
       characterSheetRepository: repos.characterSheets,
       pdfGenerator: new FakeCharacterSheetPdfGenerator(),
       logger,
+      groupAccessService,
       formationRepository: repos.formations,
       peupleRepository: repos.peoples,
       competenceRepository: repos.competences,

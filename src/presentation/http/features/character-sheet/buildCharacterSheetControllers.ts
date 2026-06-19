@@ -100,6 +100,7 @@ export function buildCharacterSheetExportController(
       characterSheetRepository: deps.characterSheetRepository,
       pdfGenerator: deps.pdfGenerator,
       logger: deps.logger,
+      groupAccessService: deps.groupAccessService,
       formationRepository: deps.formationRepository,
       peupleRepository: deps.peupleRepository,
       competenceRepository: deps.competenceRepository,

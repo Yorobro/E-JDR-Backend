@@ -1,6 +1,7 @@
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { Logger } from "@application/shared/Logger";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 import { ExportCharacterSheetPdfQuery } from "@application/features/character-sheet/query/ExportCharacterSheetPdfQuery";
@@ -26,6 +27,8 @@ export interface ExportCharacterSheetPdfDeps {
   readonly pdfGenerator: CharacterSheetPdfGenerator;
   /** Journalisation applicative. */
   readonly logger: Logger;
+  /** Contrôle d'accès groupe (autorise aussi le MJ d'une campagne où la fiche est liée). */
+  readonly groupAccessService: GroupAccessService;
   /** Catalogue des formations (résolution du nom + bonus). */
   readonly formationRepository: ReferenceRepository;
   /** Catalogue des peuples (résolution du nom + bonus). */
@@ -76,6 +79,7 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
   private readonly characterSheetRepository: CharacterSheetRepository;
   private readonly pdfGenerator: CharacterSheetPdfGenerator;
   private readonly logger: Logger;
+  private readonly groupAccessService: GroupAccessService;
   private readonly referenceResolver: CharacterSheetReferenceResolver;
   private readonly sheetArmes: SheetReferenceLinkRepository;
   private readonly sheetArmures: SheetReferenceLinkRepository;
@@ -86,6 +90,7 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
     this.characterSheetRepository = deps.characterSheetRepository;
     this.pdfGenerator = deps.pdfGenerator;
     this.logger = deps.logger;
+    this.groupAccessService = deps.groupAccessService;
     this.referenceResolver = new CharacterSheetReferenceResolver({
       formationRepository: deps.formationRepository,
       peupleRepository: deps.peupleRepository,
@@ -107,8 +112,12 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
       return Result.failure(new CharacterSheetNotFoundError());
     }
 
-    if (!sheet.isOwnedBy(query.ownerId)) {
-      this.logger.warn("Tentative d'export d'une fiche par un non-propriétaire", {
+    // Exporter = propriétaire OU MJ d'une campagne où la fiche est liée (aligné sur l'édition).
+    const canExport =
+      sheet.isOwnedBy(query.ownerId) ||
+      (await this.groupAccessService.isGameMasterOfSheetCampaign(query.ownerId, sheet.id));
+    if (!canExport) {
+      this.logger.warn("Tentative d'export d'une fiche sans droit (ni proprio ni MJ)", {
         characterSheetId: query.characterSheetId,
         ownerId: query.ownerId,
       });

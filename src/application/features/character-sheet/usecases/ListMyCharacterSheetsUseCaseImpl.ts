@@ -7,10 +7,12 @@ import { ListMyCharacterSheetsUseCase } from "@application/features/character-sh
 import { CharacterSheetSummary } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetSummary";
 
 /**
- * Use case « lister les fiches du groupe actif » (lecture pure).
+ * Use case « lister MES fiches dans le groupe actif » (lecture pure).
  *
- * Visibilité « tout le groupe » (D10) : vérifie que le demandeur est membre du groupe, puis liste
- * toutes les fiches du groupe (projetées en DTO de lecture). Pas de `UnitOfWork`.
+ * Vérifie que le demandeur est membre du groupe, puis liste les fiches **du groupe actif dont il
+ * est propriétaire** (et non plus toutes les fiches du groupe) : l'écran « Mes fiches » ne montre
+ * que les fiches créées par l'utilisateur. L'accès du MJ aux fiches de ses joueurs passera par
+ * l'écran de campagne (hors de ce listing). Pas de `UnitOfWork`.
  */
 export class ListMyCharacterSheetsUseCaseImpl implements ListMyCharacterSheetsUseCase {
   constructor(
@@ -26,7 +28,9 @@ export class ListMyCharacterSheetsUseCaseImpl implements ListMyCharacterSheetsUs
       return Result.failure(memberAccess.error);
     }
 
-    const sheets = await this.characterSheetRepository.findByGroupId(query.groupId);
+    // Fiches du groupe actif restreintes à celles dont le demandeur est propriétaire.
+    const groupSheets = await this.characterSheetRepository.findByGroupId(query.groupId);
+    const sheets = groupSheets.filter((sheet) => sheet.isOwnedBy(query.userId));
 
     const summaries: CharacterSheetSummary[] = sheets.map((sheet) => ({
       id: sheet.id,
