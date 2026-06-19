@@ -3,6 +3,13 @@ import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem
 export interface ReferenceRepository {
   save(item: ReferenceItem): Promise<void>;
 
+  /**
+   * Met à jour un élément **existant** (identifié par `item.id`). Remplace les champs mutables
+   * (nom, bonus de statistique, points de protection) ; `id`/`group_id`/`created_at` restent
+   * immuables. À appeler dans une transaction (écriture).
+   */
+  update(item: ReferenceItem): Promise<void>;
+
   /** Liste les éléments d'un groupe (du plus récent au plus ancien). */
   findByGroupId(groupId: string): Promise<ReferenceItem[]>;
 

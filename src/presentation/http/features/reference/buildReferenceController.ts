@@ -9,6 +9,7 @@ import {
   CreateReferenceItemUseCaseImpl,
   DeleteReferenceItemUseCaseImpl,
   ListReferenceItemsUseCaseImpl,
+  UpdateReferenceItemUseCaseImpl,
 } from "@application/features/reference/usecases/ReferenceCatalogueUseCaseImpls";
 import {
   LinkSheetReferenceUseCaseImpl,
@@ -74,6 +75,14 @@ export function buildReferenceController(deps: ReferenceControllerDeps): Referen
         deps.groupAccessService,
         isFormations ? formationListDeps : undefined,
       ),
+      update: new UpdateReferenceItemUseCaseImpl({
+        repository: repo,
+        selectRepo: (repos) => repos[key],
+        groupAccessService: deps.groupAccessService,
+        unitOfWork: deps.unitOfWork,
+        logger: deps.logger,
+        formationDeps: isFormations ? formationCreateDeps : undefined,
+      }),
       remove: new DeleteReferenceItemUseCaseImpl(
         repo,
         (repos) => repos[key],

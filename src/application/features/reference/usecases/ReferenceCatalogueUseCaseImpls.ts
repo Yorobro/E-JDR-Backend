@@ -21,6 +21,8 @@ import {
   DeleteReferenceItemUseCase,
   ListReferenceItemsQuery,
   ListReferenceItemsUseCase,
+  UpdateReferenceItemCommand,
+  UpdateReferenceItemUseCase,
 } from "@application/features/reference/abstractions/usecases/ReferenceCatalogueUseCases";
 import { ReferenceItemView } from "@application/features/reference/abstractions/usecases/ReferenceItemView";
 
@@ -50,6 +52,25 @@ export interface FormationCreateDeps {
 export interface FormationListDeps {
   /** Liaison formation ↔ compétences (lecture pure). */
   readonly formationCompetences: FormationCompetenceLinkRepository;
+}
+
+/**
+ * Construit le bonus de statistique à partir d'une stat/bonus bruts, ou `null` si aucune stat
+ * fournie. Partagé par la création et la modification.
+ *
+ * @param stat - La statistique ciblée (`undefined`/`null` ⇒ aucun bonus).
+ * @param bonus - Le montant du bonus (défaut 1 si `stat` fournie sans montant).
+ * @returns Le `StatBonus` validé, ou `null` (pas de bonus).
+ * @throws {DomainError} Si la stat ou le montant sont invalides (capté par l'appelant).
+ */
+function buildStatBonus(
+  stat: string | null | undefined,
+  bonus: number | null | undefined,
+): StatBonus | null {
+  if (stat === undefined || stat === null) {
+    return null;
+  }
+  return StatBonus.create({ stat, amount: bonus });
 }
 
 /** Projette une entité vers sa vue publique (sans compétences ⇒ tableau vide par défaut). */
@@ -129,7 +150,7 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
     let statBonus: StatBonus | null;
     try {
       name = ReferenceName.create(command.name);
-      statBonus = CreateReferenceItemUseCaseImpl.buildStatBonus(command);
+      statBonus = buildStatBonus(command.stat, command.bonus);
     } catch (error) {
       if (error instanceof DomainError) {
         return Result.failure(new InvalidInputError(error.code, error.message));
@@ -179,19 +200,131 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
 
     return Result.success(toView(item, competenceIds));
   }
+}
 
+/**
+ * Dépendances du use case de modification d'un élément de référence (regroupées dans un objet pour
+ * rester sous la limite de paramètres de constructeur). Symétrique de {@link CreateReferenceItemDeps}.
+ */
+export interface UpdateReferenceItemDeps {
+  /** Catalogue du type géré (lecture : recherche de l'élément + unicité du nom). */
+  readonly repository: ReferenceRepository;
+  /** Sélectionne, dans la transaction, le catalogue du type géré (écriture). */
+  readonly selectRepo: RepoSelector;
+  /** Vérifie que l'acteur est admin du groupe. */
+  readonly groupAccessService: GroupAccessService;
+  /** Encapsule l'écriture (élément + liens) dans une transaction. */
+  readonly unitOfWork: UnitOfWork;
+  /** Journalisation applicative. */
+  readonly logger: Logger;
   /**
-   * Construit le bonus de statistique à partir de la commande, ou `null` si aucune stat fournie.
-   *
-   * @param command - La commande de création.
-   * @returns Le `StatBonus` validé, ou `null` (pas de bonus).
-   * @throws {DomainError} Si la stat ou le montant sont invalides (capté par `execute`).
+   * Dépendances spécifiques aux formations (compétences). Absentes pour les autres types : un
+   * `competenceIds` fourni serait alors ignoré.
    */
-  private static buildStatBonus(command: CreateReferenceItemCommand): StatBonus | null {
-    if (command.stat === undefined || command.stat === null) {
-      return null;
+  readonly formationDeps?: FormationCreateDeps;
+}
+
+/**
+ * Use case **générique** de modification d'un élément de référence (**remplacement complet**).
+ *
+ * Seuls les admins du groupe peuvent modifier des entrées de catalogue. Le client envoie l'état
+ * complet souhaité ; le back le remplace intégralement. Pour une formation, les compétences liées
+ * sont entièrement remplacées (suppression de tous les liens existants puis réinsertion de la
+ * nouvelle liste), le tout **dans la transaction**. Le type ne change pas.
+ */
+export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCase {
+  private readonly repository: ReferenceRepository;
+  private readonly selectRepo: RepoSelector;
+  private readonly groupAccessService: GroupAccessService;
+  private readonly unitOfWork: UnitOfWork;
+  private readonly logger: Logger;
+  private readonly formationDeps?: FormationCreateDeps;
+
+  constructor(deps: UpdateReferenceItemDeps) {
+    this.repository = deps.repository;
+    this.selectRepo = deps.selectRepo;
+    this.groupAccessService = deps.groupAccessService;
+    this.unitOfWork = deps.unitOfWork;
+    this.logger = deps.logger;
+    this.formationDeps = deps.formationDeps;
+  }
+
+  public async execute(
+    command: UpdateReferenceItemCommand,
+  ): Promise<Result<ReferenceItemView, AppError>> {
+    const accessResult = await this.groupAccessService.requireAdmin(
+      command.actorId,
+      command.groupId,
+    );
+    if (accessResult.isFailure) return Result.failure(accessResult.error);
+
+    const existing = await this.repository.findById(command.itemId);
+    // L'élément doit exister **et** appartenir au groupe ciblé (sinon : introuvable, sans révéler).
+    if (existing === null || !existing.isInGroup(command.groupId)) {
+      return Result.failure(new ReferenceItemNotFoundError());
     }
-    return StatBonus.create({ stat: command.stat, amount: command.bonus });
+
+    let name: ReferenceName;
+    let statBonus: StatBonus | null;
+    try {
+      name = ReferenceName.create(command.name);
+      statBonus = buildStatBonus(command.stat, command.bonus);
+    } catch (error) {
+      if (error instanceof DomainError) {
+        return Result.failure(new InvalidInputError(error.code, error.message));
+      }
+      throw error;
+    }
+
+    // Unicité (group_id, name) : on autorise le nom inchangé (même item) ; sinon un autre item du
+    // groupe ne doit pas déjà porter ce nom.
+    const nameChanged = name.value !== existing.name.value;
+    if (nameChanged && (await this.repository.existsByGroupAndName(command.groupId, name.value))) {
+      return Result.failure(new ReferenceNameAlreadyUsedError());
+    }
+
+    // Compétences à rattacher : pertinent uniquement pour les formations (deps présentes).
+    const formationDeps = this.formationDeps;
+    const competenceIds = formationDeps !== undefined ? (command.competenceIds ?? []) : [];
+
+    // Chaque compétence doit exister dans le **même groupe** (portée + intégrité du lien).
+    if (formationDeps !== undefined) {
+      for (const competenceId of competenceIds) {
+        const exists = await formationDeps.competences.existsInGroup(command.groupId, competenceId);
+        if (!exists) {
+          return Result.failure(new ReferenceItemNotFoundError());
+        }
+      }
+    }
+
+    // Reconstruit l'élément avec son identité d'origine (id/groupId/createdAt) et le nouvel état.
+    const updated = ReferenceItem.restore({
+      id: existing.id,
+      groupId: existing.groupId,
+      name,
+      createdAt: existing.createdAt,
+      statBonus,
+      protectionPoints: command.protectionPoints ?? null,
+    });
+
+    await this.unitOfWork.execute(async (repos) => {
+      await this.selectRepo(repos).update(updated);
+      if (formationDeps !== undefined) {
+        // Remplacement complet : on efface tous les liens existants puis on réinsère la liste.
+        const links = formationDeps.formationCompetences(repos);
+        await links.deleteByFormation(updated.id);
+        for (const competenceId of competenceIds) {
+          await links.link(updated.id, competenceId, new Date());
+        }
+      }
+    });
+
+    this.logger.info("Élément de référence modifié", {
+      itemId: updated.id,
+      groupId: updated.groupId,
+    });
+
+    return Result.success(toView(updated, competenceIds));
   }
 }
 

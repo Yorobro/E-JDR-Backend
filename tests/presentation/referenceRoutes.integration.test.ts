@@ -184,6 +184,69 @@ describe("Reference routes (intégration HTTP)", () => {
     void meGroupId;
   });
 
+  it("PUT /reference/armes/:id modifie un élément et renvoie l'item (200)", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+    const created = await agent.post("/reference/armes").send({ name: "Épée", groupId });
+    const id = created.body.id as string;
+
+    const updated = await agent
+      .put(`/reference/armes/${id}`)
+      .send({ name: "Épée longue", groupId });
+    expect(updated.status).toBe(200);
+    expect(updated.body).toMatchObject({ id, name: "Épée longue" });
+
+    const list = await agent.get(`/reference/armes?groupId=${groupId}`);
+    expect(list.body.items).toHaveLength(1);
+    expect(list.body.items[0].name).toBe("Épée longue");
+  });
+
+  it("PUT /reference/formations/:id remplace entièrement les compétences", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+    const c1 = await agent.post("/reference/competences").send({ name: "Escrime", groupId });
+    const c2 = await agent.post("/reference/competences").send({ name: "Parade", groupId });
+    const formation = await agent
+      .post("/reference/formations")
+      .send({ name: "Guerrier", groupId, competenceIds: [c1.body.id] });
+    const formationId = formation.body.id as string;
+
+    const updated = await agent.put(`/reference/formations/${formationId}`).send({
+      name: "Maître d'armes",
+      groupId,
+      stat: "dexterite",
+      bonus: 2,
+      competenceIds: [c2.body.id],
+    });
+    expect(updated.status).toBe(200);
+    expect(updated.body.name).toBe("Maître d'armes");
+    expect(updated.body.stat).toBe("dexterite");
+    expect(updated.body.competenceIds).toEqual([c2.body.id]);
+
+    const list = await agent.get(`/reference/formations?groupId=${groupId}`);
+    expect(list.body.items[0].competenceIds).toEqual([c2.body.id]);
+  });
+
+  it("PUT /reference/armes/:id par un non-membre du groupe renvoie 403", async () => {
+    const owner = await authenticate("owner@test.com");
+    const groupId = await createGroup(owner, "Groupe");
+    const created = await owner.post("/reference/armes").send({ name: "Épée", groupId });
+    const id = created.body.id as string;
+
+    const intruder = await authenticate("intrus@test.com");
+    const res = await intruder.put(`/reference/armes/${id}`).send({ name: "Volée", groupId });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("NOT_GROUP_MEMBER");
+  });
+
+  it("PUT /reference/armes/:id sur un id inconnu renvoie 404 (REFERENCE_ITEM_NOT_FOUND)", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+    const res = await agent.put("/reference/armes/inexistant").send({ name: "Fantôme", groupId });
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("REFERENCE_ITEM_NOT_FOUND");
+  });
+
   it("POST /reference/armes sans cookie renvoie 401 (UNAUTHENTICATED)", async () => {
     const res = await request(app).post("/reference/armes").send({ name: "Anonyme" });
     expect(res.status).toBe(401);

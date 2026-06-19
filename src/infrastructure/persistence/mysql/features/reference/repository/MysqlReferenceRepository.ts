@@ -10,6 +10,12 @@ export class MysqlReferenceRepository implements ReferenceRepository {
     await this.dao.insert(ReferenceMapper.toRow(item));
   }
 
+  public async update(item: ReferenceItem): Promise<void> {
+    // `id`/`group_id`/`created_at` sont immuables : seuls nom/stat/bonus/protection sont écrits.
+    const { id, name, stat, bonus, points_de_protection } = ReferenceMapper.toRow(item);
+    await this.dao.update({ id, name, stat, bonus, points_de_protection });
+  }
+
   public async findByGroupId(groupId: string): Promise<ReferenceItem[]> {
     const rows = await this.dao.findByGroupId(groupId);
     return rows.map((row) => ReferenceMapper.toDomain(row));
