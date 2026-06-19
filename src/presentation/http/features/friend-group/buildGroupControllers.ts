@@ -3,6 +3,7 @@ import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
+import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 import { FriendGroupRepository } from "@application/features/friend-group/abstractions/repositories/FriendGroupRepository";
 import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { GroupInvitationRepository } from "@application/features/friend-group/abstractions/repositories/GroupInvitationRepository";
@@ -29,6 +30,7 @@ export interface GroupControllerDeps {
   groupMemberRepository: GroupMemberRepository;
   groupInvitationRepository: GroupInvitationRepository;
   campaignRepository: CampaignRepository;
+  campaignCharacterRepository: CampaignCharacterRepository;
   credentialRepository: CredentialRepository;
   idGenerator: IdGeneratorService;
   unitOfWork: UnitOfWork;
@@ -40,7 +42,11 @@ export function buildGroupControllers(deps: GroupControllerDeps): {
   invitation: InvitationController;
   groupAccessService: GroupAccessService;
 } {
-  const groupAccessService = new GroupAccessServiceImpl(deps.groupMemberRepository);
+  const groupAccessService = new GroupAccessServiceImpl(
+    deps.groupMemberRepository,
+    deps.campaignRepository,
+    deps.campaignCharacterRepository,
+  );
 
   const groupController = new GroupController(
     new CreateGroupUseCaseImpl(deps.idGenerator, deps.unitOfWork, deps.logger),

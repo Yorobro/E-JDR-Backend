@@ -40,14 +40,23 @@ export function buildCharacterSheetController(
   deps: CharacterSheetControllerDeps,
 ): CharacterSheetController {
   return new CharacterSheetController(
-    new CreateCharacterSheetUseCaseImpl(deps.idGenerator, deps.unitOfWork, deps.logger),
-    new ListMyCharacterSheetsUseCaseImpl(deps.characterSheetRepository),
+    new CreateCharacterSheetUseCaseImpl(
+      deps.idGenerator,
+      deps.groupAccessService,
+      deps.unitOfWork,
+      deps.logger,
+    ),
+    new ListMyCharacterSheetsUseCaseImpl(deps.characterSheetRepository, deps.groupAccessService),
     new DeleteCharacterSheetUseCaseImpl(
       deps.characterSheetRepository,
       deps.unitOfWork,
       deps.logger,
     ),
-    new GetCharacterSheetUseCaseImpl(deps.characterSheetRepository, deps.logger),
+    new GetCharacterSheetUseCaseImpl(
+      deps.characterSheetRepository,
+      deps.groupAccessService,
+      deps.logger,
+    ),
     new UpdateCharacterSheetUseCaseImpl(
       deps.characterSheetRepository,
       deps.formationRepository,

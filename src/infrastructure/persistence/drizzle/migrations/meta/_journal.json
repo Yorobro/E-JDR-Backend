@@ -50,6 +50,13 @@
       "when": 1781824885523,
       "tag": "0006_military_kinsey_walden",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1781826852459,
+      "tag": "0007_dapper_emma_frost",
+      "breakpoints": true
     }
   ]
 }

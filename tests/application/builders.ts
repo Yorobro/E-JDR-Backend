@@ -36,10 +36,12 @@ export function buildTestCharacterSheet(
   ownerId = "user-1",
   name = "Aragorn",
   details: Partial<CharacterSheetDetails> = {},
+  groupId = "group-1",
 ): CharacterSheet {
   return CharacterSheet.create({
     id,
     ownerId,
+    groupId,
     name: CharacterSheetName.create(name),
     createdAt: new Date("2026-01-01T00:00:00Z"),
     ...details,

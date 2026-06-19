@@ -384,6 +384,7 @@ function buildControllers(
     groupMemberRepository: services.friendGroupRepositories.groupMembers,
     groupInvitationRepository: services.friendGroupRepositories.groupInvitations,
     campaignRepository: services.campaignRepository,
+    campaignCharacterRepository: services.campaignCharacterRepository,
     credentialRepository: services.credentialRepository,
     idGenerator: services.idGenerator,
     unitOfWork: services.unitOfWork,

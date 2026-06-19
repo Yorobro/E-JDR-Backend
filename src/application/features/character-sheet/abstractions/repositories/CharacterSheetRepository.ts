@@ -31,6 +31,14 @@ export interface CharacterSheetRepository {
   findByOwnerId(ownerId: string): Promise<CharacterSheet[]>;
 
   /**
+   * Récupère toutes les fiches d'un groupe (visibilité « tout le groupe », D3/D10).
+   *
+   * @param groupId - Identifiant du groupe.
+   * @returns Les fiches du groupe (vide si aucune).
+   */
+  findByGroupId(groupId: string): Promise<CharacterSheet[]>;
+
+  /**
    * Récupère une fiche par son identifiant.
    *
    * @param id - L'identifiant de la fiche.
@@ -46,12 +54,18 @@ export interface CharacterSheetRepository {
   deleteById(id: string): Promise<void>;
 
   /**
-   * Récupère les fiches rattachables à une campagne : toutes celles dont le propriétaire
-   * n'est PAS le maître du jeu, en excluant les fiches déjà rattachées à cette campagne.
+   * Récupère les fiches rattachables à une campagne : toutes les fiches **du groupe de la
+   * campagne** dont le propriétaire n'est PAS le maître du jeu, en excluant les fiches déjà
+   * rattachées à cette campagne (D6 : le MJ pioche parmi toutes les fiches du groupe).
    *
+   * @param groupId - Identifiant du groupe de la campagne (limite la liste à ce groupe).
    * @param gameMasterId - Identifiant du MJ de la campagne (ses fiches sont exclues).
    * @param campaignId - Identifiant de la campagne (les fiches déjà liées sont exclues).
    * @returns Les fiches rattachables (tableau éventuellement vide).
    */
-  findLinkableForCampaign(gameMasterId: string, campaignId: string): Promise<CharacterSheet[]>;
+  findLinkableForCampaign(
+    groupId: string,
+    gameMasterId: string,
+    campaignId: string,
+  ): Promise<CharacterSheet[]>;
 }

@@ -23,7 +23,11 @@ describe("Reference catalogue use cases (génériques, testés sur le type `arme
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
-    groupAccessService = new GroupAccessServiceImpl(txRepos.groupMembers);
+    groupAccessService = new GroupAccessServiceImpl(
+      txRepos.groupMembers,
+      txRepos.campaigns,
+      txRepos.campaignCharacters,
+    );
     // u-1 est admin de group-1 (membre seulement de group-1)
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "u-1" }));
   });

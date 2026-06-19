@@ -108,6 +108,7 @@ export function buildTestApp(): {
     groupMemberRepository: repos.groupMembers,
     groupInvitationRepository: repos.groupInvitations,
     campaignRepository: repos.campaigns,
+    campaignCharacterRepository: repos.campaignCharacters,
     credentialRepository: repos.credentials,
     idGenerator,
     unitOfWork,
@@ -139,10 +140,10 @@ export function buildTestApp(): {
   );
 
   const characterSheetController = new CharacterSheetController(
-    new CreateCharacterSheetUseCaseImpl(idGenerator, unitOfWork, logger),
-    new ListMyCharacterSheetsUseCaseImpl(repos.characterSheets),
+    new CreateCharacterSheetUseCaseImpl(idGenerator, groupAccessService, unitOfWork, logger),
+    new ListMyCharacterSheetsUseCaseImpl(repos.characterSheets, groupAccessService),
     new DeleteCharacterSheetUseCaseImpl(repos.characterSheets, unitOfWork, logger),
-    new GetCharacterSheetUseCaseImpl(repos.characterSheets, logger),
+    new GetCharacterSheetUseCaseImpl(repos.characterSheets, groupAccessService, logger),
     new UpdateCharacterSheetUseCaseImpl(
       repos.characterSheets,
       repos.formations,

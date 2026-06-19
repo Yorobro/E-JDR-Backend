@@ -53,6 +53,14 @@ export class CharacterSheetDao {
       .orderBy(desc(characterSheets.created_at));
   }
 
+  public async findByGroupId(groupId: string): Promise<CharacterSheetRow[]> {
+    return this.executor
+      .select()
+      .from(characterSheets)
+      .where(eq(characterSheets.group_id, groupId))
+      .orderBy(desc(characterSheets.created_at));
+  }
+
   public async findById(id: string): Promise<CharacterSheetRow | null> {
     const rows = await this.executor
       .select()
@@ -67,6 +75,7 @@ export class CharacterSheetDao {
   }
 
   public async findLinkableForCampaign(
+    groupId: string,
     gameMasterId: string,
     campaignId: string,
   ): Promise<CharacterSheetRow[]> {
@@ -75,6 +84,7 @@ export class CharacterSheetDao {
       .from(characterSheets)
       .where(
         and(
+          eq(characterSheets.group_id, groupId),
           ne(characterSheets.owner_id, gameMasterId),
           notExists(
             this.executor

@@ -9,6 +9,7 @@ import {
   FakeUnitOfWork,
   buildFakeTransactionalRepositories,
   buildTestCharacterSheet,
+  buildTestCampaign,
   buildTestReferenceItem,
   buildTestMembership,
 } from "./fakes";
@@ -19,7 +20,11 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
-    const groupAccessService = new GroupAccessServiceImpl(txRepos.groupMembers);
+    const groupAccessService = new GroupAccessServiceImpl(
+      txRepos.groupMembers,
+      txRepos.campaigns,
+      txRepos.campaignCharacters,
+    );
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "owner-1" }));
     useCase = new UpdateCharacterSheetUseCaseImpl(
       txRepos.characterSheets,
@@ -134,7 +139,23 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
     expect(result.error).toBeInstanceOf(CharacterSheetNotFoundError);
   });
 
-  it("échoue avec CharacterSheetAccessDeniedError si le demandeur n'est pas le propriétaire", async () => {
+  it("autorise le MJ d'une campagne où la fiche est liée à modifier la fiche", async () => {
+    // La fiche appartient à owner-1 ; elle est liée à une campagne dont mj-7 est le MJ.
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
+    txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-7", "Donjon", "group-1"));
+    await txRepos.campaignCharacters.link("camp-1", "s-1");
+
+    const result = await useCase.execute({
+      characterSheetId: "s-1",
+      ownerId: "mj-7",
+      name: "Strider",
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.name).toBe("Strider");
+  });
+
+  it("échoue avec CharacterSheetAccessDeniedError si le demandeur n'est ni propriétaire ni MJ d'une campagne liée", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1"));
 
     const result = await useCase.execute({

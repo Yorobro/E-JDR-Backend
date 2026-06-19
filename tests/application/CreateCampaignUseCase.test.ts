@@ -16,7 +16,11 @@ describe("CreateCampaignUseCaseImpl", () => {
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
-    const groupAccessService = new GroupAccessServiceImpl(txRepos.groupMembers);
+    const groupAccessService = new GroupAccessServiceImpl(
+      txRepos.groupMembers,
+      txRepos.campaigns,
+      txRepos.campaignCharacters,
+    );
     const unitOfWork = new FakeUnitOfWork(txRepos);
     useCase = new CreateCampaignUseCaseImpl(
       new FakeIdGenerator(),

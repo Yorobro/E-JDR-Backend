@@ -90,7 +90,11 @@ describe("RemoveMemberUseCase", () => {
 
   beforeEach(() => {
     repos = buildFakeTransactionalRepositories();
-    const accessService = new GroupAccessServiceImpl(repos.groupMembers);
+    const accessService = new GroupAccessServiceImpl(
+      repos.groupMembers,
+      repos.campaigns,
+      repos.campaignCharacters,
+    );
     useCase = new RemoveMemberUseCaseImpl(
       repos.groupMembers,
       accessService,

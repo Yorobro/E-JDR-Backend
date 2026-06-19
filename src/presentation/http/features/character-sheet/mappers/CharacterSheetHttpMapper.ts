@@ -21,7 +21,10 @@ export class CharacterSheetHttpMapper {
       case "CAMPAIGN_NOT_FOUND":
       case "REFERENCE_ITEM_NOT_FOUND":
         return 404;
+      // CHARACTER_SHEET_ACCESS_DENIED : ni propriétaire ni MJ d'une campagne liée.
+      // NOT_GROUP_MEMBER : visibilité « tout le groupe » → un non-membre du groupe est refusé.
       case "CHARACTER_SHEET_ACCESS_DENIED":
+      case "NOT_GROUP_MEMBER":
         return 403;
       case "GM_CANNOT_JOIN_OWN_CAMPAIGN":
       case "SHEET_ALREADY_IN_CAMPAIGN":

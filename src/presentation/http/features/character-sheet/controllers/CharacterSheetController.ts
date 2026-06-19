@@ -65,12 +65,13 @@ export class CharacterSheetController {
     private readonly getSheetCampaigns: GetSheetCampaignsUseCase,
   ) {}
 
-  /** `POST /character-sheets` — crée une fiche appartenant à l'utilisateur authentifié. */
+  /** `POST /character-sheets` — crée une fiche dans le groupe actif, possédée par l'utilisateur. */
   public create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const body = req.body as { name?: unknown };
+      const body = req.body as { name?: unknown; groupId?: unknown };
       const result = await this.createCharacterSheet.execute({
         ownerId: req.user!.userId,
+        groupId: body.groupId as string,
         name: body.name as string,
       });
 
@@ -88,10 +89,13 @@ export class CharacterSheetController {
     }
   };
 
-  /** `GET /character-sheets` — liste les fiches de l'utilisateur authentifié. */
+  /** `GET /character-sheets?groupId=…` — liste les fiches du groupe actif (membre requis). */
   public list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await this.listMyCharacterSheets.execute({ ownerId: req.user!.userId });
+      const result = await this.listMyCharacterSheets.execute({
+        userId: req.user!.userId,
+        groupId: (req.query.groupId as string) ?? "",
+      });
 
       if (result.isFailure) {
         res
@@ -117,7 +121,7 @@ export class CharacterSheetController {
     try {
       const result = await this.getCharacterSheet.execute({
         characterSheetId: req.params.id ?? "",
-        ownerId: req.user!.userId,
+        userId: req.user!.userId,
       });
 
       if (result.isFailure) {

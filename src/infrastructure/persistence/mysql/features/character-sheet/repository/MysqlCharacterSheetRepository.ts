@@ -24,6 +24,11 @@ export class MysqlCharacterSheetRepository implements CharacterSheetRepository {
     return rows.map((row) => CharacterSheetMapper.toDomain(row));
   }
 
+  public async findByGroupId(groupId: string): Promise<CharacterSheet[]> {
+    const rows = await this.characterSheetDao.findByGroupId(groupId);
+    return rows.map((row) => CharacterSheetMapper.toDomain(row));
+  }
+
   public async findById(id: string): Promise<CharacterSheet | null> {
     const row = await this.characterSheetDao.findById(id);
     return row === null ? null : CharacterSheetMapper.toDomain(row);
@@ -34,10 +39,15 @@ export class MysqlCharacterSheetRepository implements CharacterSheetRepository {
   }
 
   public async findLinkableForCampaign(
+    groupId: string,
     gameMasterId: string,
     campaignId: string,
   ): Promise<CharacterSheet[]> {
-    const rows = await this.characterSheetDao.findLinkableForCampaign(gameMasterId, campaignId);
+    const rows = await this.characterSheetDao.findLinkableForCampaign(
+      groupId,
+      gameMasterId,
+      campaignId,
+    );
     return rows.map((row) => CharacterSheetMapper.toDomain(row));
   }
 }

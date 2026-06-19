@@ -1,23 +1,24 @@
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { Logger } from "@application/shared/Logger";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { GetCharacterSheetQuery } from "@application/features/character-sheet/query/GetCharacterSheetQuery";
 import { GetCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/GetCharacterSheetUseCase";
 import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
-import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 import { toCharacterSheetDetail } from "@application/features/character-sheet/usecases/toCharacterSheetDetail";
 
 /**
  * Use case de consultation détaillée d'une fiche.
  *
- * Charge la fiche, vérifie via le domaine que le demandeur en est le **propriétaire**
- * (`sheet.isOwnedBy`), puis projette la fiche complète. Lecture pure (sans `UnitOfWork`).
+ * Charge la fiche, vérifie que le demandeur est **membre du groupe** de la fiche (visibilité
+ * « tout le groupe », D10), puis projette la fiche complète. Lecture pure (sans `UnitOfWork`).
  */
 export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
   constructor(
     private readonly characterSheetRepository: CharacterSheetRepository,
+    private readonly groupAccessService: GroupAccessService,
     private readonly logger: Logger,
   ) {}
 
@@ -30,12 +31,13 @@ export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
       return Result.failure(new CharacterSheetNotFoundError());
     }
 
-    if (!sheet.isOwnedBy(query.ownerId)) {
-      this.logger.warn("Tentative de consultation d'une fiche par un non-propriétaire", {
+    const memberAccess = await this.groupAccessService.requireMember(query.userId, sheet.groupId);
+    if (memberAccess.isFailure) {
+      this.logger.warn("Tentative de consultation d'une fiche par un non-membre du groupe", {
         characterSheetId: query.characterSheetId,
-        ownerId: query.ownerId,
+        userId: query.userId,
       });
-      return Result.failure(new CharacterSheetAccessDeniedError());
+      return Result.failure(memberAccess.error);
     }
 
     return Result.success(toCharacterSheetDetail(sheet));

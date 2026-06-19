@@ -5,16 +5,31 @@ import { Sex } from "@domain/features/character-sheet/value-objects/Sex";
 import { Purse } from "@domain/features/character-sheet/value-objects/Purse";
 
 describe("CharacterSheet (entité)", () => {
-  const build = (ownerId = "user-1"): CharacterSheet =>
+  const build = (ownerId = "user-1", groupId = "group-1"): CharacterSheet =>
     CharacterSheet.create({
       id: "sheet-1",
       ownerId,
+      groupId,
       name: CharacterSheetName.create("Aragorn"),
       createdAt: new Date("2026-01-01T00:00:00Z"),
     });
 
   it("create établit le propriétaire", () => {
     expect(build("owner-42").ownerId).toBe("owner-42");
+  });
+
+  it("create établit le groupe", () => {
+    expect(build("owner-42", "g-7").groupId).toBe("g-7");
+  });
+
+  it("isInGroup renvoie true pour le groupe de la fiche, false sinon", () => {
+    const sheet = build("owner-42", "g-7");
+    expect(sheet.isInGroup("g-7")).toBe(true);
+    expect(sheet.isInGroup("autre")).toBe(false);
+  });
+
+  it("groupId n'apparaît pas dans les champs détaillés", () => {
+    expect("groupId" in build().details).toBe(false);
   });
 
   it("expose le nom sous forme de value object", () => {
@@ -84,12 +99,14 @@ describe("CharacterSheet (entité)", () => {
       ...build().details,
       id: "sheet-9",
       ownerId: "owner-9",
+      groupId: "group-9",
       name: CharacterSheetName.create("Legolas"),
       createdAt: new Date("2026-02-03T10:00:00Z"),
       perception: 8,
     });
     expect(sheet.id).toBe("sheet-9");
     expect(sheet.ownerId).toBe("owner-9");
+    expect(sheet.groupId).toBe("group-9");
     expect(sheet.name.value).toBe("Legolas");
     expect(sheet.createdAt.getTime()).toBe(new Date("2026-02-03T10:00:00Z").getTime());
     expect(sheet.details.perception).toBe(8);

@@ -4,6 +4,7 @@ import { GroupAccessServiceImpl } from "@application/features/friend-group/servi
 import {
   FakeCampaignRepository,
   FakeGroupMemberRepository,
+  buildFakeTransactionalRepositories,
   buildTestCampaign,
   buildTestMembership,
 } from "./fakes";
@@ -14,9 +15,14 @@ describe("ListMyCampaignsUseCaseImpl", () => {
   let useCase: ListMyCampaignsUseCaseImpl;
 
   beforeEach(() => {
-    campaignRepo = new FakeCampaignRepository();
-    memberRepo = new FakeGroupMemberRepository();
-    const groupAccessService = new GroupAccessServiceImpl(memberRepo);
+    const txRepos = buildFakeTransactionalRepositories();
+    campaignRepo = txRepos.campaigns;
+    memberRepo = txRepos.groupMembers;
+    const groupAccessService = new GroupAccessServiceImpl(
+      memberRepo,
+      txRepos.campaigns,
+      txRepos.campaignCharacters,
+    );
     useCase = new ListMyCampaignsUseCaseImpl(campaignRepo, groupAccessService);
     // user-1 est membre de group-1
     memberRepo.seed(buildTestMembership({ groupId: "group-1", userId: "user-1" }));

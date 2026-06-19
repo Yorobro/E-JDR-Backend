@@ -7,6 +7,10 @@ import { buildTestApp } from "./buildTestApp";
 /**
  * Tests d'intégration HTTP des routes fiches (`/character-sheets`) et de la liaison
  * campagne↔fiches (`/campaigns/:id/characters`), pile Express réelle sur doublures.
+ *
+ * Contrat « groupe d'amis » (Étape 3) : une fiche appartient à un groupe (`groupId`). La
+ * visibilité est « tout le groupe » (lecture par tout membre), mais création/suppression et
+ * édition restent contraintes (propriétaire / MJ). Voir le détail dans chaque test.
  */
 describe("Character sheet routes (intégration HTTP)", () => {
   let app: Application;
@@ -22,10 +26,34 @@ describe("Character sheet routes (intégration HTTP)", () => {
     return agent;
   }
 
+  /** Crée un groupe (créateur = ADMIN/membre) et renvoie son ID. */
+  async function createGroup(
+    agent: ReturnType<typeof request.agent>,
+    name = "Groupe",
+  ): Promise<string> {
+    const res = await agent.post("/groups").send({ name });
+    return res.body.id as string;
+  }
+
+  /**
+   * Fait entrer `invitee` dans le groupe `groupId` : `inviter` invite par email, `invitee`
+   * accepte. Les deux utilisateurs deviennent alors membres du même groupe.
+   */
+  async function joinGroup(
+    inviter: ReturnType<typeof request.agent>,
+    groupId: string,
+    invitee: ReturnType<typeof request.agent>,
+    inviteeEmail: string,
+  ): Promise<void> {
+    const inv = await inviter.post(`/groups/${groupId}/invitations`).send({ email: inviteeEmail });
+    await invitee.post(`/invitations/${inv.body.invitationId}/accept`);
+  }
+
   describe("CRUD fiches", () => {
     it("POST /character-sheets crée une fiche (201)", async () => {
       const agent = await authenticate("p@test.com");
-      const res = await agent.post("/character-sheets").send({ name: "Aragorn" });
+      const groupId = await createGroup(agent);
+      const res = await agent.post("/character-sheets").send({ name: "Aragorn", groupId });
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ name: "Aragorn" });
@@ -35,38 +63,80 @@ describe("Character sheet routes (intégration HTTP)", () => {
       expect(typeof res.body.ownerId).toBe("string");
     });
 
-    it("GET /character-sheets ne renvoie que mes fiches", async () => {
-      const me = await authenticate("me@test.com");
-      await me.post("/character-sheets").send({ name: "Une" });
-      await me.post("/character-sheets").send({ name: "Deux" });
-      const other = await authenticate("other@test.com");
-      await other.post("/character-sheets").send({ name: "Autre" });
+    it("POST /character-sheets par un non-membre du groupe renvoie 403 (NOT_GROUP_MEMBER)", async () => {
+      const owner = await authenticate("owner@test.com");
+      const groupId = await createGroup(owner);
+      const intrus = await authenticate("intrus@test.com");
 
-      const res = await me.get("/character-sheets");
+      const res = await intrus.post("/character-sheets").send({ name: "Aragorn", groupId });
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("NOT_GROUP_MEMBER");
+    });
+
+    it("GET /character-sheets renvoie toutes les fiches du groupe (visibilité groupe)", async () => {
+      const me = await authenticate("me@test.com");
+      const groupId = await createGroup(me);
+      await me.post("/character-sheets").send({ name: "Une", groupId });
+      await me.post("/character-sheets").send({ name: "Deux", groupId });
+
+      // Un autre membre du même groupe crée aussi une fiche : elle doit être visible par tous.
+      const mate = await authenticate("mate@test.com");
+      await joinGroup(me, groupId, mate, "mate@test.com");
+      await mate.post("/character-sheets").send({ name: "Trois", groupId });
+
+      // Une fiche dans un AUTRE groupe ne doit pas apparaître.
+      const other = await authenticate("other@test.com");
+      const otherGroupId = await createGroup(other, "Autre groupe");
+      await other.post("/character-sheets").send({ name: "Autre", groupId: otherGroupId });
+
+      const res = await me.get(`/character-sheets?groupId=${groupId}`);
       expect(res.status).toBe(200);
-      expect(res.body.characterSheets).toHaveLength(2);
+      expect(res.body.characterSheets).toHaveLength(3);
+      const names = res.body.characterSheets.map((s: { name: string }) => s.name).sort();
+      expect(names).toEqual(["Deux", "Trois", "Une"]);
+    });
+
+    it("GET /character-sheets par un non-membre du groupe renvoie 403 (NOT_GROUP_MEMBER)", async () => {
+      const owner = await authenticate("owner@test.com");
+      const groupId = await createGroup(owner);
+      await owner.post("/character-sheets").send({ name: "Privée", groupId });
+      const intrus = await authenticate("intrus@test.com");
+
+      const res = await intrus.get(`/character-sheets?groupId=${groupId}`);
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("NOT_GROUP_MEMBER");
     });
 
     it("POST /character-sheets avec un nom vide renvoie 400", async () => {
       const agent = await authenticate("p@test.com");
-      const res = await agent.post("/character-sheets").send({ name: "   " });
+      const groupId = await createGroup(agent);
+      const res = await agent.post("/character-sheets").send({ name: "   ", groupId });
       expect(res.status).toBe(400);
       expect(res.body.code).toBe("INVALID_CHARACTER_SHEET_NAME");
     });
 
     it("DELETE /character-sheets/:id supprime ma fiche (204)", async () => {
       const agent = await authenticate("p@test.com");
-      const created = await agent.post("/character-sheets").send({ name: "À supprimer" });
+      const groupId = await createGroup(agent);
+      const created = await agent.post("/character-sheets").send({ name: "À supprimer", groupId });
       const res = await agent.delete(`/character-sheets/${created.body.id}`);
       expect(res.status).toBe(204);
-      expect((await agent.get("/character-sheets")).body.characterSheets).toHaveLength(0);
+      expect(
+        (await agent.get(`/character-sheets?groupId=${groupId}`)).body.characterSheets,
+      ).toHaveLength(0);
     });
 
-    it("DELETE la fiche d'un autre renvoie 403", async () => {
+    it("DELETE la fiche d'un autre (même membre du groupe) renvoie 403", async () => {
+      // La suppression reste réservée au propriétaire, même pour un autre membre du groupe.
       const owner = await authenticate("owner@test.com");
-      const created = await owner.post("/character-sheets").send({ name: "Privée" });
-      const intrus = await authenticate("intrus@test.com");
-      const res = await intrus.delete(`/character-sheets/${created.body.id}`);
+      const groupId = await createGroup(owner);
+      const created = await owner.post("/character-sheets").send({ name: "Privée", groupId });
+
+      const mate = await authenticate("mate@test.com");
+      await joinGroup(owner, groupId, mate, "mate@test.com");
+
+      const res = await mate.delete(`/character-sheets/${created.body.id}`);
       expect(res.status).toBe(403);
       expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");
     });
@@ -81,7 +151,8 @@ describe("Character sheet routes (intégration HTTP)", () => {
   describe("Détail et mise à jour d'une fiche", () => {
     it("GET /character-sheets/:id renvoie la fiche complète (200)", async () => {
       const agent = await authenticate("p@test.com");
-      const created = await agent.post("/character-sheets").send({ name: "Aragorn" });
+      const groupId = await createGroup(agent);
+      const created = await agent.post("/character-sheets").send({ name: "Aragorn", groupId });
 
       const res = await agent.get(`/character-sheets/${created.body.id}`);
 
@@ -93,9 +164,23 @@ describe("Character sheet routes (intégration HTTP)", () => {
       expect(res.body.notes).toBeNull();
     });
 
+    it("GET la fiche d'un autre membre du même groupe réussit (200, visibilité groupe)", async () => {
+      const owner = await authenticate("owner@test.com");
+      const groupId = await createGroup(owner);
+      const created = await owner.post("/character-sheets").send({ name: "Aragorn", groupId });
+
+      const mate = await authenticate("mate@test.com");
+      await joinGroup(owner, groupId, mate, "mate@test.com");
+
+      const res = await mate.get(`/character-sheets/${created.body.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ id: created.body.id, name: "Aragorn" });
+    });
+
     it("PUT /character-sheets/:id met à jour la fiche, GET reflète les changements", async () => {
       const agent = await authenticate("p@test.com");
-      const created = await agent.post("/character-sheets").send({ name: "Aragorn" });
+      const groupId = await createGroup(agent);
+      const created = await agent.post("/character-sheets").send({ name: "Aragorn", groupId });
 
       const put = await agent.put(`/character-sheets/${created.body.id}`).send({
         name: "Strider",
@@ -119,7 +204,8 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
     it("PUT avec un sexe invalide renvoie 400", async () => {
       const agent = await authenticate("p@test.com");
-      const created = await agent.post("/character-sheets").send({ name: "Aragorn" });
+      const groupId = await createGroup(agent);
+      const created = await agent.post("/character-sheets").send({ name: "Aragorn", groupId });
 
       const res = await agent
         .put(`/character-sheets/${created.body.id}`)
@@ -130,7 +216,8 @@ describe("Character sheet routes (intégration HTTP)", () => {
 
     it("PUT avec un nom vide renvoie 400", async () => {
       const agent = await authenticate("p@test.com");
-      const created = await agent.post("/character-sheets").send({ name: "Aragorn" });
+      const groupId = await createGroup(agent);
+      const created = await agent.post("/character-sheets").send({ name: "Aragorn", groupId });
 
       const res = await agent.put(`/character-sheets/${created.body.id}`).send({ name: "   " });
       expect(res.status).toBe(400);
@@ -144,22 +231,28 @@ describe("Character sheet routes (intégration HTTP)", () => {
       expect(res.body.code).toBe("CHARACTER_SHEET_NOT_FOUND");
     });
 
-    it("GET la fiche d'un autre renvoie 403", async () => {
+    it("GET la fiche d'un autre (non-membre du groupe) renvoie 403", async () => {
+      // Nouvelle règle : l'accès est réservé aux MEMBRES du groupe de la fiche.
       const owner = await authenticate("owner@test.com");
-      const created = await owner.post("/character-sheets").send({ name: "Privée" });
+      const groupId = await createGroup(owner);
+      const created = await owner.post("/character-sheets").send({ name: "Privée", groupId });
       const intrus = await authenticate("intrus@test.com");
 
       const res = await intrus.get(`/character-sheets/${created.body.id}`);
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");
+      expect(res.body.code).toBe("NOT_GROUP_MEMBER");
     });
 
-    it("PUT la fiche d'un autre renvoie 403", async () => {
+    it("PUT la fiche d'un autre (même membre, non-MJ) renvoie 403", async () => {
+      // L'édition reste réservée au propriétaire (ou au MJ d'une campagne liée).
       const owner = await authenticate("owner@test.com");
-      const created = await owner.post("/character-sheets").send({ name: "Privée" });
-      const intrus = await authenticate("intrus@test.com");
+      const groupId = await createGroup(owner);
+      const created = await owner.post("/character-sheets").send({ name: "Privée", groupId });
 
-      const res = await intrus.put(`/character-sheets/${created.body.id}`).send({ name: "Hack" });
+      const mate = await authenticate("mate@test.com");
+      await joinGroup(owner, groupId, mate, "mate@test.com");
+
+      const res = await mate.put(`/character-sheets/${created.body.id}`).send({ name: "Hack" });
       expect(res.status).toBe(403);
       expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");
     });
@@ -175,10 +268,11 @@ describe("Character sheet routes (intégration HTTP)", () => {
   async function createCampaign(
     agent: ReturnType<typeof request.agent>,
     name = "Ma campagne",
-  ): Promise<{ body: { id: string } }> {
+  ): Promise<{ body: { id: string }; groupId: string }> {
     const grp = await agent.post("/groups").send({ name: "Groupe" });
     const groupId = grp.body.id as string;
-    return agent.post("/campaigns").send({ name, groupId });
+    const campaign = await agent.post("/campaigns").send({ name, groupId });
+    return { body: campaign.body, groupId };
   }
 
   describe("Liaison campagne↔fiches", () => {
@@ -186,8 +280,12 @@ describe("Character sheet routes (intégration HTTP)", () => {
       const mj = await authenticate("mj@test.com");
       const campaign = await createCampaign(mj, "Ma campagne");
 
+      // Le joueur doit être membre du groupe de la campagne et créer sa fiche DANS ce groupe.
       const player = await authenticate("player@test.com");
-      const sheet = await player.post("/character-sheets").send({ name: "Legolas" });
+      await joinGroup(mj, campaign.groupId, player, "player@test.com");
+      const sheet = await player
+        .post("/character-sheets")
+        .send({ name: "Legolas", groupId: campaign.groupId });
 
       const link = await mj
         .post(`/campaigns/${campaign.body.id}/characters`)
@@ -203,7 +301,9 @@ describe("Character sheet routes (intégration HTTP)", () => {
     it("refuse (409) que le MJ rattache une de ses fiches à sa propre campagne", async () => {
       const mj = await authenticate("mj@test.com");
       const campaign = await createCampaign(mj, "Ma campagne");
-      const sheet = await mj.post("/character-sheets").send({ name: "Fiche du MJ" });
+      const sheet = await mj
+        .post("/character-sheets")
+        .send({ name: "Fiche du MJ", groupId: campaign.groupId });
 
       const res = await mj
         .post(`/campaigns/${campaign.body.id}/characters`)
@@ -217,7 +317,10 @@ describe("Character sheet routes (intégration HTTP)", () => {
       const mj = await authenticate("mj@test.com");
       const campaign = await createCampaign(mj, "C");
       const player = await authenticate("player@test.com");
-      const sheet = await player.post("/character-sheets").send({ name: "S" });
+      await joinGroup(mj, campaign.groupId, player, "player@test.com");
+      const sheet = await player
+        .post("/character-sheets")
+        .send({ name: "S", groupId: campaign.groupId });
 
       await mj
         .post(`/campaigns/${campaign.body.id}/characters`)
@@ -230,11 +333,33 @@ describe("Character sheet routes (intégration HTTP)", () => {
       expect(dup.body.code).toBe("SHEET_ALREADY_IN_CAMPAIGN");
     });
 
+    it("refuse (403) de rattacher une fiche d'un autre groupe que celui de la campagne", async () => {
+      const mj = await authenticate("mj@test.com");
+      const campaign = await createCampaign(mj, "C");
+
+      // Le joueur a une fiche dans SON propre groupe, distinct de celui de la campagne.
+      const player = await authenticate("player@test.com");
+      const playerGroupId = await createGroup(player, "Groupe du joueur");
+      const sheet = await player
+        .post("/character-sheets")
+        .send({ name: "Hors groupe", groupId: playerGroupId });
+
+      const res = await mj
+        .post(`/campaigns/${campaign.body.id}/characters`)
+        .send({ characterSheetId: sheet.body.id });
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");
+    });
+
     it("détache une fiche (204)", async () => {
       const mj = await authenticate("mj@test.com");
       const campaign = await createCampaign(mj, "C");
       const player = await authenticate("player@test.com");
-      const sheet = await player.post("/character-sheets").send({ name: "S" });
+      await joinGroup(mj, campaign.groupId, player, "player@test.com");
+      const sheet = await player
+        .post("/character-sheets")
+        .send({ name: "S", groupId: campaign.groupId });
       await mj
         .post(`/campaigns/${campaign.body.id}/characters`)
         .send({ characterSheetId: sheet.body.id });
@@ -257,7 +382,10 @@ describe("Character sheet routes (intégration HTTP)", () => {
       const mj = await authenticate("mj@test.com");
       const campaign = await createCampaign(mj, "C");
       const player = await authenticate("player@test.com");
-      const sheet = await player.post("/character-sheets").send({ name: "S" });
+      await joinGroup(mj, campaign.groupId, player, "player@test.com");
+      const sheet = await player
+        .post("/character-sheets")
+        .send({ name: "S", groupId: campaign.groupId });
 
       const res = await player
         .post(`/campaigns/${campaign.body.id}/characters`)
@@ -271,7 +399,10 @@ describe("Character sheet routes (intégration HTTP)", () => {
       const mj = await authenticate("mj@test.com");
       const campaign = await createCampaign(mj, "C");
       const player = await authenticate("player@test.com");
-      const sheet = await player.post("/character-sheets").send({ name: "S" });
+      await joinGroup(mj, campaign.groupId, player, "player@test.com");
+      const sheet = await player
+        .post("/character-sheets")
+        .send({ name: "S", groupId: campaign.groupId });
       await mj
         .post(`/campaigns/${campaign.body.id}/characters`)
         .send({ characterSheetId: sheet.body.id });
@@ -286,12 +417,15 @@ describe("Character sheet routes (intégration HTTP)", () => {
       const mj = await authenticate("mj@test.com");
       const campaign = await createCampaign(mj, "C");
       // une fiche au MJ (doit être exclue)
-      await mj.post("/character-sheets").send({ name: "Fiche MJ" });
+      await mj.post("/character-sheets").send({ name: "Fiche MJ", groupId: campaign.groupId });
 
       const player = await authenticate("player@test.com");
+      await joinGroup(mj, campaign.groupId, player, "player@test.com");
       // une fiche libre du joueur (doit apparaître) + une déjà liée (doit être exclue)
-      await player.post("/character-sheets").send({ name: "Libre" });
-      const linked = await player.post("/character-sheets").send({ name: "Déjà liée" });
+      await player.post("/character-sheets").send({ name: "Libre", groupId: campaign.groupId });
+      const linked = await player
+        .post("/character-sheets")
+        .send({ name: "Déjà liée", groupId: campaign.groupId });
       // le MJ rattache "linked" → elle ne doit plus être rattachable
       await mj
         .post(`/campaigns/${campaign.body.id}/characters`)

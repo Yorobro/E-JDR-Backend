@@ -26,6 +26,7 @@ export class CharacterSheetMapper {
     return CharacterSheet.restore({
       id: row.id,
       ownerId: row.owner_id,
+      groupId: row.group_id,
       name: CharacterSheetName.create(row.name),
       createdAt: new Date(row.created_at),
       formationId: row.formation_id ?? null,
@@ -60,6 +61,7 @@ export class CharacterSheetMapper {
     return {
       id: sheet.id,
       owner_id: sheet.ownerId,
+      group_id: sheet.groupId,
       name: sheet.name.value,
       created_at: sheet.createdAt,
       formation_id: d.formationId,

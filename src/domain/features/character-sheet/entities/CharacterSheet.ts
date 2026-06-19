@@ -67,6 +67,8 @@ export interface CharacterSheetSnapshot extends CharacterSheetDetails {
   readonly id: string;
   /** Identifiant de l'utilisateur propriétaire de la fiche. */
   readonly ownerId: string;
+  /** Identifiant du groupe d'amis auquel la fiche appartient (visibilité = tout le groupe). */
+  readonly groupId: string;
   /** Nom de la fiche (value object garantissant la validité). */
   readonly name: CharacterSheetName;
   /** Date de création de la fiche. */
@@ -99,6 +101,7 @@ export class CharacterSheet {
    * @param params - Les données de la nouvelle fiche.
    * @param params.id - Identifiant unique (généré en amont par un `IdGeneratorService`).
    * @param params.ownerId - Identifiant du propriétaire (l'utilisateur authentifié).
+   * @param params.groupId - Identifiant du groupe d'amis dans lequel la fiche est créée.
    * @param params.name - Nom de la fiche (value object déjà validé).
    * @param params.createdAt - Horodatage de création (injecté pour rester testable).
    * @returns Une nouvelle instance de `CharacterSheet`.
@@ -107,6 +110,7 @@ export class CharacterSheet {
     params: {
       id: string;
       ownerId: string;
+      groupId: string;
       name: CharacterSheetName;
       createdAt: Date;
     } & Partial<CharacterSheetDetails>,
@@ -137,6 +141,11 @@ export class CharacterSheet {
     return this.props.ownerId;
   }
 
+  /** @returns L'identifiant du groupe d'amis auquel la fiche appartient. */
+  public get groupId(): string {
+    return this.props.groupId;
+  }
+
   /** @returns Le nom de la fiche (value object). */
   public get name(): CharacterSheetName {
     return this.props.name;
@@ -152,9 +161,10 @@ export class CharacterSheet {
    *   Utile pour projeter la fiche complète sans exposer le value object `name`.
    */
   public get details(): CharacterSheetDetails {
-    const { id, ownerId, name, createdAt, ...details } = this.props;
+    const { id, ownerId, groupId, name, createdAt, ...details } = this.props;
     void id;
     void ownerId;
+    void groupId;
     void name;
     void createdAt;
     return details;
@@ -172,6 +182,19 @@ export class CharacterSheet {
    */
   public isOwnedBy(userId: string): boolean {
     return this.props.ownerId === userId;
+  }
+
+  /**
+   * Indique si cette fiche appartient au **groupe** donné.
+   *
+   * Exprime l'invariant de scoping par groupe (D3) : la visibilité « tout le groupe » et les
+   * liaisons fiche↔campagne s'appuient sur l'appartenance au même groupe.
+   *
+   * @param groupId - L'identifiant du groupe à tester.
+   * @returns `true` si la fiche appartient au groupe, `false` sinon.
+   */
+  public isInGroup(groupId: string): boolean {
+    return this.props.groupId === groupId;
   }
 
   /**

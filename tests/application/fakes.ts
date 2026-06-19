@@ -202,6 +202,10 @@ export class FakeCharacterSheetRepository implements CharacterSheetRepository {
     return [...this.sheets.values()].filter((sheet) => sheet.isOwnedBy(ownerId));
   }
 
+  public async findByGroupId(groupId: string): Promise<CharacterSheet[]> {
+    return [...this.sheets.values()].filter((sheet) => sheet.isInGroup(groupId));
+  }
+
   public async findById(id: string): Promise<CharacterSheet | null> {
     return this.sheets.get(id) ?? null;
   }
@@ -219,10 +223,13 @@ export class FakeCharacterSheetRepository implements CharacterSheetRepository {
   }
 
   public async findLinkableForCampaign(
+    groupId: string,
     gameMasterId: string,
     campaignId: string,
   ): Promise<CharacterSheet[]> {
-    const candidates = [...this.sheets.values()].filter((sheet) => !sheet.isOwnedBy(gameMasterId));
+    const candidates = [...this.sheets.values()].filter(
+      (sheet) => sheet.isInGroup(groupId) && !sheet.isOwnedBy(gameMasterId),
+    );
     const linkable: CharacterSheet[] = [];
     for (const sheet of candidates) {
       const alreadyLinked =

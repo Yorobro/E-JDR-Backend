@@ -4,27 +4,49 @@ import { ListCampaignCharactersUseCaseImpl } from "@application/features/charact
 import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
 import { CampaignNotFoundError } from "@application/features/campaign/errors/CampaignNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
+import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
+import { NotGroupMemberError } from "@application/features/friend-group/errors/NotGroupMemberError";
 import {
   FakeLogger,
   FakeUnitOfWork,
   buildFakeTransactionalRepositories,
   buildTestCampaign,
   buildTestCharacterSheet,
+  buildTestMembership,
 } from "./fakes";
 
 describe("ListMyCharacterSheetsUseCaseImpl", () => {
-  it("ne renvoie que les fiches du propriétaire", async () => {
-    const txRepos = buildFakeTransactionalRepositories();
-    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "u-1", "A"));
-    txRepos.characterSheets.seed(buildTestCharacterSheet("s-2", "u-1", "B"));
-    txRepos.characterSheets.seed(buildTestCharacterSheet("s-3", "u-2", "C"));
+  const buildUseCase = (txRepos: ReturnType<typeof buildFakeTransactionalRepositories>) =>
+    new ListMyCharacterSheetsUseCaseImpl(
+      txRepos.characterSheets,
+      new GroupAccessServiceImpl(
+        txRepos.groupMembers,
+        txRepos.campaigns,
+        txRepos.campaignCharacters,
+      ),
+    );
 
-    const result = await new ListMyCharacterSheetsUseCaseImpl(txRepos.characterSheets).execute({
-      ownerId: "u-1",
-    });
+  it("renvoie toutes les fiches du groupe (visibilité tout le groupe), quel que soit le propriétaire", async () => {
+    const txRepos = buildFakeTransactionalRepositories();
+    // u-1 et u-2 ont des fiches dans group-1 ; une autre fiche est dans group-2.
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "u-1", "A", {}, "group-1"));
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-2", "u-2", "B", {}, "group-1"));
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-3", "u-1", "C", {}, "group-2"));
+    txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "u-1" }));
+
+    const result = await buildUseCase(txRepos).execute({ userId: "u-1", groupId: "group-1" });
 
     expect(result.isSuccess).toBe(true);
     expect(result.value.map((s) => s.name).sort()).toEqual(["A", "B"]);
+  });
+
+  it("échoue avec NOT_GROUP_MEMBER si le demandeur n'est pas membre du groupe", async () => {
+    const txRepos = buildFakeTransactionalRepositories();
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "u-1", "A", {}, "group-1"));
+
+    const result = await buildUseCase(txRepos).execute({ userId: "etranger", groupId: "group-1" });
+
+    expect(result.error).toBeInstanceOf(NotGroupMemberError);
   });
 });
 

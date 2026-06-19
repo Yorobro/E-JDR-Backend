@@ -23,7 +23,11 @@ describe("Sheet reference link use cases (génériques, testés sur `armes`)", (
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
-    groupAccessService = new GroupAccessServiceImpl(txRepos.groupMembers);
+    groupAccessService = new GroupAccessServiceImpl(
+      txRepos.groupMembers,
+      txRepos.campaigns,
+      txRepos.campaignCharacters,
+    );
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "u-1" }));
   });
 

@@ -7,6 +7,9 @@ import { buildTestApp } from "./buildTestApp";
 /**
  * Tests d'intégration HTTP de `GET /character-sheets/:id/campaigns` : pile Express réelle sur
  * doublures. Valide la projection (nom de campagne + pseudo du MJ) et l'autorisation propriétaire.
+ *
+ * Contrat « groupe d'amis » : la consultation des campagnes d'une fiche reste réservée au
+ * PROPRIÉTAIRE de la fiche (et non à tout le groupe). Les fiches sont créées dans un groupe.
  */
 describe("GET /character-sheets/:id/campaigns (intégration HTTP)", () => {
   let app: Application;
@@ -34,13 +37,29 @@ describe("GET /character-sheets/:id/campaigns (intégration HTTP)", () => {
     return res.body.id as string;
   }
 
+  /**
+   * Fait entrer `invitee` dans le groupe `groupId` : `inviter` invite par email, `invitee`
+   * accepte. Les deux utilisateurs deviennent alors membres du même groupe.
+   */
+  async function joinGroup(
+    inviter: ReturnType<typeof request.agent>,
+    groupId: string,
+    invitee: ReturnType<typeof request.agent>,
+    inviteeEmail: string,
+  ): Promise<void> {
+    const inv = await inviter.post(`/groups/${groupId}/invitations`).send({ email: inviteeEmail });
+    await invitee.post(`/invitations/${inv.body.invitationId}/accept`);
+  }
+
   it("renvoie les campagnes rattachées à la fiche avec le pseudo du MJ (200)", async () => {
     const mj = await authenticate("mj@test.com", "MJ");
     const groupId = await createGroup(mj);
     const campaign = await mj.post("/campaigns").send({ name: "La campagne du MJ", groupId });
 
+    // Le joueur rejoint le groupe de la campagne et y crée sa fiche.
     const player = await authenticate("player@test.com", "Joueur");
-    const sheet = await player.post("/character-sheets").send({ name: "Legolas" });
+    await joinGroup(mj, groupId, player, "player@test.com");
+    const sheet = await player.post("/character-sheets").send({ name: "Legolas", groupId });
 
     // Seul le MJ peut rattacher la fiche d'un joueur à sa campagne.
     const link = await mj
@@ -60,7 +79,8 @@ describe("GET /character-sheets/:id/campaigns (intégration HTTP)", () => {
 
   it("renvoie une liste vide si la fiche n'est rattachée à aucune campagne (200)", async () => {
     const player = await authenticate("player@test.com", "Joueur");
-    const sheet = await player.post("/character-sheets").send({ name: "Gimli" });
+    const groupId = await createGroup(player);
+    const sheet = await player.post("/character-sheets").send({ name: "Gimli", groupId });
 
     const res = await player.get(`/character-sheets/${sheet.body.id}/campaigns`);
 
@@ -68,12 +88,16 @@ describe("GET /character-sheets/:id/campaigns (intégration HTTP)", () => {
     expect(res.body.campaigns).toHaveLength(0);
   });
 
-  it("renvoie 403 si le demandeur n'est pas le propriétaire de la fiche", async () => {
+  it("renvoie 403 si le demandeur n'est pas le propriétaire de la fiche (même membre du groupe)", async () => {
+    // L'accès aux campagnes d'une fiche reste réservé au propriétaire, même pour un autre membre.
     const owner = await authenticate("owner@test.com", "Owner");
-    const sheet = await owner.post("/character-sheets").send({ name: "Privée" });
-    const intrus = await authenticate("intrus@test.com", "Intrus");
+    const groupId = await createGroup(owner);
+    const sheet = await owner.post("/character-sheets").send({ name: "Privée", groupId });
 
-    const res = await intrus.get(`/character-sheets/${sheet.body.id}/campaigns`);
+    const mate = await authenticate("mate@test.com", "Mate");
+    await joinGroup(owner, groupId, mate, "mate@test.com");
+
+    const res = await mate.get(`/character-sheets/${sheet.body.id}/campaigns`);
 
     expect(res.status).toBe(403);
     expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");

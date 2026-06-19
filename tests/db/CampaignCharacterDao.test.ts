@@ -3,7 +3,7 @@ import { drizzle, MySql2Database } from "drizzle-orm/mysql2";
 import { Pool } from "mysql2/promise";
 import * as schema from "@infrastructure/persistence/drizzle/schema";
 import { CampaignCharacterDao } from "@infrastructure/persistence/mysql/features/character-sheet/dao/CampaignCharacterDao";
-import { createTestPool, clearAllTables, insertUser } from "./dbTestUtils";
+import { createTestPool, clearAllTables, insertUser, insertFriendGroup } from "./dbTestUtils";
 
 describe("CampaignCharacterDao (intégration MySQL via Drizzle)", () => {
   let pool: Pool;
@@ -25,13 +25,14 @@ describe("CampaignCharacterDao (intégration MySQL via Drizzle)", () => {
     await clearAllTables(pool);
     await insertUser(pool, "mj-1", "MaitreDuJeu");
     await insertUser(pool, "owner-1");
+    await insertFriendGroup(pool, "group-1", "mj-1");
     await pool.execute(
-      "INSERT INTO campaigns (id, game_master_id, name, created_at) VALUES (?,?,?,?)",
-      ["camp-1", "mj-1", "Donjon", t],
+      "INSERT INTO campaigns (id, group_id, game_master_id, name, created_at) VALUES (?,?,?,?,?)",
+      ["camp-1", "group-1", "mj-1", "Donjon", t],
     );
     await pool.execute(
-      "INSERT INTO character_sheets (id, owner_id, name, created_at) VALUES (?,?,?,?)",
-      ["s-1", "owner-1", "Aragorn", t],
+      "INSERT INTO character_sheets (id, owner_id, group_id, name, created_at) VALUES (?,?,?,?,?)",
+      ["s-1", "owner-1", "group-1", "Aragorn", t],
     );
   });
 
