@@ -1,3 +1,14 @@
+## 1.9.0 (2026-06-19)
+
+* Merge pull request #10 from Yorobro/feat/pdf-character-sheet-layout ([6d45e18](https://github.com/Yorobro/E-JDR-Backend/commit/6d45e18)), closes [#10](https://github.com/Yorobro/E-JDR-Backend/issues/10)
+* feat(character-sheet): bourse a 0 par defaut a la creation ([99c9255](https://github.com/Yorobro/E-JDR-Backend/commit/99c9255))
+* feat(character-sheet): defaults a la creation (niveau 1, stats 0, PM 0) ([885c58a](https://github.com/Yorobro/E-JDR-Backend/commit/885c58a))
+* feat(character-sheet): derive per-stat totals (base + peuple + formation) ([f7982ac](https://github.com/Yorobro/E-JDR-Backend/commit/f7982ac))
+* feat(character-sheet): dériver PV et protection à la lecture ([96b7e97](https://github.com/Yorobro/E-JDR-Backend/commit/96b7e97))
+* feat(reference): add points_de_protection column to armures ([7c40ad3](https://github.com/Yorobro/E-JDR-Backend/commit/7c40ad3))
+* feat(reference): expose armure protection points through the API ([67e6780](https://github.com/Yorobro/E-JDR-Backend/commit/67e6780))
+* fix(reference): remonter les points de protection des armures liees ([0dbc02b](https://github.com/Yorobro/E-JDR-Backend/commit/0dbc02b))
+
 ## 1.8.0 (2026-06-19)
 
 * Merge pull request #9 from Yorobro/feat/pdf-character-sheet-layout ([31f6322](https://github.com/Yorobro/E-JDR-Backend/commit/31f6322)), closes [#9](https://github.com/Yorobro/E-JDR-Backend/issues/9)
