@@ -5,8 +5,8 @@
  * armures, compétences, équipement) : ce contrat plat fournit les **noms** déjà résolus (et la
  * liste des bonus de stat agrégés) pour que le générateur PDF n'ait aucune résolution à faire.
  *
- * Source **unique** du contrat de références PDF : `characterSheetPdfSections.ts` réutilise ce
- * type plutôt que d'en dupliquer une variante.
+ * Source **unique** du contrat de références PDF : le générateur (`PdfKitCharacterSheetPdfGenerator`)
+ * consomme ce type tel quel pour son rendu, sans variante dupliquée.
  */
 export interface CharacterSheetPdfReferences {
   /** Nom de la formation active, ou `null` si la fiche n'en porte pas (ou id orphelin/hors groupe). */
