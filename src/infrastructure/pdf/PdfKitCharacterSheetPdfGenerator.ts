@@ -19,7 +19,7 @@ interface StatSpec {
 }
 
 /** Espacement vertical entre deux blocs empilés. */
-const BLOCK_GAP = 12;
+const BLOCK_GAP = 7;
 
 /** Caractéristiques de la colonne de gauche, dans l'ordre de la maquette. */
 const STATS: readonly StatSpec[] = [
@@ -73,33 +73,38 @@ export class PdfKitCharacterSheetPdfGenerator implements CharacterSheetPdfGenera
     this.renderSecondPage(doc, detail, cols);
   }
 
-  /** En-tête : nom en gros titre puis lignes d'identité, pleine largeur. Retourne le Y final. */
+  /** En-tête : nom en titre puis lignes d'identité réparties sur deux colonnes. Retourne le Y final. */
   private renderHeader(
     doc: PDFKit.PDFDocument,
     detail: CharacterSheetDetail,
     references: CharacterSheetPdfReferences,
     cols: Columns,
   ): number {
-    const { x, width } = cols.full;
     doc
       .font("Helvetica-Bold")
-      .fontSize(26)
+      .fontSize(20)
       .fillColor("#000")
-      .text(showOrDash(detail.name), x, doc.page.margins.top, { width });
+      .text(showOrDash(detail.name), cols.full.x, doc.page.margins.top, { width: cols.full.width });
 
-    const lines = [
+    const leftLines = [
       `Formation : ${showOrDash(references.formationName)}`,
       `Niveau : ${showOrDash(detail.niveau)}`,
       `Peuple : ${showOrDash(references.peupleName)}`,
       `Sexe : ${showOrDash(detail.sexe)}`,
+    ].join("\n");
+    const rightLines = [
       `Taille / poids : ${showOrDash(detail.tailleEtPoids)}`,
       `Âge : ${showOrDash(detail.age)}`,
       `Apparence : ${showOrDash(detail.apparence)}`,
     ].join("\n");
 
-    doc.moveDown(0.5);
-    doc.font("Helvetica").fontSize(11).fillColor("#222").text(lines, x, doc.y, { width });
-    return doc.y;
+    doc.moveDown(0.4);
+    const identityTop = doc.y;
+    doc.font("Helvetica").fontSize(10).fillColor("#222");
+    doc.text(leftLines, cols.left.x, identityTop, { width: cols.left.width });
+    const leftBottom = doc.y;
+    doc.text(rightLines, cols.right.x, identityTop, { width: cols.right.width });
+    return Math.max(leftBottom, doc.y);
   }
 
   /** Colonnes caractéristiques (gauche) et combat/ressources (droite). Retourne le Y le plus bas. */
@@ -173,7 +178,7 @@ export class PdfKitCharacterSheetPdfGenerator implements CharacterSheetPdfGenera
     return doc.y + 4;
   }
 
-  /** Blocs inventaire pleine largeur : monnaie, armes, armures, compétences, équipement. */
+  /** Inventaire sur deux colonnes : monnaie/armes/armures à gauche, compétences/équipement à droite. */
   private renderInventory(
     doc: PDFKit.PDFDocument,
     detail: CharacterSheetDetail,
@@ -181,17 +186,37 @@ export class PdfKitCharacterSheetPdfGenerator implements CharacterSheetPdfGenera
     cols: Columns,
     startY: number,
   ): number {
-    const { x, width } = cols.full;
-    let y = startY;
-    const blocks = [
+    const leftBlocks = [
       { title: "MONNAIE", body: this.formatPurse(detail) },
       { title: "ARMES", body: joinList(references.armes) },
       { title: "ARMURES", body: joinList(references.armures) },
+    ];
+    const rightBlocks = [
       { title: "COMPÉTENCES", body: joinList(references.competences) },
       { title: "ÉQUIPEMENT", body: joinList(references.equipements) },
     ];
+    const leftBottom = this.renderBlockColumn(doc, leftBlocks, cols.left, startY);
+    const rightBottom = this.renderBlockColumn(doc, rightBlocks, cols.right, startY);
+    return Math.max(leftBottom, rightBottom);
+  }
+
+  /** Empile des boîtes titrées dans une zone (colonne) et retourne le Y le plus bas atteint. */
+  private renderBlockColumn(
+    doc: PDFKit.PDFDocument,
+    blocks: readonly { title: string; body: string }[],
+    zone: Columns["left"],
+    startY: number,
+  ): number {
+    let y = startY;
     for (const block of blocks) {
-      y += drawTitledBox(doc, { x, y, width, title: block.title, body: block.body }) + BLOCK_GAP;
+      y +=
+        drawTitledBox(doc, {
+          x: zone.x,
+          y,
+          width: zone.width,
+          title: block.title,
+          body: block.body,
+        }) + BLOCK_GAP;
     }
     return y;
   }

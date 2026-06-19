@@ -48,38 +48,63 @@ function references(
   };
 }
 
-/** Fiche entièrement renseignée (tous les champs + références non vides). */
+/**
+ * Fiche entièrement renseignée avec des données **complètes et réalistes** : toutes les stats,
+ * identité complète, et textes longs (~3 lignes) pour sorts et notes. Sert à prouver que la
+ * page 1 (en-tête + caractéristiques/combat + inventaire) tient dans l'A4 et que la fiche fait
+ * exactement deux pages.
+ */
 function fullDetail(): CharacterSheetDetail {
   return detail({
-    name: "Aragorn",
-    niveau: 3,
+    name: "Aragorn fils d'Arathorn, héritier d'Isildur",
+    niveau: 12,
     sexe: "Homme",
-    tailleEtPoids: "1m85 / 80kg",
-    age: 87,
-    apparence: "Cheveux bruns, regard perçant",
-    dexterite: 4,
-    intelligence: 3,
-    perception: 5,
-    social: 2,
-    vigueur: 6,
-    pointsDeVie: 16,
-    pointsDeMagie: 10,
-    protection: 4,
-    purse: { gold: 1, silver: 50, copper: 12 },
-    sortsEtMiracles: "Soin mineur, Lumière, Bénédiction".repeat(5),
-    notes: "Héritier du trône du Gondor. ".repeat(20),
+    tailleEtPoids: "1m98 / 95kg",
+    age: 210,
+    apparence: "Très grand, cheveux longs et noirs, regard gris perçant, barbe fournie",
+    dexterite: 14,
+    intelligence: 13,
+    perception: 15,
+    social: 12,
+    vigueur: 16,
+    pointsDeVie: 126,
+    pointsDeMagie: 100,
+    protection: 14,
+    purse: { gold: 1234, silver: 5067, copper: 8912 },
+    sortsEtMiracles:
+      "Soin mineur (1d6 PV), Lumière (rayon 5m, 1h), Bénédiction (+1 au groupe), " +
+      "Détection du mal (10m), Marche silencieuse (1 scène), Bouclier de foi (+2 protection " +
+      "pendant un combat), Purification de l'eau et de la nourriture.",
+    notes:
+      "Héritier du trône du Gondor, élevé à Fondcombe par Elrond. Porte les fragments de " +
+      "Narsil reforgés en Andúril. Allié des Rohirrim et membre de la Communauté de l'Anneau. " +
+      "Recherché par les serviteurs de l'Ennemi à travers tout le Eriador.",
   });
 }
 
-/** Références entièrement renseignées (noms + listes + bonus de stat). */
+/** Références entièrement renseignées : noms longs, listes pleines (3 armes, 2 armures, 4 compétences, 4 équipements) et bonus de stat. */
 function fullReferences(): CharacterSheetPdfReferences {
   return references({
-    formationName: "Rôdeur",
-    peupleName: "Humain",
-    armes: ["Épée longue", "Arc"],
-    armures: ["Cotte de mailles"],
-    competences: ["Pistage", "Survie", "Discrétion"],
-    equipements: ["Corde", "Rations", "Pierre à feu"],
+    formationName: "Rôdeur du Nord (Dúnedain)",
+    peupleName: "Humain de race supérieure",
+    armes: [
+      "Épée longue Andúril, Flamme de l'Ouest",
+      "Arc des Galadhrim",
+      "Dague elfique de Fondcombe",
+    ],
+    armures: ["Cotte de mailles naine de la Moria", "Cape elfique de camouflage de la Lórien"],
+    competences: [
+      "Pistage expert",
+      "Survie en milieu hostile",
+      "Discrétion absolue",
+      "Premiers soins avancés",
+    ],
+    equipements: [
+      "Corde elfique de 30 mètres",
+      "Rations de lembas pour deux semaines",
+      "Pierre à feu",
+      "Lanterne sourde",
+    ],
     statBonuses: [
       { stat: "vigueur", amount: 1 },
       { stat: "perception", amount: 2 },
@@ -112,11 +137,16 @@ describe("PdfKitCharacterSheetPdfGenerator (générateur réel)", () => {
     expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   });
 
-  it("génère un document d'au moins deux pages", async () => {
+  it("tient sur exactement deux pages avec des données complètes réalistes (page 1 ne déborde pas)", async () => {
     const pdf = await new PdfKitCharacterSheetPdfGenerator().generate(
       fullDetail(),
       fullReferences(),
     );
-    expect(countPages(pdf)).toBeGreaterThanOrEqual(2);
+    expect(countPages(pdf)).toBe(2);
+  });
+
+  it("tient sur exactement deux pages même pour une fiche entièrement vide", async () => {
+    const pdf = await new PdfKitCharacterSheetPdfGenerator().generate(detail(), references());
+    expect(countPages(pdf)).toBe(2);
   });
 });

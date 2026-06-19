@@ -11,9 +11,11 @@
 const DASH = "—";
 
 /** Marge interne (padding) d'une boîte encadrée, en points. */
-const BOX_PADDING = 8;
+const BOX_PADDING = 6;
 /** Espace vertical entre le titre d'une boîte et son corps. */
-const TITLE_GAP = 4;
+const TITLE_GAP = 3;
+/** Espace horizontal entre le libellé d'une caractéristique et sa valeur (même ligne). */
+const LABEL_VALUE_GAP = 6;
 
 /** Une zone rectangulaire de mise en page : abscisse de départ et largeur. */
 export interface Zone {
@@ -87,8 +89,8 @@ export interface TitledBox {
  */
 export function drawTitledBox(doc: PDFKit.PDFDocument, box: TitledBox): number {
   const innerWidth = box.width - 2 * BOX_PADDING;
-  const titleHeight = measureBold(doc, box.title, innerWidth, 12);
-  const bodyHeight = measureRegular(doc, box.body, innerWidth, 11);
+  const titleHeight = measureBold(doc, box.title, innerWidth, 11);
+  const bodyHeight = measureRegular(doc, box.body, innerWidth, 10);
   const boxHeight = BOX_PADDING * 2 + titleHeight + TITLE_GAP + bodyHeight;
 
   doc.rect(box.x, box.y, box.width, boxHeight).stroke();
@@ -97,13 +99,13 @@ export function drawTitledBox(doc: PDFKit.PDFDocument, box: TitledBox): number {
   let cursorY = box.y + BOX_PADDING;
   doc
     .font("Helvetica-Bold")
-    .fontSize(12)
+    .fontSize(11)
     .fillColor("#000")
     .text(box.title, textX, cursorY, { width: innerWidth });
   cursorY += titleHeight + TITLE_GAP;
   doc
     .font("Helvetica")
-    .fontSize(11)
+    .fontSize(10)
     .fillColor("#000")
     .text(box.body, textX, cursorY, { width: innerWidth });
 
@@ -121,37 +123,45 @@ export interface StatBox {
 }
 
 /**
- * Dessine la boîte d'une caractéristique : libellé en gras, valeur (déjà formatée) bien visible,
- * puis une aide en petit gris. Hauteur calculée avant tracé ; retourne la hauteur consommée.
+ * Dessine la boîte d'une caractéristique : libellé en gras et valeur (déjà formatée) sur la
+ * **même ligne** (libellé à gauche, valeur en gras à droite), puis une aide en petit gris
+ * **seulement si elle est présente**. Hauteur calculée avant tracé ; retourne la hauteur consommée.
  */
 export function drawStatBox(doc: PDFKit.PDFDocument, stat: StatBox): number {
   const innerWidth = stat.width - 2 * BOX_PADDING;
-  const labelHeight = measureBold(doc, stat.label, innerWidth, 10);
-  const valueHeight = measureBold(doc, stat.value, innerWidth, 16);
-  const hintHeight = measureRegular(doc, stat.hint, innerWidth, 8);
-  const boxHeight = BOX_PADDING * 2 + labelHeight + valueHeight + hintHeight + TITLE_GAP;
+  const valueWidth = doc.font("Helvetica-Bold").fontSize(14).widthOfString(stat.value);
+  const labelWidth = innerWidth - valueWidth - LABEL_VALUE_GAP;
+  const labelHeight = measureBold(doc, stat.label, labelWidth, 10);
+  const valueHeight = measureBold(doc, stat.value, valueWidth, 14);
+  const rowHeight = Math.max(labelHeight, valueHeight);
+  const hasHint = stat.hint.length > 0;
+  const hintHeight = hasHint ? measureRegular(doc, stat.hint, innerWidth, 8) + TITLE_GAP : 0;
+  const boxHeight = BOX_PADDING * 2 + rowHeight + hintHeight;
 
   doc.rect(stat.x, stat.y, stat.width, boxHeight).stroke();
 
   const textX = stat.x + BOX_PADDING;
-  let cursorY = stat.y + BOX_PADDING;
+  const cursorY = stat.y + BOX_PADDING;
   doc
     .font("Helvetica-Bold")
     .fontSize(10)
     .fillColor("#444")
-    .text(stat.label, textX, cursorY, { width: innerWidth });
-  cursorY += labelHeight;
+    .text(stat.label, textX, cursorY, { width: labelWidth });
   doc
     .font("Helvetica-Bold")
-    .fontSize(16)
+    .fontSize(14)
     .fillColor("#000")
-    .text(stat.value, textX, cursorY, { width: innerWidth });
-  cursorY += valueHeight + TITLE_GAP;
-  doc
-    .font("Helvetica")
-    .fontSize(8)
-    .fillColor("#888")
-    .text(stat.hint, textX, cursorY, { width: innerWidth });
+    .text(stat.value, textX + labelWidth + LABEL_VALUE_GAP, cursorY, {
+      width: valueWidth,
+      align: "right",
+    });
+  if (hasHint) {
+    doc
+      .font("Helvetica")
+      .fontSize(8)
+      .fillColor("#888")
+      .text(stat.hint, textX, cursorY + rowHeight + TITLE_GAP, { width: innerWidth });
+  }
 
   return boxHeight;
 }
