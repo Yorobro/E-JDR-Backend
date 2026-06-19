@@ -108,7 +108,36 @@ Stratégie : **JWT access token court** + **refresh token stocké en BDD** (rév
 | `/auth/refresh` | POST | Régénère l'access token (rotation du refresh) à partir du cookie refresh. |
 | `/auth/logout` | POST | Révoque le refresh token en BDD et efface les cookies. |
 
+## Environnement de développement (Vertex)
+
+> **Pas besoin de faire tourner une base MySQL en local.** L'environnement de dev
+> (back + BDD) est déployé sur **Vertex** (notre PaaS auto-hébergé). Pour développer le
+> **front**, il suffit de le pointer sur le back de dev : aucune installation de base de
+> données sur ta machine.
+
+| Élément | Où | Détail |
+|---|---|---|
+| **Back de dev** | Vertex, serveur `ejdr-backend-dev` | Source git, **branche `develop`**, `NODE_ENV=development`. URL publique : **`https://ejdr-backend-dev.vyxs.fr`** |
+| **BDD de dev** | Vertex, container `ejdr-bdd-dev` (MySQL) | Base `e_jdr`. Joignable **uniquement depuis l'intérieur du réseau Vertex** (host interne `vertex-ejdr-bdd-dev:3306`). |
+| **Front en dev** | Local (`gradlew run`) | Pointe sur le back de dev via `E-JDR-Frontend/config.local.properties` → `api.url=https://ejdr-backend-dev.vyxs.fr`. |
+
+**Le développement back se fait sur la branche `develop`.** Pour déployer une modif : pousser
+sur `develop`, puis reconstruire le serveur `ejdr-backend-dev` sur Vertex (`rebuild`). Le back
+applique ses migrations Drizzle au démarrage (`npm run serve` = `db:bootstrap && db:migrate && start`).
+
+> ⚠️ **La BDD de dev n'est pas accessible directement** (DBeaver, client `mysql`, port 3306) :
+> Vertex n'expose que du HTTP/HTTPS, pas de TCP brut. Pour lire/écrire des données de dev, passer
+> par l'API du back de dev. Un accès SQL direct nécessiterait une intervention de l'admin Vertex.
+
+> ℹ️ Le **back de prod** (`ejdr-backend` → `https://ejdr-backend.vyxs.fr`) et sa BDD `ejdr-bdd`
+> sont des serveurs distincts, non impactés par le dev.
+
 ## Démarrage
+
+> **Le bloc ci-dessous ne concerne que le cas où tu veux faire tourner le back ET une BDD
+> MySQL *en local*** (par ex. pour travailler sur le back sans dépendre de Vertex). Pour
+> développer le **front** contre le back de dev, ce n'est pas nécessaire : voir
+> [Environnement de développement (Vertex)](#environnement-de-développement-vertex).
 
 ```bash
 # 1. Installer les dépendances
@@ -117,8 +146,8 @@ npm install
 # 2. Lancer les tests unitaires (aucune BDD requise)
 npm run test
 
-# 3. Configurer l'environnement
-cp .env.example .env   # puis renseigner les accès MySQL et les secrets JWT
+# 3. Configurer l'environnement (BDD locale)
+cp .env.example .env   # puis renseigner les accès MySQL (DB_HOST=localhost) et les secrets JWT
 
 # 4. Appliquer les migrations (crée les tables)
 npm run db:migrate
