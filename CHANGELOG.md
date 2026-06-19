@@ -1,3 +1,9 @@
+## <small>1.10.1 (2026-06-19)</small>
+
+* Merge pull request #12 from Yorobro/develop ([003ffe4](https://github.com/Yorobro/E-JDR-Backend/commit/003ffe4)), closes [#12](https://github.com/Yorobro/E-JDR-Backend/issues/12)
+* docs: documenter l environnement de dev Vertex (pas de BDD locale) ([3256f6d](https://github.com/Yorobro/E-JDR-Backend/commit/3256f6d))
+* fix(logging): move pino-pretty to dependencies so dev image keeps it ([d98ed88](https://github.com/Yorobro/E-JDR-Backend/commit/d98ed88))
+
 ## 1.10.0 (2026-06-19)
 
 * Merge pull request #11 from Yorobro/feat/reference-edit ([23c5bb2](https://github.com/Yorobro/E-JDR-Backend/commit/23c5bb2)), closes [#11](https://github.com/Yorobro/E-JDR-Backend/issues/11)
