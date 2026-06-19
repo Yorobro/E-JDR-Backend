@@ -10,6 +10,7 @@ import {
 } from "drizzle-orm/mysql-core";
 import { users } from "./auth.schema";
 import { campaigns } from "./campaign.schema";
+import { friendGroups } from "./friend-group.schema";
 import { formations, peoples } from "./reference.schema";
 
 /** Table `character_sheets` — fiche de personnage (nom requis, détails NULLables). */
@@ -20,6 +21,10 @@ export const characterSheets = mysqlTable(
     owner_id: char("owner_id", { length: 36 })
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // group_id : le groupe d'amis auquel la fiche appartient (visibilité = tout le groupe, D3).
+    group_id: char("group_id", { length: 36 })
+      .notNull()
+      .references(() => friendGroups.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 120 }).notNull(),
     created_at: datetime("created_at", { mode: "date" }).notNull(),
     // formation / peuple : N‑1 vers les catalogues de l'utilisateur (nullable, SET NULL si l'élément est supprimé).
@@ -50,7 +55,10 @@ export const characterSheets = mysqlTable(
     sorts_et_miracles: text("sorts_et_miracles"),
     notes: text("notes"),
   },
-  (table) => [index("idx_character_sheets_owner_id").on(table.owner_id)],
+  (table) => [
+    index("idx_character_sheets_owner_id").on(table.owner_id),
+    index("idx_character_sheets_group_id").on(table.group_id),
+  ],
 );
 
 /** Table `campaign_characters` — liaison N-N campagnes ↔ fiches. */

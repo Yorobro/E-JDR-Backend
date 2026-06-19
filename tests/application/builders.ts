@@ -9,6 +9,7 @@ import { SessionTitle } from "@domain/features/session/value-objects/SessionTitl
 import { SessionDate } from "@domain/features/session/value-objects/SessionDate";
 import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem";
 import { ReferenceName } from "@domain/features/reference/value-objects/ReferenceName";
+import { StatBonus } from "@domain/features/reference/value-objects/StatBonus";
 import {
   CharacterSheet,
   CharacterSheetDetails,
@@ -36,10 +37,12 @@ export function buildTestCharacterSheet(
   ownerId = "user-1",
   name = "Aragorn",
   details: Partial<CharacterSheetDetails> = {},
+  groupId = "group-1",
 ): CharacterSheet {
   return CharacterSheet.create({
     id,
     ownerId,
+    groupId,
     name: CharacterSheetName.create(name),
     createdAt: new Date("2026-01-01T00:00:00Z"),
     ...details,
@@ -58,9 +61,11 @@ export function buildTestCampaign(
   id = "campaign-1",
   gameMasterId = "user-1",
   name = "Ma campagne",
+  groupId = "group-1",
 ): Campaign {
   return Campaign.create({
     id,
+    groupId,
     gameMasterId,
     name: CampaignName.create(name),
     createdAt: new Date("2026-01-01T00:00:00Z"),
@@ -95,20 +100,23 @@ export function buildTestSession(
  * Aide de test : construit un élément de référence (formation, peuple, arme, …).
  *
  * @param id - L'identifiant de l'élément (par défaut "ref-1").
- * @param ownerId - L'identifiant du propriétaire (par défaut "user-1").
+ * @param groupId - L'identifiant du groupe propriétaire (par défaut "group-1").
  * @param name - Le nom de l'élément (par défaut "Élément").
+ * @param statBonus - Bonus de statistique optionnel (`{ stat, amount }`) ; absent ⇒ aucun bonus.
  * @returns Une entité `ReferenceItem` prête pour les tests.
  */
 export function buildTestReferenceItem(
   id = "ref-1",
-  ownerId = "user-1",
+  groupId = "group-1",
   name = "Élément",
+  statBonus?: { stat: string; amount?: number | null },
 ): ReferenceItem {
   return ReferenceItem.create({
     id,
-    ownerId,
+    groupId,
     name: ReferenceName.create(name),
     createdAt: new Date("2026-01-01T00:00:00Z"),
+    statBonus: statBonus !== undefined ? StatBonus.create(statBonus) : null,
   });
 }
 

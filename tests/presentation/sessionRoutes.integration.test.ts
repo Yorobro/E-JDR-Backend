@@ -26,12 +26,14 @@ describe("Session routes (intégration HTTP)", () => {
     return agent;
   }
 
-  /** Crée une campagne via l'agent donné et renvoie son id. */
+  /** Crée un groupe puis une campagne pour l'agent donné et renvoie l'id de la campagne. */
   async function createCampaign(
     agent: ReturnType<typeof request.agent>,
     name = "Campagne",
   ): Promise<string> {
-    const res = await agent.post("/campaigns").send({ name });
+    const grp = await agent.post("/groups").send({ name: "Groupe" });
+    const groupId = grp.body.id as string;
+    const res = await agent.post("/campaigns").send({ name, groupId });
     return res.body.id as string;
   }
 

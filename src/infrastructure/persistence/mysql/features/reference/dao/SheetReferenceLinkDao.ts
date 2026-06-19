@@ -85,7 +85,7 @@ export class SheetReferenceLinkDao {
     const rows = await this.executor
       .select({
         id: refTable.id,
-        owner_id: refTable.owner_id,
+        group_id: refTable.group_id,
         name: refTable.name,
         created_at: refTable.created_at,
       })

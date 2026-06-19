@@ -7,6 +7,7 @@ import { AppError } from "@application/errors/AppError";
 import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { CreateCharacterSheetCommand } from "@application/features/character-sheet/commands/CreateCharacterSheetCommand";
 import {
@@ -17,12 +18,14 @@ import {
 /**
  * Use case de création d'une fiche de personnage.
  *
- * Orchestration pure : valide le nom via le domaine, crée l'entité en établissant l'utilisateur
- * courant comme propriétaire, puis la persiste via le `UnitOfWork`.
+ * Orchestration pure : vérifie que l'utilisateur est membre du groupe, valide le nom via le
+ * domaine, crée l'entité (propriétaire = utilisateur courant, groupe = groupe actif), puis la
+ * persiste via le `UnitOfWork`.
  */
 export class CreateCharacterSheetUseCaseImpl implements CreateCharacterSheetUseCase {
   constructor(
     private readonly idGenerator: IdGeneratorService,
+    private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
   ) {}
@@ -30,6 +33,14 @@ export class CreateCharacterSheetUseCaseImpl implements CreateCharacterSheetUseC
   public async execute(
     command: CreateCharacterSheetCommand,
   ): Promise<Result<CreateCharacterSheetResult, AppError>> {
+    const memberAccess = await this.groupAccessService.requireMember(
+      command.ownerId,
+      command.groupId,
+    );
+    if (memberAccess.isFailure) {
+      return Result.failure(memberAccess.error);
+    }
+
     let name: CharacterSheetName;
 
     try {
@@ -44,6 +55,7 @@ export class CreateCharacterSheetUseCaseImpl implements CreateCharacterSheetUseC
     const sheet = CharacterSheet.create({
       id: this.idGenerator.generate(),
       ownerId: command.ownerId,
+      groupId: command.groupId,
       name,
       createdAt: new Date(),
     });

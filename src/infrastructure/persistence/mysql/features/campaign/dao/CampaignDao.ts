@@ -11,6 +11,7 @@ export class CampaignDao {
 
   public async insert(row: {
     id: string;
+    group_id: string;
     game_master_id: string;
     name: string;
     created_at: Date;
@@ -18,12 +19,21 @@ export class CampaignDao {
     await this.executor.insert(campaigns).values(row);
   }
 
-  public async findByGameMasterId(gameMasterId: string): Promise<CampaignRow[]> {
+  public async findByGroupId(groupId: string): Promise<CampaignRow[]> {
     return this.executor
       .select()
       .from(campaigns)
-      .where(eq(campaigns.game_master_id, gameMasterId))
+      .where(eq(campaigns.group_id, groupId))
       .orderBy(desc(campaigns.created_at));
+  }
+
+  public async existsByGroupId(groupId: string): Promise<boolean> {
+    const rows = await this.executor
+      .select({ id: campaigns.id })
+      .from(campaigns)
+      .where(eq(campaigns.group_id, groupId))
+      .limit(1);
+    return rows.length > 0;
   }
 
   public async findById(id: string): Promise<CampaignRow | null> {

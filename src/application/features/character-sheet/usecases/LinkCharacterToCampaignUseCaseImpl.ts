@@ -48,6 +48,11 @@ export class LinkCharacterToCampaignUseCaseImpl implements LinkCharacterToCampai
       return Result.failure(new CharacterSheetAccessDeniedError());
     }
 
+    // La fiche et la campagne doivent appartenir au même groupe (D6 : on ne pioche que dans le groupe).
+    if (!sheet.isInGroup(campaign.groupId)) {
+      return Result.failure(new CharacterSheetAccessDeniedError());
+    }
+
     // Règle métier : le MJ ne peut pas être joueur de sa propre campagne.
     if (campaign.isGameMaster(sheet.ownerId)) {
       return Result.failure(new GameMasterCannotJoinOwnCampaignError());

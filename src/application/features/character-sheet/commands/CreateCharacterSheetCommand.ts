@@ -7,6 +7,8 @@
 export interface CreateCharacterSheetCommand {
   /** Identifiant du propriétaire (issu de la session authentifiée). */
   readonly ownerId: string;
+  /** Identifiant du groupe d'amis dans lequel la fiche est créée (le propriétaire doit en être membre). */
+  readonly groupId: string;
   /** Nom de la fiche saisi par l'utilisateur (brut, non encore validé). */
   readonly name: string;
 }

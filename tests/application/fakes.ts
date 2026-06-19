@@ -5,7 +5,11 @@ import { Campaign } from "@domain/features/campaign/entities/Campaign";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { Session } from "@domain/features/session/entities/Session";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
-import { FakeReferenceRepository, FakeSheetReferenceLinkRepository } from "./referenceFakes";
+import {
+  FakeReferenceRepository,
+  FakeSheetReferenceLinkRepository,
+  FakeFormationCompetenceLinkRepository,
+} from "./referenceFakes";
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
@@ -13,6 +17,11 @@ import { SheetCampaignView } from "@application/features/character-sheet/abstrac
 
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
+import {
+  FakeFriendGroupRepository,
+  FakeGroupMemberRepository,
+  FakeGroupInvitationRepository,
+} from "./friendGroupFakes";
 import {
   RefreshTokenRepository,
   StoredRefreshToken,
@@ -121,8 +130,12 @@ export class FakeCampaignRepository implements CampaignRepository {
     this.campaigns.set(campaign.id, campaign);
   }
 
-  public async findByGameMasterId(gameMasterId: string): Promise<Campaign[]> {
-    return [...this.campaigns.values()].filter((campaign) => campaign.isGameMaster(gameMasterId));
+  public async findByGroupId(groupId: string): Promise<Campaign[]> {
+    return [...this.campaigns.values()].filter((campaign) => campaign.groupId === groupId);
+  }
+
+  public async existsByGroupId(groupId: string): Promise<boolean> {
+    return [...this.campaigns.values()].some((campaign) => campaign.groupId === groupId);
   }
 
   public async findById(id: string): Promise<Campaign | null> {
@@ -193,6 +206,10 @@ export class FakeCharacterSheetRepository implements CharacterSheetRepository {
     return [...this.sheets.values()].filter((sheet) => sheet.isOwnedBy(ownerId));
   }
 
+  public async findByGroupId(groupId: string): Promise<CharacterSheet[]> {
+    return [...this.sheets.values()].filter((sheet) => sheet.isInGroup(groupId));
+  }
+
   public async findById(id: string): Promise<CharacterSheet | null> {
     return this.sheets.get(id) ?? null;
   }
@@ -210,10 +227,13 @@ export class FakeCharacterSheetRepository implements CharacterSheetRepository {
   }
 
   public async findLinkableForCampaign(
+    groupId: string,
     gameMasterId: string,
     campaignId: string,
   ): Promise<CharacterSheet[]> {
-    const candidates = [...this.sheets.values()].filter((sheet) => !sheet.isOwnedBy(gameMasterId));
+    const candidates = [...this.sheets.values()].filter(
+      (sheet) => sheet.isInGroup(groupId) && !sheet.isOwnedBy(gameMasterId),
+    );
     const linkable: CharacterSheet[] = [];
     for (const sheet of candidates) {
       const alreadyLinked =
@@ -352,6 +372,10 @@ export function buildFakeTransactionalRepositories(overrides?: {
   sheetArmures: FakeSheetReferenceLinkRepository;
   sheetCompetences: FakeSheetReferenceLinkRepository;
   sheetEquipements: FakeSheetReferenceLinkRepository;
+  formationCompetences: FakeFormationCompetenceLinkRepository;
+  friendGroups: FakeFriendGroupRepository;
+  groupMembers: FakeGroupMemberRepository;
+  groupInvitations: FakeGroupInvitationRepository;
 } {
   const characterSheets = overrides?.characterSheets ?? new FakeCharacterSheetRepository();
   // La liaison résout les fiches via le repo de fiches (reproduit le JOIN MySQL).
@@ -390,8 +414,23 @@ export function buildFakeTransactionalRepositories(overrides?: {
     sheetArmures: new FakeSheetReferenceLinkRepository(armures),
     sheetCompetences: new FakeSheetReferenceLinkRepository(competences),
     sheetEquipements: new FakeSheetReferenceLinkRepository(equipements),
+    formationCompetences: new FakeFormationCompetenceLinkRepository(),
+    friendGroups: new FakeFriendGroupRepository(),
+    groupMembers: new FakeGroupMemberRepository(),
+    groupInvitations: new FakeGroupInvitationRepository(),
   };
 }
+
+// Doublures de la feature friend-group : définies dans `friendGroupFakes.ts`,
+// re-exportées ici pour que les tests les importent depuis `./fakes` comme les autres.
+export {
+  FakeFriendGroupRepository,
+  FakeGroupMemberRepository,
+  FakeGroupInvitationRepository,
+  buildTestFriendGroup,
+  buildTestMembership,
+  buildTestInvitation,
+} from "./friendGroupFakes";
 
 // Les fabriques de données de test (entités domaine pré-construites) vivent dans `builders.ts`
 // (module séparé pour la lisibilité et la taille) ; re-exportées ici pour les imports existants.
@@ -406,7 +445,11 @@ export {
 
 // Doublures de la feature référence : définies dans `referenceFakes.ts` (taille de fichier),
 // re-exportées ici pour que les tests les importent depuis `./fakes` comme les autres.
-export { FakeReferenceRepository, FakeSheetReferenceLinkRepository } from "./referenceFakes";
+export {
+  FakeReferenceRepository,
+  FakeSheetReferenceLinkRepository,
+  FakeFormationCompetenceLinkRepository,
+} from "./referenceFakes";
 
 // Doublures de services (hash/token/id/pdf/logger) : définies dans `serviceFakes.ts`,
 // re-exportées ici pour préserver les imports existants `from "./fakes"`.

@@ -30,5 +30,8 @@ export function toCharacterSheetDetail(sheet: CharacterSheet): CharacterSheetDet
         : null,
     sortsEtMiracles: d.sortsEtMiracles,
     notes: d.notes,
+    // Blocs résolus renseignés par le use case de lecture (repos référence) ; `null` par défaut.
+    formation: null,
+    peuple: null,
   };
 }

@@ -1,11 +1,7 @@
 import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
-
-/**
- * Doublures en mémoire de la feature référence, extraites de `fakes.ts` (taille de fichier).
- * Re-exportées par `fakes.ts` pour ne pas casser les imports existants.
- */
+import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
 
 /** Catalogue d'éléments de référence en mémoire (indexé par id), partagé par les 6 types. */
 export class FakeReferenceRepository implements ReferenceRepository {
@@ -15,18 +11,23 @@ export class FakeReferenceRepository implements ReferenceRepository {
     this.items.set(item.id, item);
   }
 
-  public async findByOwnerId(ownerId: string): Promise<ReferenceItem[]> {
-    return [...this.items.values()].filter((item) => item.isOwnedBy(ownerId));
+  public async findByGroupId(groupId: string): Promise<ReferenceItem[]> {
+    return [...this.items.values()].filter((item) => item.isInGroup(groupId));
   }
 
   public async findById(id: string): Promise<ReferenceItem | null> {
     return this.items.get(id) ?? null;
   }
 
-  public async existsByOwnerAndName(ownerId: string, name: string): Promise<boolean> {
+  public async existsByGroupAndName(groupId: string, name: string): Promise<boolean> {
     return [...this.items.values()].some(
-      (item) => item.isOwnedBy(ownerId) && item.name.value === name,
+      (item) => item.isInGroup(groupId) && item.name.value === name,
     );
+  }
+
+  public async existsInGroup(groupId: string, itemId: string): Promise<boolean> {
+    const item = this.items.get(itemId);
+    return item !== undefined && item.isInGroup(groupId);
   }
 
   public async deleteById(id: string): Promise<void> {
@@ -77,5 +78,26 @@ export class FakeSheetReferenceLinkRepository implements SheetReferenceLinkRepos
       }
     }
     return items;
+  }
+}
+
+/**
+ * Liaison formation ↔ compétences en mémoire. Stocke les paires `formationId::competenceId` et
+ * n'expose que les **identifiants** de compétences (le contrat du port).
+ */
+export class FakeFormationCompetenceLinkRepository implements FormationCompetenceLinkRepository {
+  private readonly links = new Set<string>();
+
+  private key(formationId: string, competenceId: string): string {
+    return `${formationId}::${competenceId}`;
+  }
+
+  public async link(formationId: string, competenceId: string, _createdAt: Date): Promise<void> {
+    this.links.add(this.key(formationId, competenceId));
+  }
+
+  public async findCompetenceIdsByFormation(formationId: string): Promise<string[]> {
+    const prefix = `${formationId}::`;
+    return [...this.links].filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length));
   }
 }

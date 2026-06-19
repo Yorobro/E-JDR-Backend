@@ -1,4 +1,5 @@
 import { ReferenceName } from "@domain/features/reference/value-objects/ReferenceName";
+import { StatBonus } from "@domain/features/reference/value-objects/StatBonus";
 
 /**
  * Données nécessaires pour reconstruire un `ReferenceItem` existant (ex : depuis la base).
@@ -7,12 +8,18 @@ import { ReferenceName } from "@domain/features/reference/value-objects/Referenc
 export interface ReferenceItemSnapshot {
   /** Identifiant unique de l'élément. */
   readonly id: string;
-  /** Identifiant de l'utilisateur propriétaire de l'élément. */
-  readonly ownerId: string;
+  /** Identifiant du **groupe d'amis** propriétaire de l'élément (catalogue partagé du groupe). */
+  readonly groupId: string;
   /** Nom de l'élément (value object garantissant la validité). */
   readonly name: ReferenceName;
   /** Date de création de l'élément. */
   readonly createdAt: Date;
+  /**
+   * Bonus de statistique optionnel porté par l'élément (formations et peuples uniquement).
+   * `null` ou absent signifie « aucun bonus ». Les autres types (armes, armures, …) ne portent
+   * jamais de bonus et laissent ce champ à `null`.
+   */
+  readonly statBonus?: StatBonus | null;
 }
 
 /**
@@ -22,7 +29,7 @@ export interface ReferenceItemSnapshot {
  * l'entité mais par la table/repository qui la stocke. Cela évite six entités quasi identiques.
  *
  * Immuable de l'extérieur (aucun setter). Le nom est porté par {@link ReferenceName} garantissant
- * sa validité ; la propriété est exprimée par {@link ReferenceItem.isOwnedBy}.
+ * sa validité ; la propriété est exprimée par {@link ReferenceItem.isInGroup}.
  */
 export class ReferenceItem {
   /**
@@ -34,20 +41,21 @@ export class ReferenceItem {
   private constructor(private readonly props: ReferenceItemSnapshot) {}
 
   /**
-   * Crée un **nouvel** élément de référence dont l'utilisateur fourni est le propriétaire.
+   * Crée un **nouvel** élément de référence appartenant au groupe fourni.
    *
    * @param params - Les données du nouvel élément.
    * @param params.id - Identifiant unique (généré en amont par un `IdGeneratorService`).
-   * @param params.ownerId - Identifiant du propriétaire (l'utilisateur authentifié).
+   * @param params.groupId - Identifiant du groupe propriétaire.
    * @param params.name - Nom de l'élément (value object déjà validé).
    * @param params.createdAt - Horodatage de création (injecté pour rester testable).
    * @returns Une nouvelle instance de `ReferenceItem`.
    */
   public static create(params: {
     id: string;
-    ownerId: string;
+    groupId: string;
     name: ReferenceName;
     createdAt: Date;
+    statBonus?: StatBonus | null;
   }): ReferenceItem {
     return new ReferenceItem(params);
   }
@@ -67,9 +75,9 @@ export class ReferenceItem {
     return this.props.id;
   }
 
-  /** @returns L'identifiant du propriétaire de l'élément. */
-  public get ownerId(): string {
-    return this.props.ownerId;
+  /** @returns L'identifiant du groupe d'amis propriétaire de l'élément. */
+  public get groupId(): string {
+    return this.props.groupId;
   }
 
   /** @returns Le nom de l'élément (value object). */
@@ -83,13 +91,20 @@ export class ReferenceItem {
   }
 
   /**
-   * Indique si l'utilisateur donné est le **propriétaire** de cet élément. Les opérations
-   * réservées au propriétaire (suppression, rattachement à une fiche) s'appuient sur cette règle.
-   *
-   * @param userId - L'identifiant de l'utilisateur à tester.
-   * @returns `true` si l'utilisateur est le propriétaire, `false` sinon.
+   * @returns Le bonus de statistique porté par l'élément, ou `null` s'il n'en porte aucun
+   *          (cas des armes/armures/… et des formations/peuples sans bonus).
    */
-  public isOwnedBy(userId: string): boolean {
-    return this.props.ownerId === userId;
+  public get statBonus(): StatBonus | null {
+    return this.props.statBonus ?? null;
+  }
+
+  /**
+   * Indique si le groupe donné est le **propriétaire** de cet élément.
+   *
+   * @param groupId - L'identifiant du groupe à tester.
+   * @returns `true` si le groupe est propriétaire, `false` sinon.
+   */
+  public isInGroup(groupId: string): boolean {
+    return this.props.groupId === groupId;
   }
 }

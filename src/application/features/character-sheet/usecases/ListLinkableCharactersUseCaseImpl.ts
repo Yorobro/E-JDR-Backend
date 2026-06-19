@@ -33,6 +33,7 @@ export class ListLinkableCharactersUseCaseImpl implements ListLinkableCharacters
     }
 
     const sheets = await this.characterSheetRepository.findLinkableForCampaign(
+      campaign.groupId,
       query.actorUserId,
       query.campaignId,
     );

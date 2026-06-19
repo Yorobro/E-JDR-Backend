@@ -8,22 +8,17 @@ import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { CreateCampaignCommand } from "@application/features/campaign/commands/CreateCampaignCommand";
 import {
   CreateCampaignUseCase,
   CreateCampaignResult,
 } from "@application/features/campaign/abstractions/usecases/CreateCampaignUseCase";
 
-/**
- * Use case de création d'une campagne.
- *
- * Orchestration pure : valide le nom via le domaine (value object `CampaignName`), crée
- * l'entité `Campaign` en établissant l'utilisateur courant comme maître du jeu, puis la
- * persiste via le `UnitOfWork`. La validation métier vit dans le domaine, pas ici.
- */
 export class CreateCampaignUseCaseImpl implements CreateCampaignUseCase {
   constructor(
     private readonly idGenerator: IdGeneratorService,
+    private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
   ) {}
@@ -31,8 +26,13 @@ export class CreateCampaignUseCaseImpl implements CreateCampaignUseCase {
   public async execute(
     command: CreateCampaignCommand,
   ): Promise<Result<CreateCampaignResult, AppError>> {
-    let name: CampaignName;
+    const accessResult = await this.groupAccessService.requireMember(
+      command.gameMasterId,
+      command.groupId,
+    );
+    if (accessResult.isFailure) return Result.failure(accessResult.error);
 
+    let name: CampaignName;
     try {
       name = CampaignName.create(command.name);
     } catch (error) {
@@ -44,6 +44,7 @@ export class CreateCampaignUseCaseImpl implements CreateCampaignUseCase {
 
     const campaign = Campaign.create({
       id: this.idGenerator.generate(),
+      groupId: command.groupId,
       gameMasterId: command.gameMasterId,
       name,
       createdAt: new Date(),
@@ -55,6 +56,7 @@ export class CreateCampaignUseCaseImpl implements CreateCampaignUseCase {
 
     this.logger.info("Campagne créée", {
       campaignId: campaign.id,
+      groupId: campaign.groupId,
       gameMasterId: campaign.gameMasterId,
     });
 

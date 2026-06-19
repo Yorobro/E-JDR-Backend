@@ -6,12 +6,13 @@ import {
   CharacterSheetDao,
   CharacterSheetWriteRow,
 } from "@infrastructure/persistence/mysql/features/character-sheet/dao/CharacterSheetDao";
-import { createTestPool, clearAllTables, insertUser } from "./dbTestUtils";
+import { createTestPool, clearAllTables, insertUser, insertFriendGroup } from "./dbTestUtils";
 
 function writeRow(over: Partial<CharacterSheetWriteRow>): CharacterSheetWriteRow {
   return {
     id: "s-1",
     owner_id: "owner-1",
+    group_id: "group-1",
     name: "Aragorn",
     created_at: new Date("2026-01-01T10:00:00Z"),
     formation_id: null,
@@ -57,6 +58,8 @@ describe("CharacterSheetDao (intégration MySQL via Drizzle)", () => {
     await clearAllTables(pool);
     await insertUser(pool, "owner-1");
     await insertUser(pool, "mj-1");
+    // group-1 satisfait la FK character_sheets.group_id (et campaigns.group_id).
+    await insertFriendGroup(pool, "group-1", "owner-1");
   });
 
   it("insère et relit une fiche complète", async () => {
@@ -97,10 +100,10 @@ describe("CharacterSheetDao (intégration MySQL via Drizzle)", () => {
     await expect(dao.insert(writeRow({ id: "s-x", owner_id: "fantome" }))).rejects.toThrow();
   });
 
-  it("findLinkableForCampaign exclut les fiches du MJ et celles déjà liées", async () => {
+  it("findLinkableForCampaign : fiches du groupe de la campagne, hors fiches du MJ et déjà liées", async () => {
     await pool.execute(
-      "INSERT INTO campaigns (id, game_master_id, name, created_at) VALUES (?,?,?,?)",
-      ["camp-1", "mj-1", "Camp", new Date("2026-01-01T10:00:00Z")],
+      "INSERT INTO campaigns (id, group_id, game_master_id, name, created_at) VALUES (?,?,?,?,?)",
+      ["camp-1", "group-1", "mj-1", "Camp", new Date("2026-01-01T10:00:00Z")],
     );
     await dao.insert(writeRow({ id: "s-mj", owner_id: "mj-1" }));
     await dao.insert(writeRow({ id: "s-linked", owner_id: "owner-1" }));
@@ -109,8 +112,11 @@ describe("CharacterSheetDao (intégration MySQL via Drizzle)", () => {
       ["camp-1", "s-linked", new Date("2026-01-02T10:00:00Z")],
     );
     await dao.insert(writeRow({ id: "s-free", owner_id: "owner-1" }));
+    // Fiche d'un AUTRE groupe : ne doit pas être proposée même si non liée et pas au MJ.
+    await insertFriendGroup(pool, "group-2", "owner-1");
+    await dao.insert(writeRow({ id: "s-other-group", owner_id: "owner-1", group_id: "group-2" }));
 
-    const linkable = await dao.findLinkableForCampaign("mj-1", "camp-1");
+    const linkable = await dao.findLinkableForCampaign("group-1", "mj-1", "camp-1");
     expect(linkable.map((s) => s.id)).toEqual(["s-free"]);
   });
 });

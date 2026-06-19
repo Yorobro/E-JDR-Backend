@@ -6,6 +6,7 @@ describe("Campaign (entité)", () => {
   const buildCampaign = (gameMasterId = "user-1"): Campaign =>
     Campaign.create({
       id: "campaign-1",
+      groupId: "group-1",
       gameMasterId,
       name: CampaignName.create("Ma campagne"),
       createdAt: new Date("2026-01-01T00:00:00Z"),
@@ -35,6 +36,7 @@ describe("Campaign (entité)", () => {
   it("restore reconstruit fidèlement une campagne (round-trip)", () => {
     const snapshot = {
       id: "campaign-9",
+      groupId: "group-9",
       gameMasterId: "mj-9",
       name: CampaignName.create("Restaurée"),
       createdAt: new Date("2026-02-03T10:00:00Z"),

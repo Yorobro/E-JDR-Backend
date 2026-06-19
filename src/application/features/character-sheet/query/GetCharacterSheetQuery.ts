@@ -1,12 +1,13 @@
 /**
  * Requête de consultation détaillée d'une fiche de personnage.
  *
- * Le `ownerId` provient de l'utilisateur authentifié : il sert à vérifier que le demandeur est
- * bien le propriétaire de la fiche (sinon 403), jamais à filtrer une liste.
+ * Le `userId` provient de l'utilisateur authentifié : il sert à vérifier que le demandeur est
+ * **membre du groupe** de la fiche (visibilité « tout le groupe », D10), pas seulement son
+ * propriétaire.
  */
 export interface GetCharacterSheetQuery {
   /** Identifiant de la fiche à consulter. */
   readonly characterSheetId: string;
   /** Identifiant du demandeur (issu de la session authentifiée). */
-  readonly ownerId: string;
+  readonly userId: string;
 }

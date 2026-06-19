@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { UpdateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/UpdateCharacterSheetUseCaseImpl";
+import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
@@ -8,7 +9,9 @@ import {
   FakeUnitOfWork,
   buildFakeTransactionalRepositories,
   buildTestCharacterSheet,
+  buildTestCampaign,
   buildTestReferenceItem,
+  buildTestMembership,
 } from "./fakes";
 
 describe("UpdateCharacterSheetUseCaseImpl", () => {
@@ -17,10 +20,17 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
+    const groupAccessService = new GroupAccessServiceImpl(
+      txRepos.groupMembers,
+      txRepos.campaigns,
+      txRepos.campaignCharacters,
+    );
+    txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "owner-1" }));
     useCase = new UpdateCharacterSheetUseCaseImpl(
       txRepos.characterSheets,
       txRepos.formations,
       txRepos.peoples,
+      groupAccessService,
       new FakeUnitOfWork(txRepos),
       new FakeLogger(),
     );
@@ -28,8 +38,7 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
 
   it("met à jour le nom et les champs détaillés (dont la formation N‑1), en préservant id/ownerId/createdAt", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
-    // La formation référencée doit exister et appartenir au propriétaire.
-    txRepos.peoples.seed(buildTestReferenceItem("peuple-1", "owner-1", "Dúnedain"));
+    txRepos.peoples.seed(buildTestReferenceItem("peuple-1", "group-1", "Dúnedain"));
 
     const result = await useCase.execute({
       characterSheetId: "s-1",
@@ -55,7 +64,7 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
 
   it("refuse (REFERENCE_ITEM_NOT_FOUND) une formation/peuple d'un autre propriétaire", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
-    txRepos.peoples.seed(buildTestReferenceItem("peuple-x", "autre", "Elfe"));
+    txRepos.peoples.seed(buildTestReferenceItem("peuple-x", "group-autre", "Elfe"));
 
     const result = await useCase.execute({
       characterSheetId: "s-1",
@@ -130,7 +139,23 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
     expect(result.error).toBeInstanceOf(CharacterSheetNotFoundError);
   });
 
-  it("échoue avec CharacterSheetAccessDeniedError si le demandeur n'est pas le propriétaire", async () => {
+  it("autorise le MJ d'une campagne où la fiche est liée à modifier la fiche", async () => {
+    // La fiche appartient à owner-1 ; elle est liée à une campagne dont mj-7 est le MJ.
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
+    txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-7", "Donjon", "group-1"));
+    await txRepos.campaignCharacters.link("camp-1", "s-1");
+
+    const result = await useCase.execute({
+      characterSheetId: "s-1",
+      ownerId: "mj-7",
+      name: "Strider",
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.name).toBe("Strider");
+  });
+
+  it("échoue avec CharacterSheetAccessDeniedError si le demandeur n'est ni propriétaire ni MJ d'une campagne liée", async () => {
     txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1"));
 
     const result = await useCase.execute({

@@ -8,6 +8,7 @@ import { AppError } from "@application/errors/AppError";
 import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { UpdateCharacterSheetCommand } from "@application/features/character-sheet/commands/UpdateCharacterSheetCommand";
 import { UpdateCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/UpdateCharacterSheetUseCase";
@@ -64,6 +65,7 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
     private readonly characterSheetRepository: CharacterSheetRepository,
     private readonly formationRepository: FormationRepository,
     private readonly peupleRepository: PeupleRepository,
+    private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
   ) {}
@@ -77,8 +79,12 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
       return Result.failure(new CharacterSheetNotFoundError());
     }
 
-    if (!sheet.isOwnedBy(command.ownerId)) {
-      this.logger.warn("Tentative de modification d'une fiche par un non-propriétaire", {
+    // Modifier = propriétaire OU MJ d'une campagne où la fiche est liée (D10).
+    const canEdit =
+      sheet.isOwnedBy(command.ownerId) ||
+      (await this.groupAccessService.isGameMasterOfSheetCampaign(command.ownerId, sheet.id));
+    if (!canEdit) {
+      this.logger.warn("Tentative de modification d'une fiche sans droit (ni proprio ni MJ)", {
         characterSheetId: command.characterSheetId,
         ownerId: command.ownerId,
       });
@@ -115,19 +121,19 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
       throw error;
     }
 
-    // Les références N‑1 (formation/peuple), si fournies non-null, doivent exister ET appartenir
-    // au propriétaire de la fiche : on ne pioche que dans son propre catalogue.
+    // Les références N-1 (formation/peuple), si fournies, doivent exister dans un groupe
+    // dont l'acteur est membre.
     const formationId = normalizeId(command.formationId);
     const peupleId = normalizeId(command.peupleId);
     if (
       formationId !== null &&
-      !(await this.ownsItem(this.formationRepository, formationId, command.ownerId))
+      !(await this.canUseItem(this.formationRepository, formationId, command.ownerId))
     ) {
       return Result.failure(new ReferenceItemNotFoundError());
     }
     if (
       peupleId !== null &&
-      !(await this.ownsItem(this.peupleRepository, peupleId, command.ownerId))
+      !(await this.canUseItem(this.peupleRepository, peupleId, command.ownerId))
     ) {
       return Result.failure(new ReferenceItemNotFoundError());
     }
@@ -177,20 +183,17 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
   }
 
   /**
-   * Vérifie qu'un élément de référence existe et appartient au propriétaire donné.
-   *
-   * @param repository - Le repository de la catégorie concernée (formation/peuple).
-   * @param itemId - L'identifiant de l'élément à vérifier.
-   * @param ownerId - L'identifiant du propriétaire attendu.
-   * @returns `true` si l'élément existe et appartient à l'utilisateur.
+   * Vérifie qu'un élément de référence existe et que l'acteur est membre de son groupe.
    */
-  private async ownsItem(
-    repository: { findById(id: string): Promise<{ isOwnedBy(userId: string): boolean } | null> },
+  private async canUseItem(
+    repository: { findById(id: string): Promise<{ groupId: string } | null> },
     itemId: string,
-    ownerId: string,
+    actorId: string,
   ): Promise<boolean> {
     const item = await repository.findById(itemId);
-    return item !== null && item.isOwnedBy(ownerId);
+    if (item === null) return false;
+    const access = await this.groupAccessService.requireMember(actorId, item.groupId);
+    return access.isSuccess;
   }
 }
 
