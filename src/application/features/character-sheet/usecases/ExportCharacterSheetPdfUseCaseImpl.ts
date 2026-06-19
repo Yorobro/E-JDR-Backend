@@ -139,15 +139,35 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
     };
     const references = buildCharacterSheetPdfReferences(resolved, lists);
 
-    // PV et protection sont **dérivés** à la lecture (jamais stockés en dur) : le détail imprimé
-    // porte les valeurs recalculées depuis vigueur + bonus formation/peuple + armures liées.
-    const { pointsDeVie, protection } = computeDerivedCharacterStats({
+    // Stats totales, PV et protection sont **dérivés** à la lecture (jamais stockés en dur) : le
+    // détail imprimé porte les valeurs recalculées depuis les bases + bonus formation/peuple +
+    // armures liées. Les caractéristiques de base (dexterite..vigueur) sont écrasées par leurs
+    // **totaux** afin que le PDF affiche directement le total (base + bonus) et non la base seule.
+    const { statTotals, pointsDeVie, protection } = computeDerivedCharacterStats({
+      dexterite: detail.dexterite,
+      intelligence: detail.intelligence,
+      perception: detail.perception,
+      social: detail.social,
       vigueur: detail.vigueur,
       formation: resolved.formation,
       peuple: resolved.peuple,
       armures: lists.armures.map((armure) => ({ protectionPoints: armure.protectionPoints })),
     });
-    const printableDetail = { ...detail, pointsDeVie, protection };
+    const printableDetail = {
+      ...detail,
+      dexterite: statTotals.dexterite,
+      intelligence: statTotals.intelligence,
+      perception: statTotals.perception,
+      social: statTotals.social,
+      vigueur: statTotals.vigueur,
+      dexteriteTotale: statTotals.dexterite,
+      intelligenceTotale: statTotals.intelligence,
+      perceptionTotale: statTotals.perception,
+      socialTotale: statTotals.social,
+      vigueurTotale: statTotals.vigueur,
+      pointsDeVie,
+      protection,
+    };
 
     const pdf = await this.pdfGenerator.generate(printableDetail, references);
     return Result.success({ pdf, fileName: toPdfFileName(detail.name) });

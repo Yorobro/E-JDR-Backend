@@ -233,5 +233,47 @@ describe("GetCharacterSheetUseCaseImpl", () => {
       expect(result.value.pointsDeVie).toBe(16);
       expect(result.value.protection).toBe(0);
     });
+
+    it("expose la stat totale = base + bonus formation + bonus peuple ciblant cette stat (social)", async () => {
+      txRepos.formations.seed(
+        buildTestReferenceItem("form-1", "group-1", "Diplomate", { stat: "social", amount: 2 }),
+      );
+      txRepos.peoples.seed(
+        buildTestReferenceItem("peuple-1", "group-1", "Halfelin", { stat: "social", amount: 1 }),
+      );
+      txRepos.characterSheets.seed(
+        buildTestCharacterSheet("s-1", "owner-1", "Frodon", {
+          social: 3,
+          formationId: "form-1",
+          peupleId: "peuple-1",
+        }),
+      );
+
+      const result = await useCase.execute({ characterSheetId: "s-1", userId: "owner-1" });
+
+      // base 3 + formation +2 + peuple +1 = 6 ; la base reste inchangée.
+      expect(result.value.social).toBe(3);
+      expect(result.value.socialTotale).toBe(6);
+    });
+
+    it("renvoie une stat totale = base quand aucun bonus ne cible cette stat", async () => {
+      txRepos.peoples.seed(
+        buildTestReferenceItem("peuple-1", "group-1", "Elfe", { stat: "dexterite", amount: 1 }),
+      );
+      txRepos.characterSheets.seed(
+        buildTestCharacterSheet("s-1", "owner-1", "Legolas", {
+          dexterite: 5,
+          intelligence: 4,
+          peupleId: "peuple-1",
+        }),
+      );
+
+      const result = await useCase.execute({ characterSheetId: "s-1", userId: "owner-1" });
+
+      // dexterite reçoit le bonus du peuple (5 + 1 = 6) ; intelligence n'est ciblée par personne (4).
+      expect(result.value.dexteriteTotale).toBe(6);
+      expect(result.value.intelligenceTotale).toBe(4);
+      expect(result.value.intelligence).toBe(4);
+    });
   });
 });

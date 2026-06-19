@@ -118,4 +118,30 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
     expect(pdfGenerator.lastDetail?.pointsDeVie).toBe(17);
     expect(pdfGenerator.lastDetail?.protection).toBe(4);
   });
+
+  it("imprime le TOTAL des caractéristiques (base + bonus formation/peuple), pas la base seule", async () => {
+    txRepos.formations.seed(
+      buildTestReferenceItem("form-1", "group-1", "Diplomate", { stat: "social", amount: 2 }),
+    );
+    txRepos.peoples.seed(
+      buildTestReferenceItem("peuple-1", "group-1", "Halfelin", { stat: "social", amount: 1 }),
+    );
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Frodon", {
+        social: 3,
+        dexterite: 4,
+        formationId: "form-1",
+        peupleId: "peuple-1",
+      }),
+    );
+
+    const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "owner-1" });
+
+    expect(result.isSuccess).toBe(true);
+    // Le PDF lit detail.social : il doit porter le total 3 + 2 + 1 = 6 (et non la base 3).
+    expect(pdfGenerator.lastDetail?.social).toBe(6);
+    expect(pdfGenerator.lastDetail?.socialTotale).toBe(6);
+    // Une stat sans bonus reste à sa base.
+    expect(pdfGenerator.lastDetail?.dexterite).toBe(4);
+  });
 });

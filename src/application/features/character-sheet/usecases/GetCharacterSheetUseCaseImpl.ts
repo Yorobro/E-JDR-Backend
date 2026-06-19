@@ -91,16 +91,32 @@ export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
       sheet.groupId,
     );
 
-    // PV et protection sont **dérivés** à la lecture (jamais stockés en dur) : on écrase donc les
-    // valeurs éventuellement persistées par celles recalculées depuis vigueur + bonus + armures.
+    // Stats totales, PV et protection sont **dérivés** à la lecture (jamais stockés en dur) : on
+    // écrase donc les valeurs éventuellement persistées par celles recalculées depuis les bases +
+    // bonus formation/peuple + armures.
     const armures = await this.sheetArmures.findItemsBySheet(query.characterSheetId);
-    const { pointsDeVie, protection } = computeDerivedCharacterStats({
+    const { statTotals, pointsDeVie, protection } = computeDerivedCharacterStats({
+      dexterite: detail.dexterite,
+      intelligence: detail.intelligence,
+      perception: detail.perception,
+      social: detail.social,
       vigueur: detail.vigueur,
       formation,
       peuple,
       armures: armures.map((armure) => ({ protectionPoints: armure.protectionPoints })),
     });
 
-    return Result.success({ ...detail, formation, peuple, pointsDeVie, protection });
+    return Result.success({
+      ...detail,
+      formation,
+      peuple,
+      dexteriteTotale: statTotals.dexterite,
+      intelligenceTotale: statTotals.intelligence,
+      perceptionTotale: statTotals.perception,
+      socialTotale: statTotals.social,
+      vigueurTotale: statTotals.vigueur,
+      pointsDeVie,
+      protection,
+    });
   }
 }
