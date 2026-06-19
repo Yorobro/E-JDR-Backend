@@ -162,6 +162,11 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
   /**
    * Normalise les champs détaillés de la commande vers le format domaine, **hors** `sexe`,
    * `purse` et les références `formationId`/`peupleId` (traités à part dans {@link execute}).
+   *
+   * `pointsDeVie` et `protection` sont **volontairement absents** : ce sont des valeurs **dérivées**
+   * (recalculées à la lecture depuis vigueur + bonus formation/peuple + armures liées) et ne doivent
+   * donc jamais être persistées depuis l'input client. Les omettre du `Partial` préserve simplement
+   * les colonnes existantes (`withDetails` fusionne), et la lecture les écrasera de toute façon.
    */
   private detailsFrom(command: UpdateCharacterSheetCommand): Partial<CharacterSheetDetails> {
     return {
@@ -174,9 +179,7 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
       perception: nonNegativeInt(command.perception),
       social: nonNegativeInt(command.social),
       vigueur: nonNegativeInt(command.vigueur),
-      pointsDeVie: nonNegativeInt(command.pointsDeVie),
       pointsDeMagie: nonNegativeInt(command.pointsDeMagie),
-      protection: nonNegativeInt(command.protection),
       sortsEtMiracles: longText(command.sortsEtMiracles),
       notes: longText(command.notes),
     };

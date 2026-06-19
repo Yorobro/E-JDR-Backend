@@ -67,6 +67,7 @@ export function buildCharacterSheetController(
       peupleRepository: deps.peupleRepository,
       competenceRepository: deps.competenceRepository,
       formationCompetenceLink: deps.formationCompetenceLinkRepository,
+      sheetArmures: deps.sheetArmuresRepository,
       groupAccessService: deps.groupAccessService,
       logger: deps.logger,
     }),

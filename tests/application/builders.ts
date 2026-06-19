@@ -103,6 +103,7 @@ export function buildTestSession(
  * @param groupId - L'identifiant du groupe propriétaire (par défaut "group-1").
  * @param name - Le nom de l'élément (par défaut "Élément").
  * @param statBonus - Bonus de statistique optionnel (`{ stat, amount }`) ; absent ⇒ aucun bonus.
+ * @param protectionPoints - Points de protection optionnels (armures) ; absent ⇒ non renseigné.
  * @returns Une entité `ReferenceItem` prête pour les tests.
  */
 export function buildTestReferenceItem(
@@ -110,6 +111,7 @@ export function buildTestReferenceItem(
   groupId = "group-1",
   name = "Élément",
   statBonus?: { stat: string; amount?: number | null },
+  protectionPoints?: number | null,
 ): ReferenceItem {
   return ReferenceItem.create({
     id,
@@ -117,6 +119,7 @@ export function buildTestReferenceItem(
     name: ReferenceName.create(name),
     createdAt: new Date("2026-01-01T00:00:00Z"),
     statBonus: statBonus !== undefined ? StatBonus.create(statBonus) : null,
+    protectionPoints,
   });
 }
 

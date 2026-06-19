@@ -9,8 +9,10 @@ import { CharacterSheetDetail } from "@application/features/character-sheet/abst
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { toCharacterSheetDetail } from "@application/features/character-sheet/usecases/toCharacterSheetDetail";
 import { CharacterSheetReferenceResolver } from "@application/features/character-sheet/usecases/CharacterSheetReferenceResolver";
+import { computeDerivedCharacterStats } from "@application/features/character-sheet/usecases/computeDerivedCharacterStats";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
+import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 
 /**
  * Dépendances du use case de lecture détaillée d'une fiche (regroupées dans un objet pour rester
@@ -27,6 +29,8 @@ export interface GetCharacterSheetDeps {
   readonly competenceRepository: ReferenceRepository;
   /** Liaison formation ↔ compétences (ids des compétences rattachées à la formation). */
   readonly formationCompetenceLink: FormationCompetenceLinkRepository;
+  /** Liaison fiche ↔ armures (points de protection liés à la fiche, pour dériver la protection). */
+  readonly sheetArmures: SheetReferenceLinkRepository;
   /** Vérifie l'appartenance au groupe de la fiche (visibilité « tout le groupe »). */
   readonly groupAccessService: GroupAccessService;
   /** Journalisation applicative. */
@@ -45,6 +49,7 @@ export interface GetCharacterSheetDeps {
 export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
   private readonly characterSheetRepository: CharacterSheetRepository;
   private readonly referenceResolver: CharacterSheetReferenceResolver;
+  private readonly sheetArmures: SheetReferenceLinkRepository;
   private readonly groupAccessService: GroupAccessService;
   private readonly logger: Logger;
 
@@ -56,6 +61,7 @@ export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
       competenceRepository: deps.competenceRepository,
       formationCompetenceLink: deps.formationCompetenceLink,
     });
+    this.sheetArmures = deps.sheetArmures;
     this.groupAccessService = deps.groupAccessService;
     this.logger = deps.logger;
   }
@@ -85,6 +91,16 @@ export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
       sheet.groupId,
     );
 
-    return Result.success({ ...detail, formation, peuple });
+    // PV et protection sont **dérivés** à la lecture (jamais stockés en dur) : on écrase donc les
+    // valeurs éventuellement persistées par celles recalculées depuis vigueur + bonus + armures.
+    const armures = await this.sheetArmures.findItemsBySheet(query.characterSheetId);
+    const { pointsDeVie, protection } = computeDerivedCharacterStats({
+      vigueur: detail.vigueur,
+      formation,
+      peuple,
+      armures: armures.map((armure) => ({ protectionPoints: armure.protectionPoints })),
+    });
+
+    return Result.success({ ...detail, formation, peuple, pointsDeVie, protection });
   }
 }

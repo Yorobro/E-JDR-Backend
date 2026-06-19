@@ -92,4 +92,30 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
     expect(pdfGenerator.lastReferences?.formationName).toBe("Guerrier");
     expect(pdfGenerator.lastReferences?.armes).toEqual(["Épée longue"]);
   });
+
+  it("imprime des PV et une protection DÉRIVÉS (calculés), pas les valeurs stockées", async () => {
+    txRepos.formations.seed(
+      buildTestReferenceItem("form-1", "group-1", "Guerrier", { stat: "vigueur", amount: 2 }),
+    );
+    // Deux armures liées : protection 3 + 1 = 4.
+    txRepos.armures.seed(buildTestReferenceItem("armure-1", "group-1", "Plastron", undefined, 3));
+    txRepos.armures.seed(buildTestReferenceItem("armure-2", "group-1", "Bouclier", undefined, 1));
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", {
+        formationId: "form-1",
+        vigueur: 5,
+        pointsDeVie: 999,
+        protection: 999,
+      }),
+    );
+    await txRepos.sheetArmures.link("s-1", "armure-1");
+    await txRepos.sheetArmures.link("s-1", "armure-2");
+
+    const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "owner-1" });
+
+    expect(result.isSuccess).toBe(true);
+    // 10 + (5 + 2) = 17 ; protection 3 + 1 = 4 ; les 999 stockés sont écrasés.
+    expect(pdfGenerator.lastDetail?.pointsDeVie).toBe(17);
+    expect(pdfGenerator.lastDetail?.protection).toBe(4);
+  });
 });

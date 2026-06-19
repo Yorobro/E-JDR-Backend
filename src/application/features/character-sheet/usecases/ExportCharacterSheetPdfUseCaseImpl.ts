@@ -11,6 +11,7 @@ import { CharacterSheetNotFoundError } from "@application/features/character-she
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 import { toCharacterSheetDetail } from "@application/features/character-sheet/usecases/toCharacterSheetDetail";
 import { CharacterSheetReferenceResolver } from "@application/features/character-sheet/usecases/CharacterSheetReferenceResolver";
+import { computeDerivedCharacterStats } from "@application/features/character-sheet/usecases/computeDerivedCharacterStats";
 import { buildCharacterSheetPdfReferences } from "@application/features/character-sheet/usecases/buildCharacterSheetPdfReferences";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
@@ -138,7 +139,17 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
     };
     const references = buildCharacterSheetPdfReferences(resolved, lists);
 
-    const pdf = await this.pdfGenerator.generate(detail, references);
+    // PV et protection sont **dérivés** à la lecture (jamais stockés en dur) : le détail imprimé
+    // porte les valeurs recalculées depuis vigueur + bonus formation/peuple + armures liées.
+    const { pointsDeVie, protection } = computeDerivedCharacterStats({
+      vigueur: detail.vigueur,
+      formation: resolved.formation,
+      peuple: resolved.peuple,
+      armures: lists.armures.map((armure) => ({ protectionPoints: armure.protectionPoints })),
+    });
+    const printableDetail = { ...detail, pointsDeVie, protection };
+
+    const pdf = await this.pdfGenerator.generate(printableDetail, references);
     return Result.success({ pdf, fileName: toPdfFileName(detail.name) });
   }
 }
