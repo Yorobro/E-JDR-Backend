@@ -535,20 +535,20 @@ git commit -m "feat(auth): use case de changement de mot de passe"
 
 ---
 
-### Task A9 : Routes + controller `/me` (email + password) + montage + mapping HTTP
+### Task A9 : Étendre `/me` avec `PATCH /email` et `PATCH /password`
+
+**État vérifié :** `/me` existe DÉJÀ. `UserController` (`src/presentation/http/features/auth/controllers/UserController.ts`) a la méthode `me` et reçoit `getCurrentUser` en dépendance. `buildUserRoutes` (`src/presentation/http/features/auth/routes/userRoutes.ts`) déclare `router.get("/", controller.me)`. Montage : `main.ts:286` `app.use("/me", authMiddleware, buildUserRoutes(controllers.user))`. `controllers.user` est construit `main.ts:374` `new UserController(new GetCurrentUserUseCaseImpl(...))`. **On ÉTEND ces fichiers existants — PAS de nouveau dossier `features/user`.**
 
 **Files:**
-- Create: `src/presentation/http/features/user/controllers/UserController.ts` (méthodes `changeEmail`, `changePassword`)
-- Create: `src/presentation/http/features/user/routes/userRoutes.ts` (`PATCH /email`, `PATCH /password`)
-- Create: `src/presentation/http/features/user/mappers/UserHttpMapper.ts` (code → statut : EMAIL_ALREADY_USED→409, INVALID_EMAIL→400, INVALID_CREDENTIALS→401, WEAK_PASSWORD→400, défaut 400)
-- Create: `src/presentation/http/features/user/buildUserController.ts` (factory)
-- Modify: `src/main.ts` (instancier le UserController et monter `app.use("/me", authMiddleware, buildUserRoutes(...))`)
-- Test: `tests/presentation/userRoutes.integration.test.ts` (intégration HTTP — supertest)
+- Modify: `src/presentation/http/features/auth/controllers/UserController.ts` (ajouter `changeEmail`, `changePassword` + les 2 use cases au constructeur ; mapper les erreurs inline comme `me` le fait : EMAIL_ALREADY_USED→409, INVALID_CREDENTIALS→401, INVALID_EMAIL/WEAK_PASSWORD/défaut→400, USER_NOT_FOUND→401)
+- Modify: `src/presentation/http/features/auth/routes/userRoutes.ts` (`router.patch("/email", controller.changeEmail)`, `router.patch("/password", controller.changePassword)`)
+- Modify: `src/main.ts` (passer `ChangeEmailUseCaseImpl` et `ChangePasswordUseCaseImpl` au `new UserController(...)`, construits sur `services.credentialRepository`, le password hasher de `services`, `services.unitOfWork`)
+- Test: `tests/presentation/userRoutes.integration.test.ts` (intégration HTTP — supertest, `test:db`)
 
 **Interfaces:**
-- Consumes: `ChangeEmailUseCase`, `ChangePasswordUseCase` (A7/A8), `authMiddleware` (req.user.userId).
+- Consumes: `ChangeEmailUseCase`/`Impl`, `ChangePasswordUseCase`/`Impl` (A7/A8), `authMiddleware` (req.user.userId).
 
-> NOTE : vérifier qu'aucune route `/me` n'existe déjà (le front utilise `GET /me` pour le profil ; voir comment elle est montée aujourd'hui — peut-être via auth). Ne PAS casser le `GET /me` existant : monter les nouvelles routes sur le même préfixe ou compléter le routeur existant.
+> NE PAS casser `GET /me`. Réutiliser le style de mapping inline de `me` (pas de nouveau UserHttpMapper).
 
 - [ ] **Step 1 : Test d'intégration d'échec** (supertest) — register+login, puis `PATCH /me/email` change l'email, `PATCH /me/password` avec mauvais ancien → 401, etc. (Suivre le pattern de `tests/presentation/*.integration.test.ts`. Ces tests tournent en `test:db` — les marquer en conséquence ou réutiliser le harness d'intégration HTTP existant.)
 
