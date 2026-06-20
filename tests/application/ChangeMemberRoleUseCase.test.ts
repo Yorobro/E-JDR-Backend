@@ -133,4 +133,20 @@ describe("ChangeMemberRoleUseCase", () => {
     const target = await repos.groupMembers.findByUserIdAndGroupId("user-2", "group-1");
     expect(target?.role.value).toBe("MEMBER");
   });
+
+  it("promeut un membre en MJ", async () => {
+    repos.groupMembers.seed(buildTestMembership({ userId: "user-1", role: GroupRole.ADMIN }));
+    repos.groupMembers.seed(buildTestMembership({ userId: "user-2", role: GroupRole.MEMBER }));
+
+    const result = await useCase.execute({
+      groupId: "group-1",
+      actorId: "user-1",
+      targetUserId: "user-2",
+      newRole: "MJ",
+    });
+
+    expect(result.isSuccess).toBe(true);
+    const updated = await repos.groupMembers.findByUserIdAndGroupId("user-2", "group-1");
+    expect(updated?.role.value).toBe("MJ");
+  });
 });
