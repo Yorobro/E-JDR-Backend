@@ -1,3 +1,27 @@
+## 1.12.0 (2026-06-20)
+
+* Merge pull request #15 from Yorobro/feat/roles-and-profile ([613e035](https://github.com/Yorobro/E-JDR-Backend/commit/613e035)), closes [#15](https://github.com/Yorobro/E-JDR-Backend/issues/15)
+* fix(http): mapper NOT_GROUP_EDITOR en 403 + durcir tests (revue d'ensemble) ([71239d3](https://github.com/Yorobro/E-JDR-Backend/commit/71239d3))
+* fix(test): câbler groupAccessService sur DeleteCharacterSheet dans le harness d'intégration ([9668f4a](https://github.com/Yorobro/E-JDR-Backend/commit/9668f4a))
+* docs(db): noter que les rôles de groupe ne requièrent aucune migration ([184c709](https://github.com/Yorobro/E-JDR-Backend/commit/184c709))
+* docs(plan): découper la lecture seule front en B6a/B6b/B6c ([51e3593](https://github.com/Yorobro/E-JDR-Backend/commit/51e3593))
+* docs(plan): documenter le rôle MJ sans migration no-op (décision pré-flight) ([cd1f214](https://github.com/Yorobro/E-JDR-Backend/commit/cd1f214))
+* docs(plan): étendre le UserController/userRoutes existants pour le profil ([1d8df1b](https://github.com/Yorobro/E-JDR-Backend/commit/1d8df1b))
+* docs(plan): plan d'implémentation profil + rôles MJ & ACL ([1ba3529](https://github.com/Yorobro/E-JDR-Backend/commit/1ba3529))
+* docs(plan): scinder campagnes/sessions et fixer l'autorisation des sessions par rôle ([d77cf92](https://github.com/Yorobro/E-JDR-Backend/commit/d77cf92))
+* docs(spec): design refonte profil + rôles MJ et contrôle d'accès ([c8f5c26](https://github.com/Yorobro/E-JDR-Backend/commit/c8f5c26))
+* feat(auth): use case de changement d'email du compte ([154f566](https://github.com/Yorobro/E-JDR-Backend/commit/154f566))
+* feat(auth): use case de changement de mot de passe ([f9dfc88](https://github.com/Yorobro/E-JDR-Backend/commit/f9dfc88))
+* feat(campaign): création/suppression de campagne réservée aux éditeurs (ADMIN/MJ) ([009c4ac](https://github.com/Yorobro/E-JDR-Backend/commit/009c4ac))
+* feat(group): ajouter le rôle MJ (éditeur de contenu) ([731de15](https://github.com/Yorobro/E-JDR-Backend/commit/731de15))
+* feat(group): requireEditor (ADMIN/MJ) sur le service d'accès ([61856a0](https://github.com/Yorobro/E-JDR-Backend/commit/61856a0))
+* feat(reference): édition des catalogues réservée aux éditeurs (ADMIN/MJ) ([ad38d82](https://github.com/Yorobro/E-JDR-Backend/commit/ad38d82))
+* feat(session): autorisation des sessions par rôle de groupe (édition éditeurs, lecture membres) ([5429f51](https://github.com/Yorobro/E-JDR-Backend/commit/5429f51))
+* feat(sheet): édition et suppression de fiche par le propriétaire ou un éditeur du groupe ([b31d0f0](https://github.com/Yorobro/E-JDR-Backend/commit/b31d0f0))
+* feat(user): endpoints PATCH /me/email et PATCH /me/password ([986b60e](https://github.com/Yorobro/E-JDR-Backend/commit/986b60e))
+* test(group): couvrir la promotion d'un membre en MJ ([971c7d0](https://github.com/Yorobro/E-JDR-Backend/commit/971c7d0))
+* test(reference): scinder le fichier de tests catalogue (sous le seuil de taille) ([0f1cfe0](https://github.com/Yorobro/E-JDR-Backend/commit/0f1cfe0))
+
 ## <small>1.11.1 (2026-06-20)</small>
 
 * Merge pull request #14 from Yorobro/fix/audit-changerole-tests ([2e0990f](https://github.com/Yorobro/E-JDR-Backend/commit/2e0990f)), closes [#14](https://github.com/Yorobro/E-JDR-Backend/issues/14)
