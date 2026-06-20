@@ -26,7 +26,7 @@ export class CreateCampaignUseCaseImpl implements CreateCampaignUseCase {
   public async execute(
     command: CreateCampaignCommand,
   ): Promise<Result<CreateCampaignResult, AppError>> {
-    const accessResult = await this.groupAccessService.requireMember(
+    const accessResult = await this.groupAccessService.requireEditor(
       command.gameMasterId,
       command.groupId,
     );

@@ -3,6 +3,7 @@ import { DeleteCampaignUseCaseImpl } from "@application/features/campaign/usecas
 import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
 import { CampaignNotFoundError } from "@application/features/campaign/errors/CampaignNotFoundError";
 import { CampaignAccessDeniedError } from "@application/features/campaign/errors/CampaignAccessDeniedError";
+import { GroupRole } from "@domain/features/friend-group/value-objects/GroupRole";
 import {
   FakeLogger,
   FakeUnitOfWork,
@@ -71,5 +72,24 @@ describe("DeleteCampaignUseCaseImpl", () => {
     expect(result.isFailure).toBe(true);
     expect(result.error.code).toBe("NOT_GROUP_MEMBER");
     expect(await txRepos.campaigns.findById("c-1")).not.toBeNull();
+  });
+
+  it("autorise un MJ à supprimer sa campagne", async () => {
+    txRepos.groupMembers.seed(
+      buildTestMembership({ groupId: "group-1", userId: "u-mj", role: GroupRole.MJ }),
+    );
+    txRepos.campaigns.seed(buildTestCampaign("c-mj", "u-mj", "Camp MJ", "group-1"));
+    const result = await useCase.execute({ campaignId: "c-mj", gameMasterId: "u-mj" });
+    expect(result.isSuccess).toBe(true);
+  });
+
+  it("refuse un MEMBER de supprimer sa campagne (NOT_GROUP_EDITOR)", async () => {
+    txRepos.groupMembers.seed(
+      buildTestMembership({ groupId: "group-1", userId: "u-mem", role: GroupRole.MEMBER }),
+    );
+    txRepos.campaigns.seed(buildTestCampaign("c-mem", "u-mem", "Camp Member", "group-1"));
+    const result = await useCase.execute({ campaignId: "c-mem", gameMasterId: "u-mem" });
+    expect(result.isFailure).toBe(true);
+    expect(result.error.code).toBe("NOT_GROUP_EDITOR");
   });
 });

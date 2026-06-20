@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { CreateCampaignUseCaseImpl } from "@application/features/campaign/usecases/CreateCampaignUseCaseImpl";
 import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
+import { GroupRole } from "@domain/features/friend-group/value-objects/GroupRole";
 import {
   FakeLogger,
   FakeIdGenerator,
@@ -80,5 +81,30 @@ describe("CreateCampaignUseCaseImpl", () => {
     expect(result.error.code).toBe("INVALID_CAMPAIGN_NAME");
 
     expect(await txRepos.campaigns.findByGroupId("group-1")).toHaveLength(0);
+  });
+
+  it("autorise un MJ à créer une campagne", async () => {
+    txRepos.groupMembers.seed(
+      buildTestMembership({ groupId: "group-1", userId: "u-mj", role: GroupRole.MJ }),
+    );
+    const result = await useCase.execute({
+      groupId: "group-1",
+      gameMasterId: "u-mj",
+      name: "Camp MJ",
+    });
+    expect(result.isSuccess).toBe(true);
+  });
+
+  it("refuse un MEMBER de créer une campagne (NOT_GROUP_EDITOR)", async () => {
+    txRepos.groupMembers.seed(
+      buildTestMembership({ groupId: "group-1", userId: "u-mem", role: GroupRole.MEMBER }),
+    );
+    const result = await useCase.execute({
+      groupId: "group-1",
+      gameMasterId: "u-mem",
+      name: "Camp Member",
+    });
+    expect(result.isFailure).toBe(true);
+    expect(result.error.code).toBe("NOT_GROUP_EDITOR");
   });
 });
