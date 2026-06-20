@@ -79,12 +79,12 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
       return Result.failure(new CharacterSheetNotFoundError());
     }
 
-    // Modifier = propriétaire OU MJ d'une campagne où la fiche est liée (D10).
+    // Modifier = propriétaire OU éditeur (ADMIN/MJ) du groupe de la fiche.
     const canEdit =
       sheet.isOwnedBy(command.ownerId) ||
-      (await this.groupAccessService.isGameMasterOfSheetCampaign(command.ownerId, sheet.id));
+      (await this.groupAccessService.requireEditor(command.ownerId, sheet.groupId)).isSuccess;
     if (!canEdit) {
-      this.logger.warn("Tentative de modification d'une fiche sans droit (ni proprio ni MJ)", {
+      this.logger.warn("Tentative de modification d'une fiche sans droit (ni proprio ni éditeur)", {
         characterSheetId: command.characterSheetId,
         ownerId: command.ownerId,
       });
