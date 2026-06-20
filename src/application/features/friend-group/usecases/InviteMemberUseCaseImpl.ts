@@ -5,6 +5,7 @@ import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
+import { tryCreateValueObject } from "@application/shared/tryCreateValueObject";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { Email } from "@domain/features/auth/value-objects/Email";
 import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
@@ -57,12 +58,12 @@ export class InviteMemberUseCaseImpl implements InviteMemberUseCase {
     );
     if (accessResult.isFailure) return Result.failure(accessResult.error);
 
-    let email: Email;
-    try {
-      email = Email.create(command.inviteeEmail);
-    } catch {
-      return Result.failure(new InvitedUserNotFoundError());
-    }
+    // Un e-mail SYNTAXIQUEMENT invalide est une entrée invalide (→ 400 INVALID_EMAIL).
+    // En revanche, un e-mail bien formé mais sans compte associé reste un 404 volontairement
+    // indifférencié (InvitedUserNotFound) pour ne pas révéler l'existence d'un compte (anti-énumération).
+    const emailResult = tryCreateValueObject(() => Email.create(command.inviteeEmail));
+    if (emailResult.isFailure) return Result.failure(emailResult.error);
+    const email = emailResult.value;
 
     const credential = await this.credentialRepository.findByEmail(email);
     if (credential === null) return Result.failure(new InvitedUserNotFoundError());

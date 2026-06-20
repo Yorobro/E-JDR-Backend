@@ -1,5 +1,6 @@
 import { ReferenceName } from "@domain/features/reference/value-objects/ReferenceName";
 import { StatBonus } from "@domain/features/reference/value-objects/StatBonus";
+import { InvalidProtectionPointsError } from "@domain/features/reference/errors/InvalidProtectionPointsError";
 
 /**
  * Données nécessaires pour reconstruire un `ReferenceItem` existant (ex : depuis la base).
@@ -91,6 +92,11 @@ export class ReferenceItem {
   private static normalizeProtectionPoints(value: number | null | undefined): number | null {
     if (value === null || value === undefined) {
       return null;
+    }
+    // Une valeur non finie (typiquement `NaN` issu d'un cast d'entrée non numérique à la
+    // frontière HTTP) viole l'invariant : on la rejette plutôt que de stocker `NaN` silencieusement.
+    if (!Number.isFinite(value)) {
+      throw new InvalidProtectionPointsError(value);
     }
     return Math.max(0, Math.trunc(value));
   }
