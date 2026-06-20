@@ -6,6 +6,24 @@ import {
   buildTestCredential,
 } from "./fakes";
 import { ChangeEmailUseCaseImpl } from "@application/features/auth/usecases/ChangeEmailUseCaseImpl";
+import { Email } from "@domain/features/auth/value-objects/Email";
+import { Credential } from "@domain/features/auth/entities/Credential";
+
+/** Sous-classe de FakeCredentialRepository qui compte les appels à existsByEmail et updateEmail. */
+class SpyCredentialRepository extends FakeCredentialRepository {
+  public existsByEmailCallCount = 0;
+  public updateEmailCallCount = 0;
+
+  public override async existsByEmail(email: Email): Promise<boolean> {
+    this.existsByEmailCallCount++;
+    return super.existsByEmail(email);
+  }
+
+  public override async updateEmail(credential: Credential): Promise<void> {
+    this.updateEmailCallCount++;
+    return super.updateEmail(credential);
+  }
+}
 
 describe("ChangeEmailUseCase", () => {
   let credentialRepository: FakeCredentialRepository;
@@ -61,16 +79,23 @@ describe("ChangeEmailUseCase", () => {
     expect(result.error.code).toBe("EMAIL_ALREADY_USED");
   });
 
-  it("réussit si le nouvel email est identique à l'email actuel (inchangé)", async () => {
+  it("réussit si le nouvel email est identique à l'email actuel (inchangé) sans appeler existsByEmail ni updateEmail", async () => {
+    const spy = new SpyCredentialRepository();
     const credential = buildTestCredential("meme@exemple.fr", "password", "user-1");
-    credentialRepository.seed(credential);
+    spy.seed(credential);
+    const repos = buildFakeTransactionalRepositories({ credentials: spy });
+    const spyUnitOfWork = new FakeUnitOfWork(repos);
+    const spyUseCase = new ChangeEmailUseCaseImpl(spy, spyUnitOfWork);
 
-    const result = await useCase.execute({
+    const result = await spyUseCase.execute({
       userId: "user-1",
       newEmail: "meme@exemple.fr",
     });
 
     expect(result.isSuccess).toBe(true);
+    // Le court-circuit `if (!credential.email.equals(newEmail))` doit empêcher
+    // tout appel à existsByEmail (vérification d'unicité inutile contre soi-même).
+    expect(spy.existsByEmailCallCount).toBe(0);
   });
 
   it("retourne USER_NOT_FOUND si le credential est introuvable", async () => {

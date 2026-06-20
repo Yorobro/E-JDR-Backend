@@ -11,6 +11,7 @@ export class CampaignHttpMapper {
       case "CAMPAIGN_ACCESS_DENIED":
       case "NOT_GROUP_MEMBER":
       case "NOT_GROUP_ADMIN":
+      case "NOT_GROUP_EDITOR":
         return 403;
       default:
         return 400;

@@ -6,10 +6,9 @@ import { buildTestApp } from "./buildTestApp";
 /**
  * Tests d'intégration HTTP des routes utilisateur protégées (`/me`).
  *
- * IMPORTANT : ces tests requièrent Docker/testcontainers (`npm run test:db`).
- * Dans cet environnement, Docker est indisponible — le code est correct et calqué
- * sur le harness `buildTestApp`, mais ces tests ne peuvent pas être exécutés
- * localement. Ils seront validés sur Vertex dev.
+ * Ces tests tournent entièrement en mémoire via `buildTestApp` (fakes, pas de BDD),
+ * exactement comme les autres tests d'intégration de la présentation. Ils sont exécutés
+ * par `vitest run` sans Docker ni testcontainers.
  */
 describe("User routes — PATCH /me/email et PATCH /me/password (intégration HTTP)", () => {
   let app: Application;
