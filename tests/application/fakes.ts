@@ -83,6 +83,17 @@ export class FakeCredentialRepository implements CredentialRepository {
     this.credentials.set(credential.email.value, credential);
   }
 
+  public async updateEmail(credential: Credential): Promise<void> {
+    // Retire l'ancienne entrée (indexée par ancien email) et insère sous le nouvel email.
+    for (const [key, stored] of this.credentials.entries()) {
+      if (stored.id === credential.id) {
+        this.credentials.delete(key);
+        break;
+      }
+    }
+    this.credentials.set(credential.email.value, credential);
+  }
+
   /** Aide de test : pré-remplit le repository avec un identifiant. */
   public seed(credential: Credential): void {
     this.credentials.set(credential.email.value, credential);

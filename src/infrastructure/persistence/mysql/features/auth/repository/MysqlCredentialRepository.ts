@@ -55,4 +55,11 @@ export class MysqlCredentialRepository implements CredentialRepository {
       locked_until: credential.lockedUntil,
     });
   }
+
+  /**
+   * @inheritdoc
+   */
+  public async updateEmail(credential: Credential): Promise<void> {
+    await this.credentialDao.updateEmail(credential.id, credential.email.value);
+  }
 }

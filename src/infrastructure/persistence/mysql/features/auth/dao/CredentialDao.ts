@@ -57,4 +57,8 @@ export class CredentialDao {
       .set({ failed_attempts: data.failed_attempts, locked_until: data.locked_until })
       .where(eq(credentials.id, id));
   }
+
+  public async updateEmail(id: string, email: string): Promise<void> {
+    await this.executor.update(credentials).set({ email }).where(eq(credentials.id, id));
+  }
 }

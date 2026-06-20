@@ -46,4 +46,11 @@ export interface CredentialRepository {
    * @param credential - L'entité `Credential` dont l'état doit être persisté.
    */
   update(credential: Credential): Promise<void>;
+
+  /**
+   * Met à jour l'adresse e-mail d'un identifiant existant.
+   *
+   * @param credential - L'entité `Credential` portant le nouvel e-mail.
+   */
+  updateEmail(credential: Credential): Promise<void>;
 }

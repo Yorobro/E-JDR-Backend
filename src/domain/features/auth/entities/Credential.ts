@@ -130,6 +130,16 @@ export class Credential {
   }
 
   /**
+   * Retourne une nouvelle instance de `Credential` avec l'e-mail mis à jour.
+   *
+   * @param email - Le nouvel e-mail (value object déjà validé).
+   * @returns Une nouvelle instance de `Credential` portant le nouvel e-mail.
+   */
+  public withEmail(email: Email): Credential {
+    return new Credential({ ...this.props, email });
+  }
+
+  /**
    * Vérifie qu'un mot de passe en clair correspond au mot de passe haché de cet identifiant.
    *
    * @param plainPassword - Le mot de passe en clair à vérifier.
