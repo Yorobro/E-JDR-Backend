@@ -23,6 +23,8 @@ export class SessionHttpMapper {
       case "CAMPAIGN_NOT_FOUND":
         return 404;
       case "CAMPAIGN_ACCESS_DENIED":
+      case "NOT_GROUP_EDITOR":
+      case "NOT_GROUP_MEMBER":
         return 403;
       default:
         // Code applicatif inattendu : on reste prudent avec un 400 (entrée invalide)

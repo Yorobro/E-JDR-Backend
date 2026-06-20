@@ -406,6 +406,7 @@ function buildControllers(
     idGenerator: services.idGenerator,
     unitOfWork: services.unitOfWork,
     logger,
+    groupAccessService,
   });
   const characterSheetDeps = {
     characterSheetRepository: services.characterSheetRepository,

@@ -189,6 +189,7 @@ export function buildTestApp(): {
     idGenerator,
     unitOfWork,
     logger,
+    groupAccessService,
   });
 
   const referenceController = buildReferenceController({

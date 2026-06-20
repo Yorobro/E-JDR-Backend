@@ -3,7 +3,7 @@ import { SessionDate } from "@domain/features/session/value-objects/SessionDate"
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
-import { CampaignAccessDeniedError } from "@application/features/campaign/errors/CampaignAccessDeniedError";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
 import { SessionNotFoundError } from "@application/features/session/errors/SessionNotFoundError";
 import { GetSessionQuery } from "@application/features/session/query/GetSessionQuery";
@@ -15,13 +15,14 @@ import {
 /**
  * Use case « obtenir une session ».
  *
- * Charge la session, remonte à la campagne parente et vérifie que le demandeur en est le
- * maître du jeu avant de retourner le détail. Lecture pure (hors `UnitOfWork`).
+ * Charge la session, remonte à la campagne parente et vérifie que le demandeur est **membre**
+ * du groupe (`requireMember`) avant de retourner le détail. Lecture pure (hors `UnitOfWork`).
  */
 export class GetSessionUseCaseImpl implements GetSessionUseCase {
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly campaignRepository: CampaignRepository,
+    private readonly groupAccessService: GroupAccessService,
   ) {}
 
   public async execute(query: GetSessionQuery): Promise<Result<SessionView, AppError>> {
@@ -31,11 +32,12 @@ export class GetSessionUseCaseImpl implements GetSessionUseCase {
     }
 
     const campaign = await this.campaignRepository.findById(session.campaignId);
-    // Le FK cascade garantit la présence de la campagne parente ; par prudence, une campagne
-    // absente ou un demandeur non‑MJ aboutit au même refus d'accès.
-    if (campaign === null || !campaign.isGameMaster(query.actorUserId)) {
-      return Result.failure(new CampaignAccessDeniedError());
+    if (campaign === null) {
+      return Result.failure(new SessionNotFoundError());
     }
+
+    const access = await this.groupAccessService.requireMember(query.actorUserId, campaign.groupId);
+    if (access.isFailure) return Result.failure(access.error);
 
     return Result.success({
       id: session.id,

@@ -3,6 +3,7 @@ import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { CreateSessionUseCaseImpl } from "@application/features/session/usecases/CreateSessionUseCaseImpl";
 import { ListCampaignSessionsUseCaseImpl } from "@application/features/session/usecases/ListCampaignSessionsUseCaseImpl";
 import { GetSessionUseCaseImpl } from "@application/features/session/usecases/GetSessionUseCaseImpl";
@@ -13,8 +14,8 @@ import { SessionController } from "@presentation/http/features/session/controlle
 /**
  * Dépendances nécessaires à l'assemblage du controller session.
  *
- * Les use cases gèrent l'autorisation en remontant à la campagne parente (`isGameMaster`),
- * d'où la présence du `campaignRepository` à côté du `sessionRepository`.
+ * Les use cases gèrent l'autorisation via le `groupAccessService` (rôle dans le groupe
+ * de la campagne parente), d'où la présence du `campaignRepository` à côté du `sessionRepository`.
  */
 export interface SessionControllerDeps {
   readonly campaignRepository: CampaignRepository;
@@ -22,6 +23,7 @@ export interface SessionControllerDeps {
   readonly idGenerator: IdGeneratorService;
   readonly unitOfWork: UnitOfWork;
   readonly logger: Logger;
+  readonly groupAccessService: GroupAccessService;
 }
 
 /**
@@ -39,23 +41,31 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.idGenerator,
     deps.unitOfWork,
     deps.logger,
+    deps.groupAccessService,
   );
   const listCampaignSessions = new ListCampaignSessionsUseCaseImpl(
     deps.campaignRepository,
     deps.sessionRepository,
+    deps.groupAccessService,
   );
-  const getSession = new GetSessionUseCaseImpl(deps.sessionRepository, deps.campaignRepository);
+  const getSession = new GetSessionUseCaseImpl(
+    deps.sessionRepository,
+    deps.campaignRepository,
+    deps.groupAccessService,
+  );
   const updateSession = new UpdateSessionUseCaseImpl(
     deps.sessionRepository,
     deps.campaignRepository,
     deps.unitOfWork,
     deps.logger,
+    deps.groupAccessService,
   );
   const deleteSession = new DeleteSessionUseCaseImpl(
     deps.sessionRepository,
     deps.campaignRepository,
     deps.unitOfWork,
     deps.logger,
+    deps.groupAccessService,
   );
 
   return new SessionController(
