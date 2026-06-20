@@ -6,6 +6,7 @@ import { CampaignRepository } from "@application/features/campaign/abstractions/
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 import { NotGroupMemberError } from "@application/features/friend-group/errors/NotGroupMemberError";
 import { NotGroupAdminError } from "@application/features/friend-group/errors/NotGroupAdminError";
+import { NotGroupEditorError } from "@application/features/friend-group/errors/NotGroupEditorError";
 
 export class GroupAccessServiceImpl implements GroupAccessService {
   constructor(
@@ -29,6 +30,17 @@ export class GroupAccessServiceImpl implements GroupAccessService {
     }
     if (!membership.isAdmin()) {
       return Result.failure(new NotGroupAdminError());
+    }
+    return Result.success(undefined);
+  }
+
+  public async requireEditor(userId: string, groupId: string): Promise<Result<void, AppError>> {
+    const membership = await this.groupMemberRepository.findByUserIdAndGroupId(userId, groupId);
+    if (membership === null) {
+      return Result.failure(new NotGroupMemberError());
+    }
+    if (!membership.isEditor()) {
+      return Result.failure(new NotGroupEditorError());
     }
     return Result.success(undefined);
   }
