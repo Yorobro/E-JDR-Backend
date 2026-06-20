@@ -33,10 +33,14 @@ export interface ReferenceControllerDeps {
     | "armures"
     | "competences"
     | "equipements"
+    | "sorts"
+    | "miracles"
     | "sheetArmes"
     | "sheetArmures"
     | "sheetCompetences"
     | "sheetEquipements"
+    | "sheetSorts"
+    | "sheetMiracles"
     | "formationCompetences"
   >;
   readonly idGenerator: IdGeneratorService;
@@ -45,8 +49,22 @@ export interface ReferenceControllerDeps {
   readonly logger: Logger;
 }
 
-type CatalogueKey = "formations" | "peoples" | "armes" | "armures" | "competences" | "equipements";
-type LinkKey = "sheetArmes" | "sheetArmures" | "sheetCompetences" | "sheetEquipements";
+type CatalogueKey =
+  | "formations"
+  | "peoples"
+  | "armes"
+  | "armures"
+  | "competences"
+  | "equipements"
+  | "sorts"
+  | "miracles";
+type LinkKey =
+  | "sheetArmes"
+  | "sheetArmures"
+  | "sheetCompetences"
+  | "sheetEquipements"
+  | "sheetSorts"
+  | "sheetMiracles";
 
 export function buildReferenceController(deps: ReferenceControllerDeps): ReferenceController {
   // Dépendances spécifiques aux formations : catalogue de compétences (vérification de portée) +
@@ -124,12 +142,16 @@ export function buildReferenceController(deps: ReferenceControllerDeps): Referen
     armures: catalogue(r.armures, "armures"),
     competences: catalogue(r.competences, "competences"),
     equipements: catalogue(r.equipements, "equipements"),
+    sorts: catalogue(r.sorts, "sorts"),
+    miracles: catalogue(r.miracles, "miracles"),
   };
   const links: Record<string, LinkUseCases> = {
     armes: link(r.armes, r.sheetArmes, "sheetArmes"),
     armures: link(r.armures, r.sheetArmures, "sheetArmures"),
     competences: link(r.competences, r.sheetCompetences, "sheetCompetences"),
     equipements: link(r.equipements, r.sheetEquipements, "sheetEquipements"),
+    sorts: link(r.sorts, r.sheetSorts, "sheetSorts"),
+    miracles: link(r.miracles, r.sheetMiracles, "sheetMiracles"),
   };
 
   return new ReferenceController(catalogues, links);

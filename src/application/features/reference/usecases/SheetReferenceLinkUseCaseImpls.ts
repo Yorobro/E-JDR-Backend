@@ -34,7 +34,9 @@ function toView(item: ReferenceItem): ReferenceItemView {
     bonus: statBonus?.amount ?? null,
     // Points de protection : peuplé pour les armures liées, `null` pour les autres types.
     protectionPoints: item.protectionPoints,
-    // Types liables à une fiche (armes/armures/compétences/équipements) : pas de compétences liées.
+    // Description : peuplée pour les sorts/miracles liés, `null` pour les autres types.
+    description: item.description,
+    // Types liables à une fiche (armes/armures/compétences/équipements/sorts/miracles) : pas de compétences liées.
     competenceIds: [],
   };
 }

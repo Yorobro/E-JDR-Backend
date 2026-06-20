@@ -11,13 +11,17 @@ import {
   CompetenceRepository,
   EquipementRepository,
   FormationRepository,
+  MiracleRepository,
   PeupleRepository,
+  SortRepository,
 } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import {
   SheetArmeLinkRepository,
   SheetArmureLinkRepository,
   SheetCompetenceLinkRepository,
   SheetEquipementLinkRepository,
+  SheetMiracleLinkRepository,
+  SheetSortLinkRepository,
 } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
 import { FriendGroupRepository } from "@application/features/friend-group/abstractions/repositories/FriendGroupRepository";
@@ -45,11 +49,15 @@ export interface TransactionalRepositories {
   readonly armures: ArmureRepository;
   readonly competences: CompetenceRepository;
   readonly equipements: EquipementRepository;
+  readonly sorts: SortRepository;
+  readonly miracles: MiracleRepository;
   // Liaisons N‑N fiche ↔ éléments de référence (une par type liable).
   readonly sheetArmes: SheetArmeLinkRepository;
   readonly sheetArmures: SheetArmureLinkRepository;
   readonly sheetCompetences: SheetCompetenceLinkRepository;
   readonly sheetEquipements: SheetEquipementLinkRepository;
+  readonly sheetSorts: SheetSortLinkRepository;
+  readonly sheetMiracles: SheetMiracleLinkRepository;
   // Liaison N‑N formation ↔ compétences.
   readonly formationCompetences: FormationCompetenceLinkRepository;
   // Groupes d'amis.

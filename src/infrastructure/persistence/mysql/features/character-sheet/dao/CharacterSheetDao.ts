@@ -39,7 +39,6 @@ export class CharacterSheetDao {
         purse_gold: row.purse_gold,
         purse_silver: row.purse_silver,
         purse_copper: row.purse_copper,
-        sorts_et_miracles: row.sorts_et_miracles,
         notes: row.notes,
       })
       .where(eq(characterSheets.id, row.id));

@@ -312,7 +312,7 @@ Liste les fiches de l'utilisateur authentifié. Projection **légère** (nom seu
 Détail **complet** d'une fiche (seul le propriétaire). **Réponse 200** : tous les champs —
 `{ "id", "ownerId", "name", "createdAt", "formationId", "niveau", "peupleId", "sexe",
 "tailleEtPoids", "age", "apparence", "dexterite", "intelligence", "perception", "social",
-"vigueur", "pointsDeVie", "pointsDeMagie", "protection", "purse", "sortsEtMiracles", "notes" }`.
+"vigueur", "pointsDeVie", "pointsDeMagie", "protection", "purse", "notes" }`.
 Précisions de types :
 - `formationId`, `peupleId` : **id d'un élément de référence** du propriétaire (relation N‑1) ou `null`.
 - `niveau`, `age` : entiers (`number`) ou `null`.
@@ -320,8 +320,8 @@ Précisions de types :
 - `purse` : `{ "gold", "silver", "copper" }` (entiers bruts) ou `null` si aucune bourse.
 - les autres champs détaillés : texte ou `null`.
 
-Les **armes, armures, compétences et équipements** ne figurent **plus** ici : ce sont des
-relations N‑N gérées via `/character-sheets/:id/{type}` (cf. « Endpoints éléments de référence »).
+Les **armes, armures, compétences, équipements, sorts et miracles** ne figurent **plus** ici : ce
+sont des relations N‑N gérées via `/character-sheets/:id/{type}` (cf. « Endpoints éléments de référence »).
 
 Champs détaillés `null` si non renseignés. Erreurs : `CHARACTER_SHEET_NOT_FOUND` (404),
 `CHARACTER_SHEET_ACCESS_DENIED` (403), `UNAUTHENTICATED` (401).
@@ -400,12 +400,16 @@ Détache une fiche. **Réservé au MJ de la campagne.** **Réponse 204** (idempo
 ## Endpoints éléments de référence
 
 Chaque utilisateur gère son **catalogue** d'éléments réutilisables sur ses fiches : `formations`,
-`peoples` (peuples), `armes`, `armures`, `competences`, `equipements`. Chaque élément lui
-**appartient** (`ownerId` déduit de la session) et porte un `name` (≤ 120) **unique par
-propriétaire**. Toutes les routes sont protégées (cookie `access_token`).
+`peoples` (peuples), `armes`, `armures`, `competences`, `equipements`, `sorts`, `miracles`. Chaque
+élément porte un `name` (≤ 120) **unique par groupe**. Toutes les routes sont protégées
+(cookie `access_token`).
 
-Le segment `:type` ∈ `formations|peoples|armes|armures|competences|equipements`. Un `:type`
-inconnu renvoie `REFERENCE_ITEM_NOT_FOUND` (404).
+Le segment `:type` ∈ `formations|peoples|armes|armures|competences|equipements|sorts|miracles`. Un
+`:type` inconnu renvoie `REFERENCE_ITEM_NOT_FOUND` (404).
+
+Champs spécifiques par type (optionnels, renvoyés `null` ailleurs) : `stat`/`bonus`
+(formations/peuples), `competenceIds` (formations), `protectionPoints` (armures),
+`description` (sorts/miracles).
 
 ### POST /reference/:type
 
@@ -430,9 +434,9 @@ les champs `formation_id`/`peuple_id` des fiches à `null` (N‑1, `ON DELETE se
 les liaisons N‑N (`ON DELETE cascade`). Erreurs : `REFERENCE_ITEM_NOT_FOUND` (404, inconnu **ou**
 n'appartenant pas au demandeur), `UNAUTHENTICATED` (401).
 
-### Liaison N‑N fiche ↔ éléments (armes/armures/competences/equipements)
+### Liaison N‑N fiche ↔ éléments (armes/armures/competences/equipements/sorts/miracles)
 
-Sous `/character-sheets/:id/:type`, avec `:type` ∈ `armes|armures|competences|equipements`.
+Sous `/character-sheets/:id/:type`, avec `:type` ∈ `armes|armures|competences|equipements|sorts|miracles`.
 **Réservé au propriétaire de la fiche** ; on ne lie que des éléments dont on est aussi propriétaire.
 
 - **POST `/character-sheets/:id/:type`** — rattache un élément. **Corps** : `{ "itemId": "uuid" }`.

@@ -33,7 +33,6 @@ function writeRow(over: Partial<CharacterSheetWriteRow>): CharacterSheetWriteRow
     purse_gold: null,
     purse_silver: null,
     purse_copper: null,
-    sorts_et_miracles: null,
     notes: null,
     ...over,
   };

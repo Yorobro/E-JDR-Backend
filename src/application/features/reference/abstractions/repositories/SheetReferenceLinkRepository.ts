@@ -51,3 +51,7 @@ export type SheetArmureLinkRepository = SheetReferenceLinkRepository;
 export type SheetCompetenceLinkRepository = SheetReferenceLinkRepository;
 /** Liaison fiche ↔ **équipements**. */
 export type SheetEquipementLinkRepository = SheetReferenceLinkRepository;
+/** Liaison fiche ↔ **sorts**. */
+export type SheetSortLinkRepository = SheetReferenceLinkRepository;
+/** Liaison fiche ↔ **miracles**. */
+export type SheetMiracleLinkRepository = SheetReferenceLinkRepository;

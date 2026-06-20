@@ -38,7 +38,7 @@ const STATS: readonly StatSpec[] = [
  * l'événement `end` (document finalisé), jamais sur `data` (chunk partiel).
  *
  * Mise en page « fiche de JDR » sur deux pages : identité + caractéristiques/combat + inventaire
- * (page 1), puis sorts & miracles + notes (page 2). Le dessin est délégué à `pdfLayout`.
+ * (page 1), puis sorts + miracles (listes liées) + notes (page 2). Le dessin est délégué à `pdfLayout`.
  */
 export class PdfKitCharacterSheetPdfGenerator implements CharacterSheetPdfGenerator {
   public generate(
@@ -70,7 +70,7 @@ export class PdfKitCharacterSheetPdfGenerator implements CharacterSheetPdfGenera
     this.renderInventory(doc, detail, references, cols, y + BLOCK_GAP);
 
     doc.addPage();
-    this.renderSecondPage(doc, detail, cols);
+    this.renderSecondPage(doc, detail, references, cols);
   }
 
   /** En-tête : nom en titre puis lignes d'identité réparties sur deux colonnes. Retourne le Y final. */
@@ -220,22 +220,21 @@ export class PdfKitCharacterSheetPdfGenerator implements CharacterSheetPdfGenera
     return y;
   }
 
-  /** Page 2 : blocs pleine largeur « Sorts & Miracles » et « Notes » (textes longs). */
+  /** Page 2 : blocs pleine largeur « Sorts », « Miracles » (listes liées) et « Notes » (texte long). */
   private renderSecondPage(
     doc: PDFKit.PDFDocument,
     detail: CharacterSheetDetail,
+    references: CharacterSheetPdfReferences,
     cols: Columns,
   ): void {
     const { x, width } = cols.full;
     let y = doc.page.margins.top;
     y +=
-      drawTitledBox(doc, {
-        x,
-        y,
-        width,
-        title: "SORTS & MIRACLES",
-        body: showOrDash(detail.sortsEtMiracles),
-      }) + BLOCK_GAP;
+      drawTitledBox(doc, { x, y, width, title: "SORTS", body: joinList(references.sorts) }) +
+      BLOCK_GAP;
+    y +=
+      drawTitledBox(doc, { x, y, width, title: "MIRACLES", body: joinList(references.miracles) }) +
+      BLOCK_GAP;
     drawTitledBox(doc, { x, y, width, title: "NOTES", body: showOrDash(detail.notes) });
   }
 

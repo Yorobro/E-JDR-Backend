@@ -368,10 +368,14 @@ export function buildFakeTransactionalRepositories(overrides?: {
   armures: FakeReferenceRepository;
   competences: FakeReferenceRepository;
   equipements: FakeReferenceRepository;
+  sorts: FakeReferenceRepository;
+  miracles: FakeReferenceRepository;
   sheetArmes: FakeSheetReferenceLinkRepository;
   sheetArmures: FakeSheetReferenceLinkRepository;
   sheetCompetences: FakeSheetReferenceLinkRepository;
   sheetEquipements: FakeSheetReferenceLinkRepository;
+  sheetSorts: FakeSheetReferenceLinkRepository;
+  sheetMiracles: FakeSheetReferenceLinkRepository;
   formationCompetences: FakeFormationCompetenceLinkRepository;
   friendGroups: FakeFriendGroupRepository;
   groupMembers: FakeGroupMemberRepository;
@@ -395,6 +399,8 @@ export function buildFakeTransactionalRepositories(overrides?: {
   const armures = new FakeReferenceRepository();
   const competences = new FakeReferenceRepository();
   const equipements = new FakeReferenceRepository();
+  const sorts = new FakeReferenceRepository();
+  const miracles = new FakeReferenceRepository();
 
   return {
     users,
@@ -410,10 +416,14 @@ export function buildFakeTransactionalRepositories(overrides?: {
     armures,
     competences,
     equipements,
+    sorts,
+    miracles,
     sheetArmes: new FakeSheetReferenceLinkRepository(armes),
     sheetArmures: new FakeSheetReferenceLinkRepository(armures),
     sheetCompetences: new FakeSheetReferenceLinkRepository(competences),
     sheetEquipements: new FakeSheetReferenceLinkRepository(equipements),
+    sheetSorts: new FakeSheetReferenceLinkRepository(sorts),
+    sheetMiracles: new FakeSheetReferenceLinkRepository(miracles),
     formationCompetences: new FakeFormationCompetenceLinkRepository(),
     friendGroups: new FakeFriendGroupRepository(),
     groupMembers: new FakeGroupMemberRepository(),

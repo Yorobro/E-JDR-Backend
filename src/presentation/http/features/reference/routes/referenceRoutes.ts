@@ -3,7 +3,7 @@ import { ReferenceController } from "@presentation/http/features/reference/contr
 
 /**
  * Routeur du **catalogue** des éléments de référence, à monter sous `/reference`.
- * `:type` ∈ formations|peoples|armes|armures|competences|equipements (validé par le controller).
+ * `:type` ∈ formations|peoples|armes|armures|competences|equipements|sorts|miracles (validé par le controller).
  *
  * @param controller - Le controller référence générique.
  * @returns Le routeur Express, à monter sous `/reference`.
@@ -19,7 +19,7 @@ export function buildReferenceCatalogueRoutes(controller: ReferenceController): 
 
 /**
  * Routeur des **liaisons N‑N** fiche ↔ éléments, à monter sous `/character-sheets`.
- * `:type` ∈ armes|armures|competences|equipements (validé par le controller).
+ * `:type` ∈ armes|armures|competences|equipements|sorts|miracles (validé par le controller).
  *
  * Cohabite avec les autres routeurs montés sur `/character-sheets` (Express les cumule).
  *

@@ -38,9 +38,8 @@ export interface CharacterSheetDetail {
   readonly protection: number | null;
   // Bourse (pièces brutes)
   readonly purse: PurseView | null;
-  // Zones de texte long restantes (armes/armures/compétences/équipement = listes liées, exposées
-  // à part par le use case de lecture des liaisons fiche↔référence).
-  readonly sortsEtMiracles: string | null;
+  // Zone de texte long restante (armes/armures/compétences/équipement/sorts/miracles = listes liées,
+  // exposées à part par le use case de lecture des liaisons fiche↔référence).
   readonly notes: string | null;
   // Éléments de référence résolus (lecture seule, pour l'affichage). `null` si la fiche ne porte
   // pas l'id correspondant. Le bonus n'est PAS appliqué côté back : la fiche conserve ses stats de

@@ -117,7 +117,6 @@ describe("CharacterSheet (entité)", () => {
       pointsDeMagie: null,
       protection: null,
       purse: null,
-      sortsEtMiracles: null,
       notes: null,
     });
     expect(sheet.details.niveau).toBeNull();

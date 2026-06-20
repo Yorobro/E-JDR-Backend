@@ -38,6 +38,8 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
       sheetArmures: txRepos.sheetArmures,
       sheetCompetences: txRepos.sheetCompetences,
       sheetEquipements: txRepos.sheetEquipements,
+      sheetSorts: txRepos.sheetSorts,
+      sheetMiracles: txRepos.sheetMiracles,
     });
   });
 

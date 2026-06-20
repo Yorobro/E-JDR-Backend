@@ -384,3 +384,79 @@ describe("Reference catalogue use cases — bonus de stat + compétences (format
     expect(formation.competenceIds).toEqual(["c-1"]);
   });
 });
+
+describe("Reference catalogue use cases — description (sorts/miracles)", () => {
+  let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
+  let groupAccessService: GroupAccessServiceImpl;
+
+  beforeEach(() => {
+    txRepos = buildFakeTransactionalRepositories();
+    groupAccessService = new GroupAccessServiceImpl(
+      txRepos.groupMembers,
+      txRepos.campaigns,
+      txRepos.campaignCharacters,
+    );
+    txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "u-1" }));
+  });
+
+  function createSortUseCase(): CreateReferenceItemUseCaseImpl {
+    return new CreateReferenceItemUseCaseImpl({
+      repository: txRepos.sorts,
+      selectRepo: (repos) => repos.sorts,
+      idGenerator: new FakeIdGenerator(),
+      groupAccessService,
+      unitOfWork: new FakeUnitOfWork(txRepos),
+      logger: new FakeLogger(),
+    });
+  }
+
+  it("crée un sort avec description (la vue la renvoie)", async () => {
+    const result = await createSortUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Boule de feu",
+      description: "Inflige 3d6 dégâts de feu dans une zone de 3 mètres.",
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.name).toBe("Boule de feu");
+    expect(result.value.description).toBe("Inflige 3d6 dégâts de feu dans une zone de 3 mètres.");
+  });
+
+  it("crée un sort sans description (description null dans la vue)", async () => {
+    const result = await createSortUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Lumière",
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.description).toBeNull();
+  });
+
+  it("liste les miracles avec leur description (round-trip via la vue)", async () => {
+    const createMiracle = new CreateReferenceItemUseCaseImpl({
+      repository: txRepos.miracles,
+      selectRepo: (repos) => repos.miracles,
+      idGenerator: new FakeIdGenerator(),
+      groupAccessService,
+      unitOfWork: new FakeUnitOfWork(txRepos),
+      logger: new FakeLogger(),
+    });
+    await createMiracle.execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Guérison",
+      description: "Rend 2d6 points de vie à une cible touchée.",
+    });
+
+    const result = await new ListReferenceItemsUseCaseImpl(
+      txRepos.miracles,
+      groupAccessService,
+    ).execute({ groupId: "group-1", actorId: "u-1" });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value).toHaveLength(1);
+    expect(result.value[0]!.description).toBe("Rend 2d6 points de vie à une cible touchée.");
+  });
+});

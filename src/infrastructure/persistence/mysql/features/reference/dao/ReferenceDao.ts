@@ -6,12 +6,14 @@ import {
   competences,
   equipements,
   formations,
+  miracles,
   peoples,
+  sorts,
 } from "@infrastructure/persistence/drizzle/schema";
 
 /**
  * Une **table de référence** Drizzle (toutes ont la même forme : id, group_id, name, created_at).
- * Union des six tables concrètes, pour que le DAO générique accepte n'importe laquelle.
+ * Union des huit tables concrètes, pour que le DAO générique accepte n'importe laquelle.
  */
 export type ReferenceTable =
   | typeof formations
@@ -19,7 +21,9 @@ export type ReferenceTable =
   | typeof armes
   | typeof armures
   | typeof competences
-  | typeof equipements;
+  | typeof equipements
+  | typeof sorts
+  | typeof miracles;
 
 /**
  * Ligne brute commune à toutes les tables de référence.
@@ -37,6 +41,8 @@ export type ReferenceRow = {
   bonus?: number | null;
   /** Présent uniquement pour les armures ; `null`/absent pour les autres tables. */
   points_de_protection?: number | null;
+  /** Présent uniquement pour sorts/miracles ; `null`/absent pour les autres tables. */
+  description?: string | null;
 };
 
 /**
@@ -58,6 +64,7 @@ export class ReferenceDao {
     stat?: string | null;
     bonus?: number | null;
     points_de_protection?: number | null;
+    description?: string | null;
   }): Promise<void> {
     // Cast : les colonnes spécifiques (`stat`/`bonus` pour formations/peoples,
     // `points_de_protection` pour armures) n'existent que sur certaines tables. Sur les autres
@@ -106,6 +113,7 @@ export class ReferenceDao {
     stat?: string | null;
     bonus?: number | null;
     points_de_protection?: number | null;
+    description?: string | null;
   }): Promise<void> {
     // On ne met à jour que les champs mutables (`id`/`group_id`/`created_at` sont immuables).
     // Cast : les colonnes spécifiques (`stat`/`bonus`, `points_de_protection`) n'existent que sur

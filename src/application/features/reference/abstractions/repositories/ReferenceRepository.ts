@@ -38,3 +38,5 @@ export type ArmeRepository = ReferenceRepository;
 export type ArmureRepository = ReferenceRepository;
 export type CompetenceRepository = ReferenceRepository;
 export type EquipementRepository = ReferenceRepository;
+export type SortRepository = ReferenceRepository;
+export type MiracleRepository = ReferenceRepository;

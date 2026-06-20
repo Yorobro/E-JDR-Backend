@@ -20,6 +20,8 @@ interface LinkedItemsInput {
   readonly armures: ReferenceItem[];
   readonly competences: ReferenceItem[];
   readonly equipements: ReferenceItem[];
+  readonly sorts: ReferenceItem[];
+  readonly miracles: ReferenceItem[];
 }
 
 /**
@@ -46,6 +48,8 @@ export function buildCharacterSheetPdfReferences(
     armures: lists.armures.map((item) => item.name.value),
     competences: lists.competences.map((item) => item.name.value),
     equipements: lists.equipements.map((item) => item.name.value),
+    sorts: lists.sorts.map((item) => item.name.value),
+    miracles: lists.miracles.map((item) => item.name.value),
     statBonuses: toStatBonuses(resolved),
   };
 }

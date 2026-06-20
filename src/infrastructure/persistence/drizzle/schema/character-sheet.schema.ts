@@ -50,9 +50,8 @@ export const characterSheets = mysqlTable(
     purse_gold: int("purse_gold"),
     purse_silver: int("purse_silver"),
     purse_copper: int("purse_copper"),
-    // armes / armures / competences / equipement : désormais en N‑N via les tables de jointure
-    // (cf. reference.schema.ts), plus de colonnes texte ici.
-    sorts_et_miracles: text("sorts_et_miracles"),
+    // armes / armures / competences / equipement / sorts / miracles : désormais en N‑N via les
+    // tables de jointure (cf. reference.schema.ts), plus de colonnes texte ici.
     notes: text("notes"),
   },
   (table) => [

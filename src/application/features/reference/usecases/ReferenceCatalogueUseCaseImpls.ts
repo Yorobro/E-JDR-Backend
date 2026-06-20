@@ -83,6 +83,7 @@ function toView(item: ReferenceItem, competenceIds: string[] = []): ReferenceIte
     stat: statBonus?.stat ?? null,
     bonus: statBonus?.amount ?? null,
     protectionPoints: item.protectionPoints,
+    description: item.description,
     competenceIds,
   };
 }
@@ -184,6 +185,8 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
       statBonus,
       // Pertinent uniquement pour les armures ; ignoré (resté null) pour les autres types.
       protectionPoints: command.protectionPoints ?? null,
+      // Pertinent uniquement pour sorts/miracles ; ignorée (restée null) pour les autres types.
+      description: command.description ?? null,
     });
 
     await this.unitOfWork.execute(async (repos) => {
@@ -305,6 +308,7 @@ export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCas
       createdAt: existing.createdAt,
       statBonus,
       protectionPoints: command.protectionPoints ?? null,
+      description: command.description ?? null,
     });
 
     await this.unitOfWork.execute(async (repos) => {

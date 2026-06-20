@@ -30,7 +30,6 @@ function detail(overrides: Partial<CharacterSheetDetail> = {}): CharacterSheetDe
     pointsDeMagie: null,
     protection: null,
     purse: null,
-    sortsEtMiracles: null,
     notes: null,
     formation: null,
     peuple: null,
@@ -48,6 +47,8 @@ function references(
     armures: [],
     competences: [],
     equipements: [],
+    sorts: [],
+    miracles: [],
     statBonuses: [],
     ...overrides,
   };
@@ -76,10 +77,6 @@ function fullDetail(): CharacterSheetDetail {
     pointsDeMagie: 100,
     protection: 14,
     purse: { gold: 1234, silver: 5067, copper: 8912 },
-    sortsEtMiracles:
-      "Soin mineur (1d6 PV), Lumière (rayon 5m, 1h), Bénédiction (+1 au groupe), " +
-      "Détection du mal (10m), Marche silencieuse (1 scène), Bouclier de foi (+2 protection " +
-      "pendant un combat), Purification de l'eau et de la nourriture.",
     notes:
       "Héritier du trône du Gondor, élevé à Fondcombe par Elrond. Porte les fragments de " +
       "Narsil reforgés en Andúril. Allié des Rohirrim et membre de la Communauté de l'Anneau. " +
@@ -87,7 +84,7 @@ function fullDetail(): CharacterSheetDetail {
   });
 }
 
-/** Références entièrement renseignées : noms longs, listes pleines (3 armes, 2 armures, 4 compétences, 4 équipements) et bonus de stat. */
+/** Références entièrement renseignées : noms longs, listes pleines (armes, armures, compétences, équipements, sorts, miracles) et bonus de stat. */
 function fullReferences(): CharacterSheetPdfReferences {
   return references({
     formationName: "Rôdeur du Nord (Dúnedain)",
@@ -109,6 +106,17 @@ function fullReferences(): CharacterSheetPdfReferences {
       "Rations de lembas pour deux semaines",
       "Pierre à feu",
       "Lanterne sourde",
+    ],
+    sorts: [
+      "Lumière (rayon 5m, 1h)",
+      "Détection du mal (10m)",
+      "Marche silencieuse (1 scène)",
+      "Bouclier de foi (+2 protection pendant un combat)",
+    ],
+    miracles: [
+      "Soin mineur (1d6 PV)",
+      "Bénédiction (+1 au groupe)",
+      "Purification de l'eau et de la nourriture",
     ],
     statBonuses: [
       { stat: "vigueur", amount: 1 },

@@ -112,6 +112,7 @@ export function buildTestReferenceItem(
   name = "Élément",
   statBonus?: { stat: string; amount?: number | null },
   protectionPoints?: number | null,
+  description?: string | null,
 ): ReferenceItem {
   return ReferenceItem.create({
     id,
@@ -120,6 +121,7 @@ export function buildTestReferenceItem(
     createdAt: new Date("2026-01-01T00:00:00Z"),
     statBonus: statBonus !== undefined ? StatBonus.create(statBonus) : null,
     protectionPoints,
+    description,
   });
 }
 

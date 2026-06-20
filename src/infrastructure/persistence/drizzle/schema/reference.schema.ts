@@ -7,6 +7,7 @@ import {
   primaryKey,
   unique,
   int,
+  text,
 } from "drizzle-orm/mysql-core";
 import { friendGroups } from "./friend-group.schema";
 import { characterSheets } from "./character-sheet.schema";
@@ -106,6 +107,41 @@ export const equipements = mysqlTable("equipements", referenceColumns, (t) => [
   index("idx_equipements_group_id").on(t.group_id),
 ]);
 
+// sorts et miracles ont leurs propres colonnes inline (avec description en plus, nullable)
+export const sorts = mysqlTable(
+  "sorts",
+  {
+    id: char("id", { length: 36 }).primaryKey(),
+    group_id: char("group_id", { length: 36 })
+      .notNull()
+      .references(() => friendGroups.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 120 }).notNull(),
+    created_at: datetime("created_at", { mode: "date" }).notNull(),
+    description: text("description"),
+  },
+  (t) => [
+    unique("uq_sorts_group_name").on(t.group_id, t.name),
+    index("idx_sorts_group_id").on(t.group_id),
+  ],
+);
+
+export const miracles = mysqlTable(
+  "miracles",
+  {
+    id: char("id", { length: 36 }).primaryKey(),
+    group_id: char("group_id", { length: 36 })
+      .notNull()
+      .references(() => friendGroups.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 120 }).notNull(),
+    created_at: datetime("created_at", { mode: "date" }).notNull(),
+    description: text("description"),
+  },
+  (t) => [
+    unique("uq_miracles_group_name").on(t.group_id, t.name),
+    index("idx_miracles_group_id").on(t.group_id),
+  ],
+);
+
 // Tables de jointure N‑N. Noms volontairement **courts** (`sheet_*`, colonne `sheet_id`) :
 // MySQL limite les identifiants à 64 caractères, et les noms de contraintes FK auto-générés
 // par Drizzle (`<table>_<col>_<reftable>_<refcol>_fk`) dépasseraient cette limite avec des
@@ -175,6 +211,40 @@ export const sheetEquipements = mysqlTable(
   (t) => [
     primaryKey({ columns: [t.sheet_id, t.equipement_id] }),
     index("idx_sheet_equipements_equipement").on(t.equipement_id),
+  ],
+);
+
+export const sheetSorts = mysqlTable(
+  "sheet_sorts",
+  {
+    sheet_id: char("sheet_id", { length: 36 })
+      .notNull()
+      .references(() => characterSheets.id, { onDelete: "cascade" }),
+    sort_id: char("sort_id", { length: 36 })
+      .notNull()
+      .references(() => sorts.id, { onDelete: "cascade" }),
+    created_at: datetime("created_at", { mode: "date" }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sheet_id, t.sort_id] }),
+    index("idx_sheet_sorts_sort").on(t.sort_id),
+  ],
+);
+
+export const sheetMiracles = mysqlTable(
+  "sheet_miracles",
+  {
+    sheet_id: char("sheet_id", { length: 36 })
+      .notNull()
+      .references(() => characterSheets.id, { onDelete: "cascade" }),
+    miracle_id: char("miracle_id", { length: 36 })
+      .notNull()
+      .references(() => miracles.id, { onDelete: "cascade" }),
+    created_at: datetime("created_at", { mode: "date" }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sheet_id, t.miracle_id] }),
+    index("idx_sheet_miracles_miracle").on(t.miracle_id),
   ],
 );
 

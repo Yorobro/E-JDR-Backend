@@ -33,7 +33,6 @@ export interface UpdateCharacterSheetCommand {
   readonly protection?: number | null;
   // Bourse (pièces brutes, validées via le value object `Purse`)
   readonly purse?: { gold?: number | null; silver?: number | null; copper?: number | null } | null;
-  // Zones de texte long restantes (armes/armures/compétences/équipement = liaisons N‑N gérées à part).
-  readonly sortsEtMiracles?: string | null;
+  // Zone de texte long restante (armes/armures/compétences/équipement/sorts/miracles = liaisons N‑N gérées à part).
   readonly notes?: string | null;
 }
