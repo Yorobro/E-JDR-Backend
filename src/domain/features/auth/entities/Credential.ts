@@ -140,6 +140,16 @@ export class Credential {
   }
 
   /**
+   * Retourne une nouvelle instance de `Credential` avec le mot de passe mis à jour.
+   *
+   * @param password - Le nouveau mot de passe haché (value object déjà haché).
+   * @returns Une nouvelle instance de `Credential` portant le nouveau mot de passe.
+   */
+  public withPassword(password: HashedPassword): Credential {
+    return Credential.restore({ ...this.props, password });
+  }
+
+  /**
    * Vérifie qu'un mot de passe en clair correspond au mot de passe haché de cet identifiant.
    *
    * @param plainPassword - Le mot de passe en clair à vérifier.

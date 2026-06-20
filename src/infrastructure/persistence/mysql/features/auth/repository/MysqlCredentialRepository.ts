@@ -62,4 +62,11 @@ export class MysqlCredentialRepository implements CredentialRepository {
   public async updateEmail(credential: Credential): Promise<void> {
     await this.credentialDao.updateEmail(credential.id, credential.email.value);
   }
+
+  /**
+   * @inheritdoc
+   */
+  public async updatePassword(credential: Credential): Promise<void> {
+    await this.credentialDao.updatePassword(credential.id, credential.password.value);
+  }
 }

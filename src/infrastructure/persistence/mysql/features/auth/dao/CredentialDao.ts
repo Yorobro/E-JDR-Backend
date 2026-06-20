@@ -61,4 +61,11 @@ export class CredentialDao {
   public async updateEmail(id: string, email: string): Promise<void> {
     await this.executor.update(credentials).set({ email }).where(eq(credentials.id, id));
   }
+
+  public async updatePassword(id: string, passwordHash: string): Promise<void> {
+    await this.executor
+      .update(credentials)
+      .set({ password_hash: passwordHash })
+      .where(eq(credentials.id, id));
+  }
 }

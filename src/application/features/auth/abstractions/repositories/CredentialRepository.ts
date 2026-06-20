@@ -53,4 +53,11 @@ export interface CredentialRepository {
    * @param credential - L'entité `Credential` portant le nouvel e-mail.
    */
   updateEmail(credential: Credential): Promise<void>;
+
+  /**
+   * Met à jour le mot de passe haché d'un identifiant existant.
+   *
+   * @param credential - L'entité `Credential` portant le nouveau mot de passe haché.
+   */
+  updatePassword(credential: Credential): Promise<void>;
 }
