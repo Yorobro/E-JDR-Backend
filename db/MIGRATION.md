@@ -181,3 +181,10 @@ l'adoption non destructive de la section « Bases existantes — baseline » ci-
       détourné.
 - [ ] Testée localement (`npm run db:migrate` sur une base de dev).
 - [ ] Validée par `npm run test:db` (les tests Testcontainers rejouent depuis zéro).
+
+## Rôles de groupe (pas de migration requise)
+
+La colonne `group_members.role` est un `varchar(10)` **libre** : les valeurs de rôle
+(`ADMIN`, `MJ`, `MEMBER`) sont validées au niveau applicatif par le value object `GroupRole`,
+pas par une contrainte SQL (ce n'est pas un `ENUM`). Ajouter un rôle — comme `MJ` — ne nécessite
+donc **aucune migration** : la chaîne entre directement dans la colonne existante.
