@@ -273,52 +273,57 @@ git commit -m "feat(reference): édition des catalogues réservée aux éditeurs
 
 ---
 
-### Task A4 : Brancher `requireEditor` sur campagnes & sessions
+### Task A4a : Brancher `requireEditor` sur les campagnes (écriture)
+
+**État vérifié :** dans `campaign/usecases/`, 3 appels à `requireMember` :
+`CreateCampaignUseCaseImpl.ts:29` (écriture → passe à `requireEditor`),
+`DeleteCampaignUseCaseImpl.ts:45` (écriture → `requireEditor`),
+`ListMyCampaignsUseCaseImpl.ts:18` (LECTURE → **reste `requireMember`**).
 
 **Files:**
-- Modify: `src/application/features/campaign/usecases/CreateCampaignUseCaseImpl.ts` (et tout use case d'édition campagne utilisant `requireMember` pour une action d'écriture)
-- Modify: les use cases de session (création/édition) si présents sous `src/application/features/session/usecases/`
-- Test: `tests/application/CreateCampaignUseCase.test.ts` (+ tests session correspondants)
+- Modify: `src/application/features/campaign/usecases/CreateCampaignUseCaseImpl.ts:29` (`requireMember` → `requireEditor`)
+- Modify: `src/application/features/campaign/usecases/DeleteCampaignUseCaseImpl.ts:45` (`requireMember` → `requireEditor`)
+- Test: `tests/application/CreateCampaignUseCase.test.ts`, `tests/application/DeleteCampaignUseCase.test.ts`
 
 **Interfaces:**
-- Consumes: `GroupAccessService.requireEditor`.
+- Consumes: `GroupAccessService.requireEditor`. Les use cases campagne ont DÉJÀ `groupAccessService` en dépendance (ils appellent `requireMember`).
 
-> NOTE implémentation : repérer par grep les use cases d'ÉCRITURE (create/update/delete) qui appellent `requireMember`. Seuls ceux-là passent à `requireEditor`. Les use cases de LECTURE (list/get) gardent `requireMember`.
+- [ ] **Step 1 : Tests d'échec** — pour Create et Delete : un MJ réussit, un MEMBER échoue avec `NOT_GROUP_EDITOR`. (Lire chaque fichier de test pour la signature exacte des commandes et le seed de rôle ; importer `GroupRole`.)
+- [ ] **Step 2 : Lancer, vérifier l'échec** — `npx vitest run tests/application/CreateCampaignUseCase.test.ts tests/application/DeleteCampaignUseCase.test.ts`
+- [ ] **Step 3 : Remplacer** `requireMember` → `requireEditor` dans Create + Delete (PAS dans ListMyCampaigns).
+- [ ] **Step 4 : Suite + régressions** — `npx vitest run tests/application` ; ajuster tout test supposant qu'un MEMBER crée/supprime une campagne (passer à ADMIN/MJ).
+- [ ] **Step 5 : Commit** — `git commit -m "feat(campaign): création/suppression de campagne réservée aux éditeurs (ADMIN/MJ)"`
 
-- [ ] **Step 1 : Écrire les tests d'échec** (campagne)
+---
 
-```typescript
-it("refuse un MEMBER de créer une campagne (NOT_GROUP_EDITOR)", async () => {
-  // seed u-mem MEMBER de group-1 (suivre le pattern existant du fichier)
-  const result = await useCase.execute({ /* groupId group-1, createdBy u-mem, name … */ });
-  expect(result.isFailure).toBe(true);
-  expect(result.error.code).toBe("NOT_GROUP_EDITOR");
-});
-it("autorise un MJ à créer une campagne", async () => {
-  const result = await useCase.execute({ /* MJ */ });
-  expect(result.isSuccess).toBe(true);
-});
-```
-(Adapter aux arguments réels de `CreateCampaignCommand` lus dans le fichier de test existant.)
+### Task A4b : Aligner les sessions sur les rôles de groupe
 
-- [ ] **Step 2 : Lancer, vérifier l'échec**
+**Décision (validée) :** les sessions étaient gouvernées par `campaign.isGameMaster(actor)` (gameMasterId) pour TOUTES les opérations, y compris la lecture. Nouveau modèle :
+- **Écriture** (Create/Update/Delete) → `requireEditor(actor, campaign.groupId)`.
+- **Lecture** (Get/List) → `requireMember(actor, campaign.groupId)` (tout membre voit les sessions).
 
-Run: `npx vitest run tests/application/CreateCampaignUseCase.test.ts`
-Expected: FAIL.
+**État vérifié :** les 5 use cases session (`Create/Update/Delete/Get/ListCampaignSessions`) vérifient `campaign.isGameMaster(actor)` et **n'ont PAS** `groupAccessService` en dépendance (constructeurs : `campaignRepository, [sessionRepository], [idGenerator], unitOfWork, logger`). `Campaign` expose `groupId` (getter `Campaign.ts:76`). Le wiring est `buildSessionController.ts` (instancie les 5) + `main.ts` (l'appelle avec `SessionControllerDeps`).
 
-- [ ] **Step 3 : Remplacer `requireMember` → `requireEditor`** dans les use cases d'écriture campagne/session repérés.
+**Files:**
+- Modify: les 5 `src/application/features/session/usecases/*UseCaseImpl.ts` (injecter `groupAccessService`, remplacer le check `isGameMaster`)
+- Modify: `src/presentation/http/features/session/buildSessionController.ts` (ajouter `groupAccessService` aux `SessionControllerDeps` et le passer aux 5 use cases)
+- Modify: `src/main.ts` (passer `groupAccessService` — déjà disponible, retourné par `buildGroupControllers` — dans les deps du session controller)
+- Test: les fichiers de test session sous `tests/application/` (adapter : le MJ-de-campagne n'est plus le critère ; c'est le rôle de groupe)
 
-- [ ] **Step 4 : Lancer la suite ciblée + vérifier les régressions**
+**Interfaces:**
+- Consumes: `GroupAccessService.requireEditor` / `requireMember`, `Campaign.groupId`.
 
-Run: `npx vitest run tests/application` 
-Expected: PASS (corriger les tests existants qui supposaient qu'un MEMBER pouvait créer une campagne/session — les ajuster pour utiliser un ADMIN/MJ).
+> NOTE : conserver `CampaignNotFoundError` quand la campagne est absente. Remplacer uniquement le
+> `if (!campaign.isGameMaster(actor)) return CampaignAccessDeniedError()` par :
+> écriture → `const acc = await this.groupAccessService.requireEditor(actor, campaign.groupId); if (acc.isFailure) return Result.failure(acc.error);`
+> lecture → idem avec `requireMember`. (Le code d'erreur devient NOT_GROUP_EDITOR / NOT_GROUP_MEMBER au
+> lieu de CAMPAIGN_ACCESS_DENIED — ajuster les tests en conséquence.)
 
-- [ ] **Step 5 : Commit**
-
-```bash
-git add -A
-git commit -m "feat(campaign): création/édition campagnes et sessions réservée aux éditeurs"
-```
+- [ ] **Step 1 : Tests d'échec** — pour chaque opération : éditeur (ADMIN/MJ) peut créer/modifier/supprimer ; MEMBER ne peut PAS écrire (NOT_GROUP_EDITOR) mais PEUT lire (get/list réussissent). (Adapter aux fakes/seed existants ; le seed doit créer un membership de rôle voulu dans le groupe de la campagne.)
+- [ ] **Step 2 : Lancer, vérifier l'échec** — `npx vitest run tests/application` (cibler les fichiers session)
+- [ ] **Step 3 : Implémenter** — injecter `groupAccessService` dans les 5 use cases + wiring `buildSessionController` + `main.ts` ; remplacer les checks.
+- [ ] **Step 4 : Suite complète + build + lint** — `npx vitest run tests/application && npm run build && npm run lint`. Ajuster tous les tests session (et tout test d'intégration session) qui supposaient le critère gameMaster.
+- [ ] **Step 5 : Commit** — `git commit -m "feat(session): autorisation des sessions par rôle de groupe (édition éditeurs, lecture membres)"`
 
 ---
 
