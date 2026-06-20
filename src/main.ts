@@ -38,6 +38,8 @@ import { LoginUserUseCaseImpl } from "@application/features/auth/usecases/LoginU
 import { LogoutUserUseCaseImpl } from "@application/features/auth/usecases/LogoutUserUseCaseImpl";
 import { RefreshAccessTokenUseCaseImpl } from "@application/features/auth/usecases/RefreshAccessTokenUseCaseImpl";
 import { GetCurrentUserUseCaseImpl } from "@application/features/auth/usecases/GetCurrentUserUseCaseImpl";
+import { ChangeEmailUseCaseImpl } from "@application/features/auth/usecases/ChangeEmailUseCaseImpl";
+import { ChangePasswordUseCaseImpl } from "@application/features/auth/usecases/ChangePasswordUseCaseImpl";
 
 // Presentation — feature auth
 import { AuthController } from "@presentation/http/features/auth/controllers/AuthController";
@@ -373,6 +375,12 @@ function buildControllers(
   const authController = buildAuthController(services, config, logger);
   const userController = new UserController(
     new GetCurrentUserUseCaseImpl(services.userRepository, services.credentialRepository),
+    new ChangeEmailUseCaseImpl(services.credentialRepository, services.unitOfWork),
+    new ChangePasswordUseCaseImpl(
+      services.credentialRepository,
+      services.passwordHasher,
+      services.unitOfWork,
+    ),
   );
 
   const {
