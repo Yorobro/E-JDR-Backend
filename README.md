@@ -176,3 +176,27 @@ npm run dev
 > revenir en arrière, on écrit une nouvelle migration correctrice (via `npm run db:custom`).
 > Les conventions complètes (workflow auto/custom, baseline) sont décrites dans
 > [`db/MIGRATION.md`](db/MIGRATION.md).
+
+## Sécurité des dépendances
+
+`npm audit` remonte des vulnérabilités **toutes cantonnées à l'outillage de dev/CI** (tests,
+release). `npm audit --omit=dev` ne laisse que quelques advisories **moderate** héritées
+d'`esbuild ≤ 0.24.2` (`GHSA-67mh-4wv8-2f99`, SSRF du *dev-server*), tirées transitivement par
+`drizzle-kit` :
+
+```
+drizzle-kit → @esbuild-kit/esm-loader → @esbuild-kit/core-utils → esbuild
+```
+
+**Pourquoi c'est accepté (non exploitable).** `drizzle-kit` est volontairement en `dependencies`
+(et non `devDependencies`) parce que le script `serve` applique les migrations au démarrage du
+conteneur (`npm run db:migrate` → `drizzle-kit migrate`). `esbuild` est donc bien présent dans
+l'image runtime, **mais la CVE ne vise que le *dev-server* d'esbuild** (commande `esbuild serve`),
+jamais lancé ici : `drizzle-kit migrate` ne fait que des migrations. Aucun chemin d'exécution
+n'atteint le code vulnérable. Le correctif proposé par `npm audit fix --force` est un **downgrade
+cassant** de `drizzle-kit` (0.31 → 0.18) — **à ne pas appliquer**.
+
+**Point de surveillance.** `@esbuild-kit/*` est déprécié (fusionné dans `tsx`). Mettre à jour
+`drizzle-kit` dès qu'une version abandonnant `@esbuild-kit` est publiée. Alternative plus propre à
+terme : sortir la migration de l'image runtime (job CI/déploiement dédié) pour repasser
+`drizzle-kit` en `devDependencies` et purger `esbuild` du runtime.
