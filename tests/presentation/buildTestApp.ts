@@ -146,7 +146,12 @@ export function buildTestApp(): {
   const characterSheetController = new CharacterSheetController(
     new CreateCharacterSheetUseCaseImpl(idGenerator, groupAccessService, unitOfWork, logger),
     new ListMyCharacterSheetsUseCaseImpl(repos.characterSheets, groupAccessService),
-    new DeleteCharacterSheetUseCaseImpl(repos.characterSheets, unitOfWork, logger),
+    new DeleteCharacterSheetUseCaseImpl(
+      repos.characterSheets,
+      unitOfWork,
+      logger,
+      groupAccessService,
+    ),
     new GetCharacterSheetUseCaseImpl({
       characterSheetRepository: repos.characterSheets,
       formationRepository: repos.formations,
