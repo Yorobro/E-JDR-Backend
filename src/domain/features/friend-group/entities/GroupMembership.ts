@@ -42,4 +42,8 @@ export class GroupMembership {
   public isAdmin(): boolean {
     return this.props.role.isAdmin();
   }
+
+  public isEditor(): boolean {
+    return this.props.role.isEditor();
+  }
 }

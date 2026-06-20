@@ -42,7 +42,7 @@ export class DeleteCampaignUseCaseImpl implements DeleteCampaignUseCase {
     }
 
     // Le MJ doit toujours appartenir au groupe de la campagne (D2/D5 : cohérence avec la création).
-    const memberAccess = await this.groupAccessService.requireMember(
+    const memberAccess = await this.groupAccessService.requireEditor(
       command.gameMasterId,
       campaign.groupId,
     );

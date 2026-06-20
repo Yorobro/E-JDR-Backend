@@ -4,12 +4,12 @@ import { GroupAccessServiceImpl } from "@application/features/friend-group/servi
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
+import { GroupRole } from "@domain/features/friend-group/value-objects/GroupRole";
 import {
   FakeLogger,
   FakeUnitOfWork,
   buildFakeTransactionalRepositories,
   buildTestCharacterSheet,
-  buildTestCampaign,
   buildTestReferenceItem,
   buildTestMembership,
 } from "./fakes";
@@ -161,15 +161,17 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
     expect(result.error).toBeInstanceOf(CharacterSheetNotFoundError);
   });
 
-  it("autorise le MJ d'une campagne où la fiche est liée à modifier la fiche", async () => {
-    // La fiche appartient à owner-1 ; elle est liée à une campagne dont mj-7 est le MJ.
-    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
-    txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-7", "Donjon", "group-1"));
-    await txRepos.campaignCharacters.link("camp-1", "s-1");
+  it("autorise un ADMIN du groupe à modifier la fiche (non-propriétaire)", async () => {
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", {}, "group-1"),
+    );
+    txRepos.groupMembers.seed(
+      buildTestMembership({ groupId: "group-1", userId: "admin-1", role: GroupRole.ADMIN }),
+    );
 
     const result = await useCase.execute({
       characterSheetId: "s-1",
-      ownerId: "mj-7",
+      ownerId: "admin-1",
       name: "Strider",
     });
 
@@ -177,8 +179,31 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
     expect(result.value.name).toBe("Strider");
   });
 
-  it("échoue avec CharacterSheetAccessDeniedError si le demandeur n'est ni propriétaire ni MJ d'une campagne liée", async () => {
-    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1"));
+  it("autorise un MJ du groupe à modifier la fiche (non-propriétaire)", async () => {
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", {}, "group-1"),
+    );
+    txRepos.groupMembers.seed(
+      buildTestMembership({ groupId: "group-1", userId: "mj-1", role: GroupRole.MJ }),
+    );
+
+    const result = await useCase.execute({
+      characterSheetId: "s-1",
+      ownerId: "mj-1",
+      name: "Strider",
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.name).toBe("Strider");
+  });
+
+  it("échoue avec CharacterSheetAccessDeniedError si le demandeur est MEMBER non-propriétaire", async () => {
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", {}, "group-1"),
+    );
+    txRepos.groupMembers.seed(
+      buildTestMembership({ groupId: "group-1", userId: "autre", role: GroupRole.MEMBER }),
+    );
 
     const result = await useCase.execute({
       characterSheetId: "s-1",

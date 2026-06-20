@@ -14,6 +14,8 @@ export function buildUserRoutes(controller: UserController): Router {
   const router = Router();
 
   router.get("/", controller.me);
+  router.patch("/email", controller.patchEmail);
+  router.patch("/password", controller.patchPassword);
 
   return router;
 }

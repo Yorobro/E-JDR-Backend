@@ -9,6 +9,8 @@ import { LoginUserUseCaseImpl } from "@application/features/auth/usecases/LoginU
 import { LogoutUserUseCaseImpl } from "@application/features/auth/usecases/LogoutUserUseCaseImpl";
 import { RefreshAccessTokenUseCaseImpl } from "@application/features/auth/usecases/RefreshAccessTokenUseCaseImpl";
 import { GetCurrentUserUseCaseImpl } from "@application/features/auth/usecases/GetCurrentUserUseCaseImpl";
+import { ChangeEmailUseCaseImpl } from "@application/features/auth/usecases/ChangeEmailUseCaseImpl";
+import { ChangePasswordUseCaseImpl } from "@application/features/auth/usecases/ChangePasswordUseCaseImpl";
 import { AuthController } from "@presentation/http/features/auth/controllers/AuthController";
 import { UserController } from "@presentation/http/features/auth/controllers/UserController";
 import { buildAuthMiddleware } from "@presentation/http/shared/middlewares/authMiddleware";
@@ -96,6 +98,8 @@ export function buildTestApp(): {
 
   const userController = new UserController(
     new GetCurrentUserUseCaseImpl(userRepository, credentialRepository),
+    new ChangeEmailUseCaseImpl(credentialRepository, unitOfWork),
+    new ChangePasswordUseCaseImpl(credentialRepository, passwordHasher, unitOfWork),
   );
 
   // Group controllers sont construits en premier pour exposer groupAccessService.
@@ -142,7 +146,12 @@ export function buildTestApp(): {
   const characterSheetController = new CharacterSheetController(
     new CreateCharacterSheetUseCaseImpl(idGenerator, groupAccessService, unitOfWork, logger),
     new ListMyCharacterSheetsUseCaseImpl(repos.characterSheets, groupAccessService),
-    new DeleteCharacterSheetUseCaseImpl(repos.characterSheets, unitOfWork, logger),
+    new DeleteCharacterSheetUseCaseImpl(
+      repos.characterSheets,
+      unitOfWork,
+      logger,
+      groupAccessService,
+    ),
     new GetCharacterSheetUseCaseImpl({
       characterSheetRepository: repos.characterSheets,
       formationRepository: repos.formations,
@@ -189,6 +198,7 @@ export function buildTestApp(): {
     idGenerator,
     unitOfWork,
     logger,
+    groupAccessService,
   });
 
   const referenceController = buildReferenceController({

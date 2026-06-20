@@ -97,7 +97,7 @@ describe("Session routes (intégration HTTP)", () => {
     expect(res.body.code).toBe("INVALID_SESSION_DATE");
   });
 
-  it("POST session sur une campagne d'un autre MJ renvoie 403 (CAMPAIGN_ACCESS_DENIED)", async () => {
+  it("POST session sur une campagne d'un autre groupe renvoie 403 (NOT_GROUP_MEMBER)", async () => {
     const mj = await authenticate("mj@test.com");
     const campaignId = await createCampaign(mj);
 
@@ -107,7 +107,7 @@ describe("Session routes (intégration HTTP)", () => {
       .send({ title: "Intrus", date: "2026-06-20" });
 
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe("CAMPAIGN_ACCESS_DENIED");
+    expect(res.body.code).toBe("NOT_GROUP_MEMBER");
   });
 
   it("GET/PUT/DELETE /sessions/:id : cycle de vie complet pour le MJ", async () => {
@@ -143,7 +143,7 @@ describe("Session routes (intégration HTTP)", () => {
     expect(res.body.code).toBe("SESSION_NOT_FOUND");
   });
 
-  it("GET /sessions/:id d'une campagne d'un autre MJ renvoie 403", async () => {
+  it("GET /sessions/:id d'une campagne d'un autre groupe renvoie 403 (NOT_GROUP_MEMBER)", async () => {
     const mj = await authenticate("mj@test.com");
     const campaignId = await createCampaign(mj);
     const created = await mj
@@ -155,7 +155,7 @@ describe("Session routes (intégration HTTP)", () => {
     const res = await autre.get(`/sessions/${sessionId}`);
 
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe("CAMPAIGN_ACCESS_DENIED");
+    expect(res.body.code).toBe("NOT_GROUP_MEMBER");
   });
 
   it("POST session sans cookie renvoie 401 (UNAUTHENTICATED)", async () => {

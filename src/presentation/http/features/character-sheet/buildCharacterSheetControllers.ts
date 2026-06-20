@@ -62,6 +62,7 @@ export function buildCharacterSheetController(
       deps.characterSheetRepository,
       deps.unitOfWork,
       deps.logger,
+      deps.groupAccessService,
     ),
     new GetCharacterSheetUseCaseImpl({
       characterSheetRepository: deps.characterSheetRepository,

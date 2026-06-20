@@ -142,7 +142,7 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
   public async execute(
     command: CreateReferenceItemCommand,
   ): Promise<Result<ReferenceItemView, AppError>> {
-    const accessResult = await this.groupAccessService.requireAdmin(
+    const accessResult = await this.groupAccessService.requireEditor(
       command.actorId,
       command.groupId,
     );
@@ -260,7 +260,7 @@ export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCas
   public async execute(
     command: UpdateReferenceItemCommand,
   ): Promise<Result<ReferenceItemView, AppError>> {
-    const accessResult = await this.groupAccessService.requireAdmin(
+    const accessResult = await this.groupAccessService.requireEditor(
       command.actorId,
       command.groupId,
     );
@@ -399,7 +399,7 @@ export class DeleteReferenceItemUseCaseImpl implements DeleteReferenceItemUseCas
       return Result.failure(new ReferenceItemNotFoundError());
     }
 
-    const accessResult = await this.groupAccessService.requireAdmin(command.actorId, item.groupId);
+    const accessResult = await this.groupAccessService.requireEditor(command.actorId, item.groupId);
     if (accessResult.isFailure) return Result.failure(new ReferenceItemNotFoundError());
 
     await this.unitOfWork.execute(async (repos) => {
