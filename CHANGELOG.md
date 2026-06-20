@@ -1,3 +1,10 @@
+## <small>1.11.1 (2026-06-20)</small>
+
+* Merge pull request #14 from Yorobro/fix/audit-changerole-tests ([2e0990f](https://github.com/Yorobro/E-JDR-Backend/commit/2e0990f)), closes [#14](https://github.com/Yorobro/E-JDR-Backend/issues/14)
+* docs(deps): documenter la dette esbuild/drizzle-kit et son innocuité ([dd14d57](https://github.com/Yorobro/E-JDR-Backend/commit/dd14d57))
+* fix(http): renvoyer 400 sur entrées invalides + valider protectionPoints ([cb05c76](https://github.com/Yorobro/E-JDR-Backend/commit/cb05c76))
+* test(friend-group): couvrir ChangeMemberRoleUseCase (gestion des privilèges) ([1a22406](https://github.com/Yorobro/E-JDR-Backend/commit/1a22406))
+
 ## 1.11.0 (2026-06-20)
 
 * Merge pull request #13 from Yorobro/feat/sorts-miracles ([2808ab5](https://github.com/Yorobro/E-JDR-Backend/commit/2808ab5)), closes [#13](https://github.com/Yorobro/E-JDR-Backend/issues/13)
