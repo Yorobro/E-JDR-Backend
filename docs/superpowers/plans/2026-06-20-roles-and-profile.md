@@ -827,7 +827,32 @@ git commit -m "refactor(nav): déplacer la déconnexion du header vers la page p
 
 ---
 
-### Task B6 : Lecture seule selon `canEdit` (catalogues, campagnes, fiches) + choix de rôle MJ
+### Task B6 — découpée en B6a / B6b / B6c (voir ci-dessous)
+
+> Cartographie : ActiveGroupState.canEdit attend déjà ADMIN/MJ. Écrans à gater :
+> Reference list (FAB + card edit/delete), Campaign list (FAB + card delete), Campaign detail
+> (boutons rattacher/ajouter session — n'injecte PAS encore ActiveGroupState), MyCharacterSheets
+> (FAB à GARDER), CharacterSheetDetail (bouton Modifier = canEdit OU propriétaire — nécessite l'ID
+> user courant, pas encore dans le VM detail), GroupDetail/MemberCard (toggle ADMIN↔MEMBER → choix
+> 3 états ADMIN/MJ/MEMBER). Découpe en 3 sous-tâches indépendantes.
+
+#### Task B6a : lecture seule catalogues + campagnes (liste & détail)
+- ReferenceListPage : `canEdit` via `koinInject<ActiveGroupState>().canEdit.collectAsStateWithLifecycle()` ; FAB création masqué si `!canEdit` ; les `onEdit`/`onDelete` des ReferenceCard ne sont rendus que si canEdit (rendre les callbacks nullables dans `ReferenceCard` comme `CharacterSheetCard` le fait déjà : `if (onDelete != null)`).
+- CampaignListPage : FAB masqué si `!canEdit` ; bouton delete de `CampaignCard` rendu seulement si canEdit (callback nullable).
+- CampaignDetailPage : injecter `ActiveGroupState`, observer `canEdit`, masquer les boutons « Rattacher une fiche » et « Ajouter une session » si `!canEdit`.
+- Compile + detekt + commit. Vérif visuelle différée.
+
+#### Task B6b : fiches — FAB conservé + détail (canEdit OU propriétaire)
+- MyCharacterSheetsPage : le FAB de création RESTE visible (un MEMBER crée ses fiches). Le bouton delete de `CharacterSheetCard` : visible si `canEdit OU ownerId == currentUserId` (la carte a déjà un `onDelete` nullable). Il faut l'id du user courant — voir ci-dessous.
+- CharacterSheetDetailPage : bouton « Modifier » visible si `canEdit OU sheet.ownerId == currentUserId`. Le VM detail doit exposer l'id du user courant : injecter `GetCurrentUserUseCase` dans `CharacterSheetDetailViewModel` (ou exposer un `canEditSheet: StateFlow<Boolean>` calculé). Le plus propre : ajouter au VM un `currentUserId` chargé en init via `GetCurrentUserUseCase`, et exposer `isOwner = sheet.ownerId == currentUserId` ; la page combine `canEdit || isOwner`.
+- Test : si on ajoute de la logique au `CharacterSheetDetailViewModel` (currentUserId/isOwner), couvrir par un test VM (le VM est compté par Kover). Sinon (logique seulement dans le composable), pas de test.
+- Compile + detekt (+ test VM si logique VM) + commit.
+
+#### Task B6c : UI rôle MJ dans la gestion des membres
+- `MemberCard` (FriendGroupComponents.kt) : remplacer le toggle ADMIN↔MEMBER par un choix à 3 rôles (ADMIN / MJ / MEMBER). Option simple : un petit menu/`DropdownMenu` ou un dialog listant les 3 rôles, appelant `onChangeRole(role)` avec le rôle choisi (≠ rôle courant). Garder la protection « dernier admin » existante (ne pas permettre de rétrograder le dernier admin — déjà géré via `canManageRole`/`wouldDemoteLastAdmin` côté page).
+- Compile + detekt + commit. Vérif visuelle différée.
+
+### Task B6 (référence d'origine, remplacée par B6a/b/c)
 
 **Files:**
 - Modify: `ReferenceListPage.kt` (FAB création + onEdit/onDelete des cartes conditionnés par `canEdit`)
