@@ -6,7 +6,7 @@ import {
 import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
 import { ReferenceNameAlreadyUsedError } from "@application/features/reference/errors/ReferenceNameAlreadyUsedError";
 import { ReferenceItemNotFoundError } from "@application/features/reference/errors/ReferenceItemNotFoundError";
-import { NotGroupAdminError } from "@application/features/friend-group/errors/NotGroupAdminError";
+import { NotGroupEditorError } from "@application/features/friend-group/errors/NotGroupEditorError";
 import { GroupRole } from "@domain/features/friend-group/value-objects/GroupRole";
 import {
   FakeLogger,
@@ -121,7 +121,7 @@ describe("UpdateReferenceItemUseCase — types simples (testé sur `armes`)", ()
     expect(stored!.protectionPoints).toBe(5);
   });
 
-  it("échoue (NOT_GROUP_ADMIN) si l'acteur est membre mais pas admin du groupe", async () => {
+  it("échoue (NOT_GROUP_EDITOR) si l'acteur est membre mais pas éditeur du groupe", async () => {
     txRepos.groupMembers.seed(
       buildTestMembership({ groupId: "group-1", userId: "membre", role: GroupRole.MEMBER }),
     );
@@ -135,7 +135,7 @@ describe("UpdateReferenceItemUseCase — types simples (testé sur `armes`)", ()
     });
 
     expect(result.isFailure).toBe(true);
-    expect(result.error).toBeInstanceOf(NotGroupAdminError);
+    expect(result.error).toBeInstanceOf(NotGroupEditorError);
   });
 
   it("échoue (404) si l'élément est inconnu ou hors du groupe", async () => {

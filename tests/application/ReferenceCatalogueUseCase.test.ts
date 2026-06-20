@@ -16,6 +16,7 @@ import {
   buildTestReferenceItem,
   buildTestMembership,
 } from "./fakes";
+import { GroupRole } from "@domain/features/friend-group/value-objects/GroupRole";
 
 describe("Reference catalogue use cases (génériques, testés sur le type `armes`)", () => {
   let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
@@ -224,6 +225,31 @@ describe("Reference catalogue use cases (génériques, testés sur le type `arme
     expect(ghost.error).toBeInstanceOf(ReferenceItemNotFoundError);
     expect(others.error).toBeInstanceOf(ReferenceItemNotFoundError);
     expect(await txRepos.armes.findById("a-1")).not.toBeNull();
+  });
+
+  it("autorise un MJ à créer un élément", async () => {
+    txRepos.groupMembers.seed(
+      buildTestMembership({ groupId: "group-1", userId: "u-mj", role: GroupRole.MJ }),
+    );
+    const result = await createUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-mj",
+      name: "Épée MJ",
+    });
+    expect(result.isSuccess).toBe(true);
+  });
+
+  it("refuse un MEMBER de créer un élément (NOT_GROUP_EDITOR)", async () => {
+    txRepos.groupMembers.seed(
+      buildTestMembership({ groupId: "group-1", userId: "u-mem", role: GroupRole.MEMBER }),
+    );
+    const result = await createUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-mem",
+      name: "Refusé",
+    });
+    expect(result.isFailure).toBe(true);
+    expect(result.error.code).toBe("NOT_GROUP_EDITOR");
   });
 });
 
