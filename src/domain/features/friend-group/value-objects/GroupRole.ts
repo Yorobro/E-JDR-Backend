@@ -1,3 +1,5 @@
+import { InvalidGroupRoleError } from "@domain/features/friend-group/errors/InvalidGroupRoleError";
+
 export class GroupRole {
   public static readonly ADMIN = new GroupRole("ADMIN");
   public static readonly MEMBER = new GroupRole("MEMBER");
@@ -11,7 +13,7 @@ export class GroupRole {
       case "MEMBER":
         return GroupRole.MEMBER;
       default:
-        throw new Error(`Rôle de groupe inconnu : ${raw}`);
+        throw new InvalidGroupRoleError(raw);
     }
   }
 

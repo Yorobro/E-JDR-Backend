@@ -7,6 +7,7 @@ import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
+import { tryCreateValueObject } from "@application/shared/tryCreateValueObject";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
@@ -177,17 +178,21 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
       }
     }
 
-    const item = ReferenceItem.create({
-      id: this.idGenerator.generate(),
-      groupId: command.groupId,
-      name,
-      createdAt: new Date(),
-      statBonus,
-      // Pertinent uniquement pour les armures ; ignoré (resté null) pour les autres types.
-      protectionPoints: command.protectionPoints ?? null,
-      // Pertinent uniquement pour sorts/miracles ; ignorée (restée null) pour les autres types.
-      description: command.description ?? null,
-    });
+    const itemResult = tryCreateValueObject(() =>
+      ReferenceItem.create({
+        id: this.idGenerator.generate(),
+        groupId: command.groupId,
+        name,
+        createdAt: new Date(),
+        statBonus,
+        // Pertinent uniquement pour les armures ; ignoré (resté null) pour les autres types.
+        protectionPoints: command.protectionPoints ?? null,
+        // Pertinent uniquement pour sorts/miracles ; ignorée (restée null) pour les autres types.
+        description: command.description ?? null,
+      }),
+    );
+    if (itemResult.isFailure) return Result.failure(itemResult.error);
+    const item = itemResult.value;
 
     await this.unitOfWork.execute(async (repos) => {
       await this.selectRepo(repos).save(item);
@@ -301,15 +306,21 @@ export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCas
     }
 
     // Reconstruit l'élément avec son identité d'origine (id/groupId/createdAt) et le nouvel état.
-    const updated = ReferenceItem.restore({
-      id: existing.id,
-      groupId: existing.groupId,
-      name,
-      createdAt: existing.createdAt,
-      statBonus,
-      protectionPoints: command.protectionPoints ?? null,
-      description: command.description ?? null,
-    });
+    // On passe par `create` (et non `restore`) pour que le NOUVEL état utilisateur soit normalisé
+    // et validé (ex : points de protection non finis rejetés en INVALID_PROTECTION_POINTS → 400).
+    const updatedResult = tryCreateValueObject(() =>
+      ReferenceItem.create({
+        id: existing.id,
+        groupId: existing.groupId,
+        name,
+        createdAt: existing.createdAt,
+        statBonus,
+        protectionPoints: command.protectionPoints ?? null,
+        description: command.description ?? null,
+      }),
+    );
+    if (updatedResult.isFailure) return Result.failure(updatedResult.error);
+    const updated = updatedResult.value;
 
     await this.unitOfWork.execute(async (repos) => {
       await this.selectRepo(repos).update(updated);

@@ -15,6 +15,9 @@ import {
 } from "@application/features/reference/abstractions/usecases/SheetReferenceLinkUseCases";
 import { ReferenceHttpMapper } from "@presentation/http/features/reference/mappers/ReferenceHttpMapper";
 
+/** Sentinel renvoyé par `parseProtectionPoints` quand l'entrée n'est pas un nombre exploitable. */
+const INVALID = Symbol("INVALID_PROTECTION_POINTS");
+
 /** Use cases du catalogue d'un type donné (formation, peuple, arme, …). */
 export interface CatalogueUseCases {
   readonly create: CreateReferenceItemUseCase;
@@ -53,13 +56,18 @@ export class ReferenceController {
         description?: unknown;
         competenceIds?: unknown;
       };
+      const protectionPoints = ReferenceController.parseProtectionPoints(body.protectionPoints);
+      if (protectionPoints === INVALID) {
+        ReferenceController.respondInvalidProtectionPoints(res);
+        return;
+      }
       const result = await uc.create.execute({
         groupId: body.groupId as string,
         actorId: req.user!.userId,
         name: body.name as string,
         stat: (body.stat as string | null | undefined) ?? null,
         bonus: (body.bonus as number | null | undefined) ?? null,
-        protectionPoints: (body.protectionPoints as number | null | undefined) ?? null,
+        protectionPoints,
         description: (body.description as string | null | undefined) ?? null,
         competenceIds: Array.isArray(body.competenceIds)
           ? (body.competenceIds as string[])
@@ -106,6 +114,11 @@ export class ReferenceController {
         description?: unknown;
         competenceIds?: unknown;
       };
+      const protectionPoints = ReferenceController.parseProtectionPoints(body.protectionPoints);
+      if (protectionPoints === INVALID) {
+        ReferenceController.respondInvalidProtectionPoints(res);
+        return;
+      }
       const result = await uc.update.execute({
         itemId: req.params.id ?? "",
         groupId: body.groupId as string,
@@ -113,7 +126,7 @@ export class ReferenceController {
         name: body.name as string,
         stat: (body.stat as string | null | undefined) ?? null,
         bonus: (body.bonus as number | null | undefined) ?? null,
-        protectionPoints: (body.protectionPoints as number | null | undefined) ?? null,
+        protectionPoints,
         description: (body.description as string | null | undefined) ?? null,
         competenceIds: Array.isArray(body.competenceIds)
           ? (body.competenceIds as string[])
@@ -236,6 +249,28 @@ export class ReferenceController {
     res
       .status(ReferenceHttpMapper.statusFor(error))
       .json({ code: error.code, message: error.message });
+  }
+
+  /**
+   * Valide les points de protection bruts du corps de requête à la frontière HTTP.
+   *
+   * Accepte un nombre fini, ou `null`/`undefined` (non renseigné → `null`). Toute autre valeur
+   * (chaîne non numérique, `NaN`, booléen…) renvoie le sentinel [INVALID] : un cast `as number`
+   * laissait sinon passer un `NaN` jusqu'au stockage. Couvre uniformément création ET mise à jour
+   * (cette dernière reconstruit via `restore`, qui ne re-normalise pas).
+   */
+  private static parseProtectionPoints(value: unknown): number | null | typeof INVALID {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    return typeof value === "number" && Number.isFinite(value) ? value : INVALID;
+  }
+
+  private static respondInvalidProtectionPoints(res: Response): void {
+    res.status(400).json({
+      code: "INVALID_PROTECTION_POINTS",
+      message: "Les points de protection doivent être un nombre entier.",
+    });
   }
 
   private static serialize(view: ReferenceItemView): {

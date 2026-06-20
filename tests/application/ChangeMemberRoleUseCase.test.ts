@@ -126,11 +126,9 @@ describe("ChangeMemberRoleUseCase", () => {
       newRole: "SUPER_ADMIN",
     });
 
-    // NOTE: le use case mappe aujourd'hui un rôle invalide sur NOT_GROUP_MEMBER (et donc 403),
-    // au lieu d'une erreur d'entrée invalide (400). Ce test verrouille le comportement ACTUEL ;
-    // il faudra l'ajuster si le mapping est corrigé en InvalidInputError (cf. finding d'audit).
+    // Un rôle inconnu est une entrée invalide : INVALID_GROUP_ROLE (→ 400), pas NOT_GROUP_MEMBER (403).
     expect(result.isFailure).toBe(true);
-    expect(result.error.code).toBe("NOT_GROUP_MEMBER");
+    expect(result.error.code).toBe("INVALID_GROUP_ROLE");
     // Aucune modification de rôle malgré l'entrée invalide.
     const target = await repos.groupMembers.findByUserIdAndGroupId("user-2", "group-1");
     expect(target?.role.value).toBe("MEMBER");

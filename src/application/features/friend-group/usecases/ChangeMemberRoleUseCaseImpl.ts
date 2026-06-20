@@ -4,6 +4,7 @@ import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
+import { tryCreateValueObject } from "@application/shared/tryCreateValueObject";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { NotGroupMemberError } from "@application/features/friend-group/errors/NotGroupMemberError";
@@ -33,12 +34,10 @@ export class ChangeMemberRoleUseCaseImpl implements ChangeMemberRoleUseCase {
     );
     if (targetMembership === null) return Result.failure(new NotGroupMemberError());
 
-    let newRole: GroupRole;
-    try {
-      newRole = GroupRole.create(params.newRole);
-    } catch {
-      return Result.failure(new NotGroupMemberError());
-    }
+    // Un rôle inconnu est une entrée invalide (→ 400 INVALID_GROUP_ROLE), pas un « non-membre ».
+    const newRoleResult = tryCreateValueObject(() => GroupRole.create(params.newRole));
+    if (newRoleResult.isFailure) return Result.failure(newRoleResult.error);
+    const newRole: GroupRole = newRoleResult.value;
 
     if (targetMembership.isAdmin() && !newRole.isAdmin()) {
       const adminCount = await this.groupMemberRepository.countAdminsByGroupId(params.groupId);

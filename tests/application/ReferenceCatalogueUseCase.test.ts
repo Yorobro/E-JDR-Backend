@@ -91,6 +91,22 @@ describe("Reference catalogue use cases (génériques, testés sur le type `arme
     expect(result.error.code).toBe("INVALID_REFERENCE_NAME");
   });
 
+  it("échoue (INVALID_PROTECTION_POINTS) si les points de protection ne sont pas finis", async () => {
+    // Simule un cast HTTP d'une entrée non numérique (`"abc" as number` → NaN) qui ne doit pas
+    // être stocké silencieusement : le domaine le rejette via tryCreateValueObject.
+    const result = await createUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Armure de mailles",
+      protectionPoints: Number.NaN,
+    });
+
+    expect(result.isFailure).toBe(true);
+    expect(result.error).toBeInstanceOf(InvalidInputError);
+    expect(result.error.code).toBe("INVALID_PROTECTION_POINTS");
+    expect(await txRepos.armes.findByGroupId("group-1")).toHaveLength(0);
+  });
+
   it("liste uniquement les éléments du groupe", async () => {
     txRepos.armes.seed(buildTestReferenceItem("a-1", "group-1", "Épée"));
     txRepos.armes.seed(buildTestReferenceItem("a-2", "group-1", "Hache"));
