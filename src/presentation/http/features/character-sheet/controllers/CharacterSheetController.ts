@@ -28,7 +28,6 @@ interface UpdateCharacterSheetBody {
   pointsDeMagie?: unknown;
   protection?: unknown;
   purse?: unknown;
-  sortsEtMiracles?: unknown;
   notes?: unknown;
 }
 
@@ -212,7 +211,6 @@ export class CharacterSheetController {
       pointsDeMagie: num(body.pointsDeMagie),
       protection: num(body.protection),
       purse: toPurseCommand(body.purse),
-      sortsEtMiracles: text(body.sortsEtMiracles),
       notes: text(body.notes),
     };
   }

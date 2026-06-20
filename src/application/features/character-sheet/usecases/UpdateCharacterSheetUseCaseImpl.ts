@@ -180,7 +180,6 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
       social: nonNegativeInt(command.social),
       vigueur: nonNegativeInt(command.vigueur),
       pointsDeMagie: nonNegativeInt(command.pointsDeMagie),
-      sortsEtMiracles: longText(command.sortsEtMiracles),
       notes: longText(command.notes),
     };
   }

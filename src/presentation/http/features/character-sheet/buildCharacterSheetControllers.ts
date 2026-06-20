@@ -26,11 +26,13 @@ export interface CharacterSheetControllerDeps {
   readonly peupleRepository: ReferenceRepository;
   readonly competenceRepository: ReferenceRepository;
   readonly formationCompetenceLinkRepository: FormationCompetenceLinkRepository;
-  /** Liaisons fiche ↔ éléments (noms des armes/armures/compétences/équipements liés, pour le PDF). */
+  /** Liaisons fiche ↔ éléments (noms des armes/armures/compétences/équipements/sorts/miracles liés, pour le PDF). */
   readonly sheetArmesRepository: SheetReferenceLinkRepository;
   readonly sheetArmuresRepository: SheetReferenceLinkRepository;
   readonly sheetCompetencesRepository: SheetReferenceLinkRepository;
   readonly sheetEquipementsRepository: SheetReferenceLinkRepository;
+  readonly sheetSortsRepository: SheetReferenceLinkRepository;
+  readonly sheetMiraclesRepository: SheetReferenceLinkRepository;
   readonly groupAccessService: GroupAccessService;
   readonly pdfGenerator: CharacterSheetPdfGenerator;
   readonly idGenerator: IdGeneratorService;
@@ -110,6 +112,8 @@ export function buildCharacterSheetExportController(
       sheetArmures: deps.sheetArmuresRepository,
       sheetCompetences: deps.sheetCompetencesRepository,
       sheetEquipements: deps.sheetEquipementsRepository,
+      sheetSorts: deps.sheetSortsRepository,
+      sheetMiracles: deps.sheetMiraclesRepository,
     }),
   );
 }

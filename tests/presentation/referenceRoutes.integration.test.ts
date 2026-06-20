@@ -252,4 +252,86 @@ describe("Reference routes (intégration HTTP)", () => {
     expect(res.status).toBe(401);
     expect(res.body.code).toBe("UNAUTHENTICATED");
   });
+
+  it("POST /reference/sorts avec description : créé (201), renvoyé en liste", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+
+    const created = await agent
+      .post("/reference/sorts")
+      .send({ name: "Boule de feu", groupId, description: "3d6 dégâts de feu en zone." });
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({
+      name: "Boule de feu",
+      description: "3d6 dégâts de feu en zone.",
+    });
+
+    const list = await agent.get(`/reference/sorts?groupId=${groupId}`);
+    expect(list.status).toBe(200);
+    expect(list.body.items[0].description).toBe("3d6 dégâts de feu en zone.");
+  });
+
+  it("POST /reference/miracles sans description : description null", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+
+    const created = await agent.post("/reference/miracles").send({ name: "Guérison", groupId });
+    expect(created.status).toBe(201);
+    expect(created.body.description).toBeNull();
+  });
+
+  it("PUT /reference/sorts/:id modifie la description", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+    const created = await agent
+      .post("/reference/sorts")
+      .send({ name: "Éclair", groupId, description: "Ancienne description." });
+    const id = created.body.id as string;
+
+    const updated = await agent
+      .put(`/reference/sorts/${id}`)
+      .send({ name: "Éclair", groupId, description: "Nouvelle description." });
+    expect(updated.status).toBe(200);
+    expect(updated.body.description).toBe("Nouvelle description.");
+  });
+
+  it("cycle de liaison N-N sorts : créer fiche + sort, lier, lister, délier", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+    const sheet = await agent.post("/character-sheets").send({ name: "Gandalf", groupId });
+    const sheetId = sheet.body.id as string;
+    const sort = await agent.post("/reference/sorts").send({ name: "Lumière", groupId });
+    const sortId = sort.body.id as string;
+
+    const link = await agent.post(`/character-sheets/${sheetId}/sorts`).send({ itemId: sortId });
+    expect(link.status).toBe(201);
+
+    const linked = await agent.get(`/character-sheets/${sheetId}/sorts`);
+    expect(linked.status).toBe(200);
+    expect(linked.body.items).toHaveLength(1);
+    expect(linked.body.items[0].name).toBe("Lumière");
+
+    const unlink = await agent.delete(`/character-sheets/${sheetId}/sorts/${sortId}`);
+    expect(unlink.status).toBe(204);
+
+    const after = await agent.get(`/character-sheets/${sheetId}/sorts`);
+    expect(after.body.items).toHaveLength(0);
+  });
+
+  it("cycle de liaison N-N miracles : lier puis lister", async () => {
+    const agent = await authenticate();
+    const groupId = await createGroup(agent);
+    const sheet = await agent.post("/character-sheets").send({ name: "Prêtresse", groupId });
+    const sheetId = sheet.body.id as string;
+    const miracle = await agent.post("/reference/miracles").send({ name: "Bénédiction", groupId });
+    const miracleId = miracle.body.id as string;
+
+    const link = await agent
+      .post(`/character-sheets/${sheetId}/miracles`)
+      .send({ itemId: miracleId });
+    expect(link.status).toBe(201);
+
+    const linked = await agent.get(`/character-sheets/${sheetId}/miracles`);
+    expect(linked.body.items.map((i: { name: string }) => i.name)).toEqual(["Bénédiction"]);
+  });
 });

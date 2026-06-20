@@ -178,6 +178,8 @@ export function buildTestApp(): {
       sheetArmures: repos.sheetArmures,
       sheetCompetences: repos.sheetCompetences,
       sheetEquipements: repos.sheetEquipements,
+      sheetSorts: repos.sheetSorts,
+      sheetMiracles: repos.sheetMiracles,
     }),
   );
 

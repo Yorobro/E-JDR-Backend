@@ -418,6 +418,8 @@ function buildControllers(
     sheetArmuresRepository: services.referenceRepositories.sheetArmures,
     sheetCompetencesRepository: services.referenceRepositories.sheetCompetences,
     sheetEquipementsRepository: services.referenceRepositories.sheetEquipements,
+    sheetSortsRepository: services.referenceRepositories.sheetSorts,
+    sheetMiraclesRepository: services.referenceRepositories.sheetMiracles,
     groupAccessService,
     pdfGenerator: services.pdfGenerator,
     idGenerator: services.idGenerator,

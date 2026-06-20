@@ -22,6 +22,11 @@ export interface ReferenceItemView {
    */
   readonly protectionPoints: number | null;
   /**
+   * Description libre portée par l'élément (sorts/miracles uniquement), ou `null` si l'élément n'en
+   * porte pas (toujours `null` pour les formations, peuples, armes, armures, compétences, équipements).
+   */
+  readonly description: string | null;
+  /**
    * Identifiants des compétences rattachées (formations uniquement). Tableau vide pour les autres
    * types.
    */

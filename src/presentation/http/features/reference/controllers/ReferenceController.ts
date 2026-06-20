@@ -50,6 +50,7 @@ export class ReferenceController {
         stat?: unknown;
         bonus?: unknown;
         protectionPoints?: unknown;
+        description?: unknown;
         competenceIds?: unknown;
       };
       const result = await uc.create.execute({
@@ -59,6 +60,7 @@ export class ReferenceController {
         stat: (body.stat as string | null | undefined) ?? null,
         bonus: (body.bonus as number | null | undefined) ?? null,
         protectionPoints: (body.protectionPoints as number | null | undefined) ?? null,
+        description: (body.description as string | null | undefined) ?? null,
         competenceIds: Array.isArray(body.competenceIds)
           ? (body.competenceIds as string[])
           : undefined,
@@ -101,6 +103,7 @@ export class ReferenceController {
         stat?: unknown;
         bonus?: unknown;
         protectionPoints?: unknown;
+        description?: unknown;
         competenceIds?: unknown;
       };
       const result = await uc.update.execute({
@@ -111,6 +114,7 @@ export class ReferenceController {
         stat: (body.stat as string | null | undefined) ?? null,
         bonus: (body.bonus as number | null | undefined) ?? null,
         protectionPoints: (body.protectionPoints as number | null | undefined) ?? null,
+        description: (body.description as string | null | undefined) ?? null,
         competenceIds: Array.isArray(body.competenceIds)
           ? (body.competenceIds as string[])
           : undefined,
@@ -241,6 +245,7 @@ export class ReferenceController {
     stat: string | null;
     bonus: number | null;
     protectionPoints: number | null;
+    description: string | null;
     competenceIds: string[];
   } {
     return {
@@ -250,6 +255,7 @@ export class ReferenceController {
       stat: view.stat,
       bonus: view.bonus,
       protectionPoints: view.protectionPoints,
+      description: view.description,
       competenceIds: view.competenceIds,
     };
   }

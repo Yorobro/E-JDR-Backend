@@ -6,11 +6,15 @@ import {
   competences,
   equipements,
   formations,
+  miracles,
   peoples,
   sheetArmes,
   sheetArmures,
   sheetCompetences,
   sheetEquipements,
+  sheetMiracles,
+  sheetSorts,
+  sorts,
 } from "@infrastructure/persistence/drizzle/schema";
 import { ReferenceDao } from "@infrastructure/persistence/mysql/features/reference/dao/ReferenceDao";
 import { SheetReferenceLinkDao } from "@infrastructure/persistence/mysql/features/reference/dao/SheetReferenceLinkDao";
@@ -28,15 +32,19 @@ type ReferenceRepositories = Pick<
   | "armures"
   | "competences"
   | "equipements"
+  | "sorts"
+  | "miracles"
   | "sheetArmes"
   | "sheetArmures"
   | "sheetCompetences"
   | "sheetEquipements"
+  | "sheetSorts"
+  | "sheetMiracles"
   | "formationCompetences"
 >;
 
 /**
- * Construit les 11 repositories de la feature référence (6 catalogues + 4 liaisons fiche↔élément
+ * Construit les 15 repositories de la feature référence (8 catalogues + 6 liaisons fiche↔élément
  * + 1 liaison formation↔compétences) sur un `DrizzleExecutor` donné. Chaque repository est une
  * instance du repository générique paramétrée par la table Drizzle correspondante. Utilisé par le
  * composition root (pool) et le `UnitOfWork` (transaction), comme les autres factories.
@@ -49,6 +57,8 @@ export function createReferenceRepositories(executor: DrizzleExecutor): Referenc
     armures: new MysqlReferenceRepository(new ReferenceDao(executor, armures)),
     competences: new MysqlReferenceRepository(new ReferenceDao(executor, competences)),
     equipements: new MysqlReferenceRepository(new ReferenceDao(executor, equipements)),
+    sorts: new MysqlReferenceRepository(new ReferenceDao(executor, sorts)),
+    miracles: new MysqlReferenceRepository(new ReferenceDao(executor, miracles)),
     sheetArmes: new MysqlSheetReferenceLinkRepository(
       new SheetReferenceLinkDao(executor, {
         joinTable: sheetArmes,
@@ -75,6 +85,20 @@ export function createReferenceRepositories(executor: DrizzleExecutor): Referenc
         joinTable: sheetEquipements,
         itemIdColumn: sheetEquipements.equipement_id,
         referenceTable: equipements,
+      }),
+    ),
+    sheetSorts: new MysqlSheetReferenceLinkRepository(
+      new SheetReferenceLinkDao(executor, {
+        joinTable: sheetSorts,
+        itemIdColumn: sheetSorts.sort_id,
+        referenceTable: sorts,
+      }),
+    ),
+    sheetMiracles: new MysqlSheetReferenceLinkRepository(
+      new SheetReferenceLinkDao(executor, {
+        joinTable: sheetMiracles,
+        itemIdColumn: sheetMiracles.miracle_id,
+        referenceTable: miracles,
       }),
     ),
     formationCompetences: new MysqlFormationCompetenceLinkRepository(

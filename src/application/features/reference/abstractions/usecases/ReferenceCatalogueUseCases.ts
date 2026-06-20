@@ -37,6 +37,11 @@ export interface CreateReferenceItemCommand {
    * autres types.
    */
   readonly protectionPoints?: number | null;
+  /**
+   * Description libre (sorts/miracles uniquement). Texte brut, aucune contrainte. `undefined`/`null`
+   * ⇒ non renseignée. Ignorée pour les autres types.
+   */
+  readonly description?: string | null;
 }
 
 /** Requête de listing des éléments d'un groupe. */
@@ -77,6 +82,8 @@ export interface UpdateReferenceItemCommand {
   readonly competenceIds?: string[];
   /** Nouveaux points de protection (armures uniquement). `undefined`/`null` ⇒ non renseigné. */
   readonly protectionPoints?: number | null;
+  /** Nouvelle description libre (sorts/miracles uniquement). `undefined`/`null` ⇒ non renseignée. */
+  readonly description?: string | null;
 }
 
 /** Commande de suppression d'un élément de référence. */

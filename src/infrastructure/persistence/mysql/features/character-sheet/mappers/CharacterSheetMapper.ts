@@ -45,7 +45,6 @@ export class CharacterSheetMapper {
       pointsDeMagie: row.points_de_magie ?? null,
       protection: row.protection ?? null,
       purse: buildPurse(row),
-      sortsEtMiracles: row.sorts_et_miracles ?? null,
       notes: row.notes ?? null,
     });
   }
@@ -82,7 +81,6 @@ export class CharacterSheetMapper {
       purse_gold: d.purse?.gold ?? null,
       purse_silver: d.purse?.silver ?? null,
       purse_copper: d.purse?.copper ?? null,
-      sorts_et_miracles: d.sortsEtMiracles,
       notes: d.notes,
     };
   }

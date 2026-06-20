@@ -23,6 +23,8 @@ describe("buildCharacterSheetPdfReferences", () => {
         armures: [buildTestReferenceItem("ar-1", "group-1", "Cotte de mailles")],
         competences: [buildTestReferenceItem("c-1", "group-1", "Discrétion")],
         equipements: [buildTestReferenceItem("e-1", "group-1", "Torche")],
+        sorts: [buildTestReferenceItem("s-1", "group-1", "Boule de feu")],
+        miracles: [buildTestReferenceItem("m-1", "group-1", "Guérison")],
       },
     );
 
@@ -32,6 +34,8 @@ describe("buildCharacterSheetPdfReferences", () => {
     expect(refs.armures).toEqual(["Cotte de mailles"]);
     expect(refs.competences).toEqual(["Discrétion"]);
     expect(refs.equipements).toEqual(["Torche"]);
+    expect(refs.sorts).toEqual(["Boule de feu"]);
+    expect(refs.miracles).toEqual(["Guérison"]);
     // Formation et peuple ciblent tous deux « social » → deux entrées distinctes (non fusionnées).
     expect(refs.statBonuses).toEqual([
       { stat: "social", amount: 2 },
@@ -45,7 +49,7 @@ describe("buildCharacterSheetPdfReferences", () => {
         formation: { id: "form-1", name: "Roturier", stat: null, bonus: null, competences: [] },
         peuple: { id: "peuple-1", name: "Nain", stat: "vigueur", bonus: null },
       },
-      { armes: [], armures: [], competences: [], equipements: [] },
+      { armes: [], armures: [], competences: [], equipements: [], sorts: [], miracles: [] },
     );
 
     // Seul le peuple porte une stat ; son bonus null retombe sur le défaut (1).
@@ -55,7 +59,7 @@ describe("buildCharacterSheetPdfReferences", () => {
   it("produit des champs vides/null et statBonuses [] quand tout est absent", () => {
     const refs = buildCharacterSheetPdfReferences(
       { formation: null, peuple: null },
-      { armes: [], armures: [], competences: [], equipements: [] },
+      { armes: [], armures: [], competences: [], equipements: [], sorts: [], miracles: [] },
     );
 
     expect(refs).toEqual({
@@ -65,6 +69,8 @@ describe("buildCharacterSheetPdfReferences", () => {
       armures: [],
       competences: [],
       equipements: [],
+      sorts: [],
+      miracles: [],
       statBonuses: [],
     });
   });

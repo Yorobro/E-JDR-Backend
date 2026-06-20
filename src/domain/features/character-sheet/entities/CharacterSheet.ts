@@ -29,9 +29,8 @@ export interface CharacterSheetDetails {
   readonly protection: number | null;
   // Bourse (value object)
   readonly purse: Purse | null;
-  // Zones de texte long restantes (armes/armures/compétences/équipement sont passés en N‑N,
-  // gérés hors de cette entité via les liaisons fiche↔éléments de référence).
-  readonly sortsEtMiracles: string | null;
+  // Zone de texte long restante (armes/armures/compétences/équipement/sorts/miracles sont passés
+  // en N‑N, gérés hors de cette entité via les liaisons fiche↔éléments de référence).
   readonly notes: string | null;
 }
 
@@ -53,7 +52,6 @@ const EMPTY_DETAILS: CharacterSheetDetails = {
   pointsDeMagie: null,
   protection: null,
   purse: null,
-  sortsEtMiracles: null,
   notes: null,
 };
 

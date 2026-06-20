@@ -26,6 +26,12 @@ export interface ReferenceItemSnapshot {
    * protection d'une fiche), `null` est traité comme la valeur par défaut 0.
    */
   readonly protectionPoints?: number | null;
+  /**
+   * Description libre optionnelle portée par l'élément (sorts et miracles uniquement). Texte brut
+   * sans contrainte métier. `null` ou absent signifie « non renseignée » ; les autres types ne
+   * portent jamais de description.
+   */
+  readonly description?: string | null;
 }
 
 /**
@@ -63,10 +69,12 @@ export class ReferenceItem {
     createdAt: Date;
     statBonus?: StatBonus | null;
     protectionPoints?: number | null;
+    description?: string | null;
   }): ReferenceItem {
     return new ReferenceItem({
       ...params,
       protectionPoints: ReferenceItem.normalizeProtectionPoints(params.protectionPoints),
+      description: params.description ?? null,
     });
   }
 
@@ -131,6 +139,14 @@ export class ReferenceItem {
    */
   public get protectionPoints(): number | null {
     return this.props.protectionPoints ?? null;
+  }
+
+  /**
+   * @returns La description libre portée par l'élément (sorts/miracles), ou `null` s'il n'en porte
+   *          pas (cas des autres types et des sorts/miracles sans description renseignée).
+   */
+  public get description(): string | null {
+    return this.props.description ?? null;
   }
 
   /**

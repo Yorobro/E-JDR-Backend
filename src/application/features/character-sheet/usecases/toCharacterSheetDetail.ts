@@ -35,7 +35,6 @@ export function toCharacterSheetDetail(sheet: CharacterSheet): CharacterSheetDet
       d.purse != null
         ? { gold: d.purse.gold, silver: d.purse.silver, copper: d.purse.copper }
         : null,
-    sortsEtMiracles: d.sortsEtMiracles,
     notes: d.notes,
     // Blocs résolus renseignés par le use case de lecture (repos référence) ; `null` par défaut.
     formation: null,

@@ -6,10 +6,14 @@ import {
   armures,
   competences,
   equipements,
+  miracles,
   sheetArmes,
   sheetArmures,
   sheetCompetences,
   sheetEquipements,
+  sheetMiracles,
+  sheetSorts,
+  sorts,
 } from "@infrastructure/persistence/drizzle/schema";
 import { ReferenceRow } from "@infrastructure/persistence/mysql/features/reference/dao/ReferenceDao";
 
@@ -18,14 +22,18 @@ export type SheetLinkTable =
   | typeof sheetArmes
   | typeof sheetArmures
   | typeof sheetCompetences
-  | typeof sheetEquipements;
+  | typeof sheetEquipements
+  | typeof sheetSorts
+  | typeof sheetMiracles;
 
 /** La table de référence liée (pour résoudre les éléments rattachés via JOIN). */
 export type LinkedReferenceTable =
   | typeof armes
   | typeof armures
   | typeof competences
-  | typeof equipements;
+  | typeof equipements
+  | typeof sorts
+  | typeof miracles;
 
 /**
  * Décrit une liaison N‑N : la table de jointure, sa colonne « item » (`arme_id`, `armure_id`…),
@@ -87,6 +95,9 @@ export class SheetReferenceLinkDao {
     // somme des protections des armures liées soit correcte côté fiche.
     const protectionColumn =
       "points_de_protection" in refTable ? (refTable as typeof armures).points_de_protection : null;
+    // Seules les tables `sorts`/`miracles` portent `description` ; idem, sélection conditionnelle.
+    const descriptionColumn =
+      "description" in refTable ? (refTable as typeof sorts).description : null;
     const rows = await this.executor
       .select({
         id: refTable.id,
@@ -94,6 +105,7 @@ export class SheetReferenceLinkDao {
         name: refTable.name,
         created_at: refTable.created_at,
         ...(protectionColumn !== null ? { points_de_protection: protectionColumn } : {}),
+        ...(descriptionColumn !== null ? { description: descriptionColumn } : {}),
       })
       .from(join)
       .innerJoin(refTable, eq(this.binding.itemIdColumn, refTable.id))

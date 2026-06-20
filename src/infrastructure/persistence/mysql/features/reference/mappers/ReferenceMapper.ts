@@ -19,6 +19,8 @@ export class ReferenceMapper {
       statBonus,
       // points_de_protection n'est peuplé que pour les armures ; absent/null pour les autres.
       protectionPoints: row.points_de_protection ?? null,
+      // description n'est peuplée que pour sorts/miracles ; absente/null pour les autres.
+      description: row.description ?? null,
     });
   }
 
@@ -30,6 +32,7 @@ export class ReferenceMapper {
     stat: string | null;
     bonus: number | null;
     points_de_protection: number | null;
+    description: string | null;
   } {
     const statBonus = item.statBonus;
     return {
@@ -40,6 +43,7 @@ export class ReferenceMapper {
       stat: statBonus?.stat ?? null,
       bonus: statBonus?.amount ?? null,
       points_de_protection: item.protectionPoints,
+      description: item.description,
     };
   }
 }

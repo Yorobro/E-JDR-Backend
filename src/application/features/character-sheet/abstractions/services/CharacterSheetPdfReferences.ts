@@ -21,6 +21,10 @@ export interface CharacterSheetPdfReferences {
   readonly competences: string[];
   /** Noms des équipements liés à la fiche (vide si aucun). */
   readonly equipements: string[];
+  /** Noms des sorts liés à la fiche (vide si aucun). */
+  readonly sorts: string[];
+  /** Noms des miracles liés à la fiche (vide si aucun). */
+  readonly miracles: string[];
   /**
    * Bonus de statistique apportés par la formation et le peuple résolus (un par élément qui porte
    * une stat), pour affichage « +N sur <stat> ». Vide si ni la formation ni le peuple ne portent

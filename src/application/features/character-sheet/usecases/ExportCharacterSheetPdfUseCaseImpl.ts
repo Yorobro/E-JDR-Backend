@@ -46,6 +46,10 @@ export interface ExportCharacterSheetPdfDeps {
   readonly sheetCompetences: SheetReferenceLinkRepository;
   /** Liaison fiche ↔ équipements (noms des équipements liés). */
   readonly sheetEquipements: SheetReferenceLinkRepository;
+  /** Liaison fiche ↔ sorts (noms des sorts liés). */
+  readonly sheetSorts: SheetReferenceLinkRepository;
+  /** Liaison fiche ↔ miracles (noms des miracles liés). */
+  readonly sheetMiracles: SheetReferenceLinkRepository;
 }
 
 /**
@@ -86,6 +90,8 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
   private readonly sheetArmures: SheetReferenceLinkRepository;
   private readonly sheetCompetences: SheetReferenceLinkRepository;
   private readonly sheetEquipements: SheetReferenceLinkRepository;
+  private readonly sheetSorts: SheetReferenceLinkRepository;
+  private readonly sheetMiracles: SheetReferenceLinkRepository;
 
   constructor(deps: ExportCharacterSheetPdfDeps) {
     this.characterSheetRepository = deps.characterSheetRepository;
@@ -102,6 +108,8 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
     this.sheetArmures = deps.sheetArmures;
     this.sheetCompetences = deps.sheetCompetences;
     this.sheetEquipements = deps.sheetEquipements;
+    this.sheetSorts = deps.sheetSorts;
+    this.sheetMiracles = deps.sheetMiracles;
   }
 
   public async execute(
@@ -136,6 +144,8 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
       armures: await this.sheetArmures.findItemsBySheet(query.characterSheetId),
       competences: await this.sheetCompetences.findItemsBySheet(query.characterSheetId),
       equipements: await this.sheetEquipements.findItemsBySheet(query.characterSheetId),
+      sorts: await this.sheetSorts.findItemsBySheet(query.characterSheetId),
+      miracles: await this.sheetMiracles.findItemsBySheet(query.characterSheetId),
     };
     const references = buildCharacterSheetPdfReferences(resolved, lists);
 
