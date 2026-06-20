@@ -1,3 +1,9 @@
+## 1.11.0 (2026-06-20)
+
+* Merge pull request #13 from Yorobro/feat/sorts-miracles ([2808ab5](https://github.com/Yorobro/E-JDR-Backend/commit/2808ab5)), closes [#13](https://github.com/Yorobro/E-JDR-Backend/issues/13)
+* docs(reference): documenter les catalogues sorts/miracles + champ description ([156777d](https://github.com/Yorobro/E-JDR-Backend/commit/156777d))
+* feat(reference): dissocier sorts et miracles en deux catalogues ([fb2804f](https://github.com/Yorobro/E-JDR-Backend/commit/fb2804f))
+
 ## <small>1.10.1 (2026-06-19)</small>
 
 * Merge pull request #12 from Yorobro/develop ([003ffe4](https://github.com/Yorobro/E-JDR-Backend/commit/003ffe4)), closes [#12](https://github.com/Yorobro/E-JDR-Backend/issues/12)
