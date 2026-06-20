@@ -568,43 +568,40 @@ git commit -m "feat(user): endpoints PATCH /me/email et /me/password"
 
 ---
 
-### Task A10 : Migration BDD — élargir la colonne `role` à `MJ`
+### Task A10 : Confirmer que la colonne `role` accepte `MJ` (aucune migration)
 
 **Files:**
-- Inspect: `src/infrastructure/persistence/drizzle/schema/friend-group.schema.ts` (la colonne `role` est `varchar(10)` — `MJ` y entre déjà, longueur OK)
-- Create: migration custom documentaire (le schéma TS ne change pas, donc `db:generate` ne produira rien) — utiliser `npm run db:custom -- --name=allow_mj_role` pour poser un fichier qui **documente** l'extension de domaine de valeurs (la colonne acceptant déjà la chaîne, aucune contrainte SQL à modifier).
-- Modify: `db/MIGRATION.md` si une note est utile.
+- Inspect: `src/infrastructure/persistence/drizzle/schema/friend-group.schema.ts` (confirmer que `role` est `varchar`, pas un `enum`)
+- Modify: `db/MIGRATION.md` OU `README.md` (note brève : le rôle `MJ` est une valeur applicative valide de la colonne libre `group_members.role`, aucune migration nécessaire)
 
 **Interfaces:**
-- Produces: une entrée de migration appliquée (`__drizzle_migrations`) traçant l'ajout du rôle MJ.
+- Produces: rien de schéma (décision pré-flight : pas de migration no-op). Juste une note de doc.
 
-> NOTE importante : comme `role` est un `varchar(10)` libre (pas un `ENUM` MySQL), insérer `"MJ"` ne nécessite AUCUN DDL. Cette tâche existe pour (a) confirmer ce fait en lisant le schéma, (b) poser une migration custom no-op documentée pour la traçabilité. Si en lisant le schéma on découvre que `role` est en réalité un `enum(...)`, alors écrire un `ALTER TABLE group_members MODIFY role ...` ajoutant `MJ` — décision prise à la lecture.
+> NOTE (décision pré-flight) : `role` est un `varchar(10)` **libre** (pas un `ENUM` MySQL), donc
+> insérer `"MJ"` ne nécessite AUCUN DDL et AUCUNE migration. On NE crée PAS de migration no-op
+> (un fichier vide serait du bruit). Cette tâche se limite à : (1) confirmer le type en lisant le
+> schéma, (2) ajouter une courte note de documentation. **Exception** : si la lecture révèle que
+> `role` est en réalité un `enum(...)`, alors créer une vraie migration
+> `ALTER TABLE group_members MODIFY role ...` ajoutant `MJ` — décision prise à la lecture.
 
 - [ ] **Step 1 : Lire le schéma** et confirmer le type de `role`.
 
 Run: `grep -n "role" src/infrastructure/persistence/drizzle/schema/friend-group.schema.ts`
-Expected: `role: varchar("role", { length: 10 })` → aucun DDL requis.
+Expected: `role: varchar("role", { length: 10 })` → aucune migration requise.
 
-- [ ] **Step 2 : Créer la migration custom**
+- [ ] **Step 2 : Ajouter une note de doc** (dans `db/MIGRATION.md`, section appropriée) :
 
-Run: `npm run db:custom -- --name=allow_mj_role`
-Puis écrire dans le `.sql` généré un commentaire SQL explicatif (no-op) :
-```sql
--- Le rôle de groupe `MJ` est désormais une valeur applicative valide de la colonne
--- `group_members.role` (varchar). Aucune modification de schéma nécessaire (colonne libre).
-SELECT 1;
+```markdown
+> **Rôle de groupe `MJ`** — La colonne `group_members.role` est un `varchar` libre : les valeurs
+> de rôle (`ADMIN`, `MJ`, `MEMBER`) sont validées au niveau applicatif (`GroupRole`), pas par une
+> contrainte SQL. Ajouter un rôle ne nécessite donc aucune migration.
 ```
 
-- [ ] **Step 3 : Appliquer sur la BDD locale/dev** (si Docker dispo) ou différer à la validation Vertex dev.
-
-Run: `npm run db:migrate` (si BDD joignable)
-Expected: `migrations applied successfully`.
-
-- [ ] **Step 4 : Commit**
+- [ ] **Step 3 : Commit**
 
 ```bash
-git add -A
-git commit -m "chore(db): tracer l'autorisation du rôle MJ (colonne role libre, no-op DDL)"
+git add db/MIGRATION.md
+git commit -m "docs(db): noter que le rôle MJ ne requiert aucune migration (colonne role libre)"
 ```
 
 ---
