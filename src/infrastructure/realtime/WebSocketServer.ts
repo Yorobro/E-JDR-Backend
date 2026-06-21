@@ -23,7 +23,7 @@ export interface ChannelAuthorizerDeps {
  * Autorise les abonnements selon le type de canal :
  * - `user:{id}` : seulement si `id` est l'utilisateur lui-même ;
  * - `group:{id}` : seulement si l'utilisateur est membre du groupe ;
- * - `sheet:{id}` : refusé par défaut à ce stade (affiné au Lot 3 avec le repo de fiches).
+ * - `sheet:{id}` : autorisé si l'utilisateur est membre du groupe de la fiche.
  */
 export class RealtimeChannelAuthorizer implements ChannelAuthorizer {
   constructor(private readonly deps: ChannelAuthorizerDeps) {}
