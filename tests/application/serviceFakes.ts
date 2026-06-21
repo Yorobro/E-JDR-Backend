@@ -13,6 +13,7 @@ import {
   AuthTokens,
   AuthTokenService,
 } from "@application/features/auth/abstractions/services/AuthTokenService";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 import { CharacterSheetPdfReferences } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfReferences";
 import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
@@ -126,6 +127,30 @@ export class FakeCharacterSheetPdfGenerator implements CharacterSheetPdfGenerato
     this.lastDetail = detail;
     this.lastReferences = references;
     return Buffer.from("%PDF-fake");
+  }
+}
+
+/** Type d'un appel de notification capturé par {@link FakeRealtimeNotifier}. */
+export interface CapturedNotification {
+  readonly kind: "user" | "group" | "sheet";
+  readonly id: string;
+  readonly resource: string;
+}
+
+/** Notifier temps réel factice : capture les appels `notify*` pour les vérifier en test. */
+export class FakeRealtimeNotifier implements RealtimeNotifier {
+  public readonly notifications: CapturedNotification[] = [];
+
+  public notifyUserChanged(userId: string, resource: string): void {
+    this.notifications.push({ kind: "user", id: userId, resource });
+  }
+
+  public notifyGroupChanged(groupId: string, resource: string): void {
+    this.notifications.push({ kind: "group", id: groupId, resource });
+  }
+
+  public notifySheetChanged(sheetId: string, resource: string): void {
+    this.notifications.push({ kind: "sheet", id: sheetId, resource });
   }
 }
 

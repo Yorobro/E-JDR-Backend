@@ -17,8 +17,11 @@ import { TokenHasherServiceImpl } from "@infrastructure/security/TokenHasherServ
 import { IdGeneratorServiceImpl } from "@infrastructure/id/IdGeneratorServiceImpl";
 import { PinoLogger } from "@infrastructure/logging/PinoLogger";
 import { PdfKitCharacterSheetPdfGenerator } from "@infrastructure/pdf/PdfKitCharacterSheetPdfGenerator";
+import { RealtimeHub } from "@infrastructure/realtime/RealtimeHub";
+import { WsRealtimeNotifier } from "@infrastructure/realtime/WsRealtimeNotifier";
 import { buildRealtimeServer } from "@infrastructure/realtime/buildRealtimeServer";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 // Application — ports repositories
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
@@ -346,11 +349,26 @@ async function bootstrap(): Promise<void> {
   // Construction unique de tous les services partagés (repos, adapters de sécurité, authTokenService).
   const services = buildServices(connection, config);
 
-  const { controllers, groupAccessService } = buildControllers(services, config, logger);
+  // Fondation temps réel : le hub pub/sub est partagé entre le notifier (qui publie depuis les
+  // use cases) et le serveur WebSocket (qui diffuse aux clients abonnés).
+  const realtimeHub = new RealtimeHub();
+  const realtimeNotifier = new WsRealtimeNotifier(realtimeHub, logger);
+
+  const { controllers, groupAccessService } = buildControllers(
+    services,
+    config,
+    logger,
+    realtimeNotifier,
+  );
   const authMiddleware = buildAuthMiddleware(services.tokenProvider);
 
   const app = buildHttpApp(controllers, authMiddleware, logger);
-  const httpServer = buildRealtimeServer(app, services.tokenProvider, groupAccessService);
+  const httpServer = buildRealtimeServer(
+    app,
+    services.tokenProvider,
+    groupAccessService,
+    realtimeHub,
+  );
 
   httpServer.listen(config.port, () => {
     logger.info("Serveur démarré (HTTP + WebSocket /ws)", { port: config.port });
@@ -383,6 +401,7 @@ function buildControllers(
   services: AuthServices,
   config: AppConfig,
   logger: Logger,
+  realtimeNotifier: RealtimeNotifier,
 ): BuiltControllers {
   const authController = buildAuthController(services, config, logger);
   const userController = new UserController(
@@ -446,6 +465,7 @@ function buildControllers(
     idGenerator: services.idGenerator,
     unitOfWork: services.unitOfWork,
     logger,
+    realtimeNotifier,
   };
 
   const controllers: HttpControllers = {

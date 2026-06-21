@@ -8,6 +8,7 @@ import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { CreateCharacterSheetCommand } from "@application/features/character-sheet/commands/CreateCharacterSheetCommand";
 import {
@@ -28,6 +29,7 @@ export class CreateCharacterSheetUseCaseImpl implements CreateCharacterSheetUseC
     private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(
@@ -68,6 +70,10 @@ export class CreateCharacterSheetUseCaseImpl implements CreateCharacterSheetUseC
       characterSheetId: sheet.id,
       ownerId: sheet.ownerId,
     });
+
+    // Notifie en temps réel les autres appareils du propriétaire pour qu'ils rafraîchissent
+    // leur liste « Mes fiches » (best-effort : n'impacte pas le résultat de la création).
+    this.realtimeNotifier.notifyUserChanged(sheet.ownerId, "character-sheets");
 
     return Result.success({
       id: sheet.id,

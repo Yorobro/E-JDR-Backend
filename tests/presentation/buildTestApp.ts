@@ -44,6 +44,7 @@ import {
   FakeTokenHasher,
   FakeTokenProvider,
   FakeCharacterSheetPdfGenerator,
+  FakeRealtimeNotifier,
 } from "../application/fakes";
 import { buildGroupControllers } from "@presentation/http/features/friend-group/buildGroupControllers";
 
@@ -142,14 +143,22 @@ export function buildTestApp(): {
     new ListLinkableCharactersUseCaseImpl(repos.campaigns, repos.characterSheets),
   );
 
+  const realtimeNotifier = new FakeRealtimeNotifier();
   const characterSheetController = new CharacterSheetController(
-    new CreateCharacterSheetUseCaseImpl(idGenerator, groupAccessService, unitOfWork, logger),
+    new CreateCharacterSheetUseCaseImpl(
+      idGenerator,
+      groupAccessService,
+      unitOfWork,
+      logger,
+      realtimeNotifier,
+    ),
     new ListMyCharacterSheetsUseCaseImpl(repos.characterSheets, groupAccessService),
     new DeleteCharacterSheetUseCaseImpl(
       repos.characterSheets,
       unitOfWork,
       logger,
       groupAccessService,
+      realtimeNotifier,
     ),
     new GetCharacterSheetUseCaseImpl({
       characterSheetRepository: repos.characterSheets,
