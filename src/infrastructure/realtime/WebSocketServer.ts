@@ -6,6 +6,7 @@ import { ACCESS_TOKEN_COOKIE } from "@presentation/http/features/auth/mappers/Au
 import { RealtimeHub } from "@infrastructure/realtime/RealtimeHub";
 import { userChannel, parseChannel } from "@infrastructure/realtime/RealtimeChannels";
 import { parseCookies } from "@infrastructure/realtime/parseCookies";
+import { SheetGroupLookup } from "@application/features/realtime/abstractions/SheetGroupLookup";
 
 /** Décide si un utilisateur a le droit de s'abonner à un canal donné. */
 export interface ChannelAuthorizer {
@@ -15,6 +16,7 @@ export interface ChannelAuthorizer {
 /** Dépendances de l'autorisateur de canaux. */
 export interface ChannelAuthorizerDeps {
   groupAccess: Pick<GroupAccessService, "requireMember">;
+  sheetGroupLookup: SheetGroupLookup;
 }
 
 /**
@@ -38,7 +40,14 @@ export class RealtimeChannelAuthorizer implements ChannelAuthorizer {
       const result = await this.deps.groupAccess.requireMember(userId, parsed.id);
       return result.isSuccess;
     }
-    // sheet: affiné au Lot 3.
+    if (parsed.kind === "sheet") {
+      const groupId = await this.deps.sheetGroupLookup.groupIdOf(parsed.id);
+      if (groupId === null) {
+        return false;
+      }
+      const result = await this.deps.groupAccess.requireMember(userId, groupId);
+      return result.isSuccess;
+    }
     return false;
   }
 }

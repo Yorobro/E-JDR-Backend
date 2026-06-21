@@ -20,6 +20,7 @@ import { PdfKitCharacterSheetPdfGenerator } from "@infrastructure/pdf/PdfKitChar
 import { RealtimeHub } from "@infrastructure/realtime/RealtimeHub";
 import { WsRealtimeNotifier } from "@infrastructure/realtime/WsRealtimeNotifier";
 import { buildRealtimeServer } from "@infrastructure/realtime/buildRealtimeServer";
+import { CharacterSheetGroupLookup } from "@infrastructure/realtime/CharacterSheetGroupLookup";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
@@ -368,6 +369,7 @@ async function bootstrap(): Promise<void> {
     services.tokenProvider,
     groupAccessService,
     realtimeHub,
+    new CharacterSheetGroupLookup(services.characterSheetRepository),
   );
 
   httpServer.listen(config.port, () => {

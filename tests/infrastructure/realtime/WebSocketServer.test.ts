@@ -13,10 +13,14 @@ function fakeGroupAccess(memberOf: Record<string, string[]>) {
   };
 }
 
+/** Fake SheetGroupLookup : renvoie toujours null (aucune fiche connue). */
+const noSheets = { groupIdOf: async () => null as string | null };
+
 describe("RealtimeChannelAuthorizer", () => {
   it("autorise un user à s'abonner à SON propre canal user", async () => {
     const auth = new RealtimeChannelAuthorizer({
       groupAccess: fakeGroupAccess({}),
+      sheetGroupLookup: noSheets,
     });
     expect(await auth.canSubscribe("u1", "user:u1")).toBe(true);
   });
@@ -24,6 +28,7 @@ describe("RealtimeChannelAuthorizer", () => {
   it("refuse l'abonnement au canal user d'autrui", async () => {
     const auth = new RealtimeChannelAuthorizer({
       groupAccess: fakeGroupAccess({}),
+      sheetGroupLookup: noSheets,
     });
     expect(await auth.canSubscribe("u1", "user:u2")).toBe(false);
   });
@@ -31,6 +36,7 @@ describe("RealtimeChannelAuthorizer", () => {
   it("autorise le canal group si l'utilisateur est membre", async () => {
     const auth = new RealtimeChannelAuthorizer({
       groupAccess: fakeGroupAccess({ u1: ["g1"] }),
+      sheetGroupLookup: noSheets,
     });
     expect(await auth.canSubscribe("u1", "group:g1")).toBe(true);
     expect(await auth.canSubscribe("u1", "group:g2")).toBe(false);
@@ -39,15 +45,9 @@ describe("RealtimeChannelAuthorizer", () => {
   it("refuse un canal malformé ou de type inconnu", async () => {
     const auth = new RealtimeChannelAuthorizer({
       groupAccess: fakeGroupAccess({}),
+      sheetGroupLookup: noSheets,
     });
     expect(await auth.canSubscribe("u1", "admin:1")).toBe(false);
     expect(await auth.canSubscribe("u1", "group:")).toBe(false);
-  });
-
-  it("refuse le canal sheet à ce stade (affiné au Lot 3)", async () => {
-    const auth = new RealtimeChannelAuthorizer({
-      groupAccess: fakeGroupAccess({}),
-    });
-    expect(await auth.canSubscribe("u1", "sheet:s1")).toBe(false);
   });
 });

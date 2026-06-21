@@ -3,6 +3,7 @@ import { Application } from "express";
 
 import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { SheetGroupLookup } from "@application/features/realtime/abstractions/SheetGroupLookup";
 import { RealtimeHub } from "@infrastructure/realtime/RealtimeHub";
 import {
   attachWebSocketServer,
@@ -22,6 +23,7 @@ import {
  * @param tokenProvider - Vérificateur de jetons (auth du handshake WS, identique au REST).
  * @param groupAccessService - Service d'accès aux groupes (autorise les abonnements `group:`).
  * @param hub - Le bus pub/sub partagé avec le notifier.
+ * @param sheetGroupLookup - Résout le groupe d'une fiche pour autoriser les abonnements `sheet:`.
  * @returns Le serveur HTTP portant l'app Express ET le serveur WebSocket.
  */
 export function buildRealtimeServer(
@@ -29,8 +31,12 @@ export function buildRealtimeServer(
   tokenProvider: TokenProviderService,
   groupAccessService: GroupAccessService,
   hub: RealtimeHub,
+  sheetGroupLookup: SheetGroupLookup,
 ): http.Server {
-  const authorizer = new RealtimeChannelAuthorizer({ groupAccess: groupAccessService });
+  const authorizer = new RealtimeChannelAuthorizer({
+    groupAccess: groupAccessService,
+    sheetGroupLookup,
+  });
 
   const httpServer = http.createServer(app);
   attachWebSocketServer(httpServer, { hub, tokenProvider, authorizer });
