@@ -6,22 +6,26 @@ import {
   FakeLogger,
   FakeIdGenerator,
   FakeUnitOfWork,
+  FakeRealtimeNotifier,
   buildFakeTransactionalRepositories,
   buildTestMembership,
 } from "./fakes";
 
 describe("CreateCharacterSheetUseCaseImpl", () => {
   let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
+  let notifier: FakeRealtimeNotifier;
   let useCase: CreateCharacterSheetUseCaseImpl;
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
+    notifier = new FakeRealtimeNotifier();
     const groupAccessService = new GroupAccessServiceImpl(txRepos.groupMembers);
     useCase = new CreateCharacterSheetUseCaseImpl(
       new FakeIdGenerator(),
       groupAccessService,
       new FakeUnitOfWork(txRepos),
       new FakeLogger(),
+      notifier,
     );
     // user-1 est membre du groupe group-1.
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "user-1" }));
@@ -40,6 +44,20 @@ describe("CreateCharacterSheetUseCaseImpl", () => {
     expect(stored).toHaveLength(1);
     expect(stored[0]!.ownerId).toBe("user-1");
     expect(stored[0]!.groupId).toBe("group-1");
+  });
+
+  it("notifie le propriétaire (temps réel) après une création réussie", async () => {
+    await useCase.execute({ ownerId: "user-1", groupId: "group-1", name: "Gimli" });
+
+    expect(notifier.notifications).toEqual([
+      { kind: "user", id: "user-1", resource: "character-sheets" },
+    ]);
+  });
+
+  it("ne notifie pas si la création échoue (non membre du groupe)", async () => {
+    await useCase.execute({ ownerId: "user-1", groupId: "group-inconnu", name: "Gimli" });
+
+    expect(notifier.notifications).toHaveLength(0);
   });
 
   it("échoue avec NOT_GROUP_MEMBER si l'utilisateur n'est pas membre du groupe", async () => {

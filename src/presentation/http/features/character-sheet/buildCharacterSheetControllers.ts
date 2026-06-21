@@ -8,6 +8,7 @@ import { ReferenceRepository } from "@application/features/reference/abstraction
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
 import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import { CreateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CreateCharacterSheetUseCaseImpl";
 import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/character-sheet/usecases/ListMyCharacterSheetsUseCaseImpl";
 import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/DeleteCharacterSheetUseCaseImpl";
@@ -38,6 +39,8 @@ export interface CharacterSheetControllerDeps {
   readonly idGenerator: IdGeneratorService;
   readonly unitOfWork: UnitOfWork;
   readonly logger: Logger;
+  /** Notifier temps réel : rafraîchit « Mes fiches » sur les autres appareils du propriétaire. */
+  readonly realtimeNotifier: RealtimeNotifier;
 }
 
 /**
@@ -56,6 +59,7 @@ export function buildCharacterSheetController(
       deps.groupAccessService,
       deps.unitOfWork,
       deps.logger,
+      deps.realtimeNotifier,
     ),
     new ListMyCharacterSheetsUseCaseImpl(deps.characterSheetRepository, deps.groupAccessService),
     new DeleteCharacterSheetUseCaseImpl(
@@ -63,6 +67,7 @@ export function buildCharacterSheetController(
       deps.unitOfWork,
       deps.logger,
       deps.groupAccessService,
+      deps.realtimeNotifier,
     ),
     new GetCharacterSheetUseCaseImpl({
       characterSheetRepository: deps.characterSheetRepository,

@@ -12,23 +12,24 @@ import {
 /**
  * Crée le serveur HTTP et y greffe le serveur WebSocket de la fondation temps réel (`/ws`).
  *
- * Extrait du composition root (`main.ts`) pour isoler le câblage temps réel. Le bus pub/sub
- * `RealtimeHub` et l'autorisateur de canaux sont construits ici ; l'auth du handshake WS
- * réutilise le `TokenProviderService` du REST. Le `WsRealtimeNotifier` (publication d'events
- * depuis les use cases) sera câblé au lot « feature pilote » (Lot 3), où il sera injecté dans
- * les use cases concernés.
+ * Extrait du composition root (`main.ts`) pour isoler le câblage temps réel. L'autorisateur de
+ * canaux est construit ici ; l'auth du handshake WS réutilise le `TokenProviderService` du REST.
+ * Le bus pub/sub `hub` est fourni par l'appelant car il est **partagé** avec le
+ * `WsRealtimeNotifier` (qui publie depuis les use cases) : publication et diffusion doivent
+ * passer par la même instance.
  *
  * @param app - L'application Express déjà assemblée.
  * @param tokenProvider - Vérificateur de jetons (auth du handshake WS, identique au REST).
  * @param groupAccessService - Service d'accès aux groupes (autorise les abonnements `group:`).
+ * @param hub - Le bus pub/sub partagé avec le notifier.
  * @returns Le serveur HTTP portant l'app Express ET le serveur WebSocket.
  */
 export function buildRealtimeServer(
   app: Application,
   tokenProvider: TokenProviderService,
   groupAccessService: GroupAccessService,
+  hub: RealtimeHub,
 ): http.Server {
-  const hub = new RealtimeHub();
   const authorizer = new RealtimeChannelAuthorizer({ groupAccess: groupAccessService });
 
   const httpServer = http.createServer(app);
