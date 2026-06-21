@@ -110,8 +110,10 @@ export class AuthController {
         return;
       }
 
-      AuthHttpMapper.setAuthCookies(res, result.value.tokens, this.config.isProduction);
-      res.status(200).json({ message: "Jetons rafraîchis." });
+      // Rafraîchissement sans rotation : seul le cookie access_token est reposé ; le
+      // refresh_token du client reste valide, ce qui préserve les autres sessions/appareils.
+      AuthHttpMapper.setAccessCookie(res, result.value.accessToken, this.config.isProduction);
+      res.status(200).json({ message: "Access token rafraîchi." });
     } catch (error) {
       this.handleThrownError(error, res, next);
     }

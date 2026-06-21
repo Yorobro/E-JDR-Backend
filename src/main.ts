@@ -232,7 +232,6 @@ function buildAuthController(
     services.tokenProvider,
     services.tokenHasher,
     services.authTokenService,
-    services.unitOfWork,
   );
 
   return new AuthController(registerUser, loginUser, logoutUser, refreshAccessToken, config);

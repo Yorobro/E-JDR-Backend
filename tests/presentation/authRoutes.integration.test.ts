@@ -116,7 +116,7 @@ describe("Auth routes (intégration HTTP)", () => {
     expect(res.body.code).toBe("INVALID_REFRESH_TOKEN");
   });
 
-  it("POST /auth/refresh effectue la rotation à partir du cookie posé au register", async () => {
+  it("POST /auth/refresh repose le cookie access_token sans toucher au refresh_token", async () => {
     const agent = request.agent(app);
     await agent
       .post("/auth/register")
@@ -126,6 +126,25 @@ describe("Auth routes (intégration HTTP)", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.message).toBeDefined();
+    // Sans rotation : seul le cookie access_token est reposé, pas le refresh_token.
+    const cookies = (res.headers["set-cookie"] as unknown as string[]) ?? [];
+    expect(cookies.some((c) => c.startsWith("access_token="))).toBe(true);
+    expect(cookies.some((c) => c.startsWith("refresh_token="))).toBe(false);
+  });
+
+  it("POST /auth/refresh peut être rejoué : le refresh_token reste valide (multi-appareils)", async () => {
+    const agent = request.agent(app);
+    await agent
+      .post("/auth/register")
+      .send({ email: "multi@test.com", pseudo: "Gandalf", password: "password123" });
+
+    // Le même refresh_token (jamais tourné) doit rester accepté à chaque rafraîchissement :
+    // c'est ce qui permet à un appareil de garder sa session pendant qu'un autre rafraîchit.
+    const first = await agent.post("/auth/refresh");
+    const second = await agent.post("/auth/refresh");
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
   });
 
   // Garde-fou : la pile de gestion d'erreurs et le routage sont bien câblés.

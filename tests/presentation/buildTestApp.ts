@@ -91,7 +91,6 @@ export function buildTestApp(): {
       tokenProvider,
       tokenHasher,
       authTokenService,
-      unitOfWork,
     ),
     { isProduction: false } as AppConfig,
   );

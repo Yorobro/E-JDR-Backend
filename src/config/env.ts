@@ -81,7 +81,7 @@ export function loadConfig(): AppConfig {
     jwt: {
       accessSecret: requireEnv("JWT_ACCESS_SECRET"),
       refreshSecret: requireEnv("JWT_REFRESH_SECRET"),
-      accessExpiresIn: optionalEnv("JWT_ACCESS_EXPIRES_IN", "15m"),
+      accessExpiresIn: optionalEnv("JWT_ACCESS_EXPIRES_IN", "1h"),
       refreshExpiresIn: optionalEnv("JWT_REFRESH_EXPIRES_IN", "7d"),
     },
     logLevel: optionalEnv("LOG_LEVEL", "info"),
