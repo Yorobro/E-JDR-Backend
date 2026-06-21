@@ -17,6 +17,8 @@ import { TokenHasherServiceImpl } from "@infrastructure/security/TokenHasherServ
 import { IdGeneratorServiceImpl } from "@infrastructure/id/IdGeneratorServiceImpl";
 import { PinoLogger } from "@infrastructure/logging/PinoLogger";
 import { PdfKitCharacterSheetPdfGenerator } from "@infrastructure/pdf/PdfKitCharacterSheetPdfGenerator";
+import { buildRealtimeServer } from "@infrastructure/realtime/buildRealtimeServer";
+import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 
 // Application — ports repositories
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
@@ -344,13 +346,14 @@ async function bootstrap(): Promise<void> {
   // Construction unique de tous les services partagés (repos, adapters de sécurité, authTokenService).
   const services = buildServices(connection, config);
 
-  const controllers = buildControllers(services, config, logger);
+  const { controllers, groupAccessService } = buildControllers(services, config, logger);
   const authMiddleware = buildAuthMiddleware(services.tokenProvider);
 
   const app = buildHttpApp(controllers, authMiddleware, logger);
+  const httpServer = buildRealtimeServer(app, services.tokenProvider, groupAccessService);
 
-  app.listen(config.port, () => {
-    logger.info("Serveur démarré", { port: config.port });
+  httpServer.listen(config.port, () => {
+    logger.info("Serveur démarré (HTTP + WebSocket /ws)", { port: config.port });
   });
 }
 
@@ -366,11 +369,21 @@ async function bootstrap(): Promise<void> {
  * @param logger - Le logger applicatif.
  * @returns L'ensemble des controllers prêts à être montés par {@link buildHttpApp}.
  */
+/**
+ * Résultat de {@link buildControllers} : les controllers HTTP + le `groupAccessService`
+ * réexposé pour que le bootstrap puisse l'injecter dans l'autorisateur de canaux temps réel
+ * (un abonnement `group:{id}` n'est accordé qu'à un membre du groupe).
+ */
+interface BuiltControllers {
+  controllers: HttpControllers;
+  groupAccessService: GroupAccessService;
+}
+
 function buildControllers(
   services: AuthServices,
   config: AppConfig,
   logger: Logger,
-): HttpControllers {
+): BuiltControllers {
   const authController = buildAuthController(services, config, logger);
   const userController = new UserController(
     new GetCurrentUserUseCaseImpl(services.userRepository, services.credentialRepository),
@@ -435,7 +448,7 @@ function buildControllers(
     logger,
   };
 
-  return {
+  const controllers: HttpControllers = {
     auth: authController,
     user: userController,
     campaign: buildCampaignController(campaignDeps),
@@ -454,6 +467,8 @@ function buildControllers(
     group: groupController,
     invitation: invitationController,
   };
+
+  return { controllers, groupAccessService };
 }
 
 // Démarre le serveur uniquement lorsque ce fichier est exécuté directement
