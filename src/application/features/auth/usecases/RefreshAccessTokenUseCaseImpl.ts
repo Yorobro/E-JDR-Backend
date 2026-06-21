@@ -7,20 +7,26 @@ import {
   RefreshAccessTokenResult,
 } from "@application/features/auth/abstractions/usecases/RefreshAccessTokenUseCase";
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
-import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
+import {
+  RefreshTokenRepository,
+  StoredRefreshToken,
+} from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
 import { TokenHasherService } from "@application/features/auth/abstractions/services/TokenHasherService";
 import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
-import { UnitOfWork } from "@application/shared/UnitOfWork";
 
 /**
- * Use case de rafraîchissement des jetons (avec rotation des refresh tokens).
+ * Use case de rafraîchissement de l'access token (sans rotation du refresh token).
  *
  * Orchestration pure :
- * 1. vérifie la signature/expiration du refresh token ;
- * 2. vérifie sa présence en base (un token absent = révoqué) ;
- * 3. révoque l'ancien token (rotation) ;
- * 4. émet une nouvelle paire de jetons via le service partagé.
+ * 1. vérifie la signature/expiration du refresh token (cryptographique) ;
+ * 2. vérifie sa présence en base ET sa non-expiration (un token absent = révoqué) ;
+ * 3. vérifie que l'utilisateur existe toujours ;
+ * 4. émet **uniquement** un nouvel access token via le service partagé.
+ *
+ * Le refresh token n'est **pas** révoqué ni régénéré : la session de l'appareil reste
+ * intacte. C'est ce qui permet à plusieurs appareils du même utilisateur de rester connectés
+ * en parallèle — rafraîchir l'un n'invalide pas les autres (pas de rotation destructive).
  *
  * Toute incohérence (signature, expiration, absence en base, utilisateur introuvable)
  * renvoie une unique erreur métier {@link InvalidRefreshTokenError}.
@@ -30,9 +36,8 @@ export class RefreshAccessTokenUseCaseImpl implements RefreshAccessTokenUseCase 
    * @param userRepository - Port de persistance des utilisateurs.
    * @param refreshTokenRepository - Port de persistance des refresh tokens.
    * @param tokenProvider - Port de vérification du refresh token.
-   * @param tokenHasher - Port de hachage déterministe (recherche/révocation par empreinte).
-   * @param authTokenService - Service partagé d'émission des nouveaux jetons.
-   * @param unitOfWork - Unité de travail : rend la rotation (révocation + réémission) atomique.
+   * @param tokenHasher - Port de hachage déterministe (recherche par empreinte).
+   * @param authTokenService - Service partagé d'émission des jetons.
    */
   constructor(
     private readonly userRepository: UserRepository,
@@ -40,7 +45,6 @@ export class RefreshAccessTokenUseCaseImpl implements RefreshAccessTokenUseCase 
     private readonly tokenProvider: TokenProviderService,
     private readonly tokenHasher: TokenHasherService,
     private readonly authTokenService: AuthTokenService,
-    private readonly unitOfWork: UnitOfWork,
   ) {}
 
   /**
@@ -54,29 +58,27 @@ export class RefreshAccessTokenUseCaseImpl implements RefreshAccessTokenUseCase 
       return Result.failure(new InvalidRefreshTokenError());
     }
 
-    const isStored = await this.isRefreshTokenStored(command.refreshToken);
-    if (!isStored) {
+    const stored = await this.findStoredRefreshToken(command.refreshToken);
+    // Token absent (révoqué/inexistant) OU expiré en base : on refuse. La non-expiration est
+    // déjà garantie cryptographiquement par `verifyRefreshToken`, mais on la revérifie ici en
+    // base par défense en profondeur (le token n'étant plus systématiquement supprimé).
+    if (stored === null || stored.expiresAt.getTime() <= Date.now()) {
       return Result.failure(new InvalidRefreshTokenError());
     }
 
     // L'utilisateur est rechargé par son identifiant (claim `userId`), clé naturelle de
-    // l'identité métier ; on s'assure qu'il existe toujours avant de réémettre des jetons.
+    // l'identité métier ; on s'assure qu'il existe toujours avant de réémettre un access token.
     const user = await this.userRepository.findById(payload.userId);
     if (user === null) {
       return Result.failure(new InvalidRefreshTokenError());
     }
 
-    // Rotation atomique : la révocation de l'ancien token et la persistance du nouveau
-    // (via `issueTokens` + repo transactionnel) partagent une seule transaction.
-    const tokens = await this.unitOfWork.execute(async (repos) => {
-      const oldTokenHash = this.tokenHasher.hash(command.refreshToken);
-      await repos.refreshTokens.deleteByTokenHash(oldTokenHash);
-      return this.authTokenService.issueTokens(payload.userId, payload.email, repos.refreshTokens);
-    });
+    // Émission du seul access token : le refresh token en base reste inchangé (pas de rotation).
+    const accessToken = this.authTokenService.issueAccessToken(payload.userId, payload.email);
 
     await this.purgeExpiredTokens();
 
-    return Result.success({ tokens });
+    return Result.success({ accessToken });
   }
 
   /**
@@ -95,14 +97,15 @@ export class RefreshAccessTokenUseCaseImpl implements RefreshAccessTokenUseCase 
   }
 
   /**
-   * Vérifie qu'un refresh token est bien présent en base (donc non révoqué).
+   * Retrouve l'enregistrement d'un refresh token à partir de son empreinte.
    *
    * @param rawRefreshToken - Le refresh token brut.
-   * @returns `true` si une empreinte correspondante existe en base, `false` sinon.
+   * @returns L'enregistrement stocké, ou `null` s'il est absent (donc révoqué/inexistant).
    */
-  private async isRefreshTokenStored(rawRefreshToken: string): Promise<boolean> {
+  private async findStoredRefreshToken(
+    rawRefreshToken: string,
+  ): Promise<StoredRefreshToken | null> {
     const tokenHash = this.tokenHasher.hash(rawRefreshToken);
-    const stored = await this.refreshTokenRepository.findByTokenHash(tokenHash);
-    return stored !== null;
+    return this.refreshTokenRepository.findByTokenHash(tokenHash);
   }
 }

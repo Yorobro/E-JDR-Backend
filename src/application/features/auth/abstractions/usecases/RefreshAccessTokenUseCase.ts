@@ -1,14 +1,18 @@
 import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { RefreshAccessTokenCommand } from "@application/features/auth/commands/RefreshAccessTokenCommand";
-import { AuthTokens } from "@application/features/auth/abstractions/services/AuthTokenService";
+import { AccessTokenOnly } from "@application/features/auth/abstractions/services/AuthTokenService";
 
 /**
- * Résultat de succès d'un rafraîchissement : une nouvelle paire de jetons (rotation).
+ * Résultat de succès d'un rafraîchissement : un nouvel access token.
+ *
+ * Le refresh token de la session n'est **pas** régénéré : le client conserve celui qu'il
+ * détient déjà. Ce choix (pas de rotation) permet à plusieurs appareils du même utilisateur
+ * de rester connectés simultanément.
  */
 export interface RefreshAccessTokenResult {
-  /** Nouvelle paire de jetons d'authentification émise. */
-  readonly tokens: AuthTokens;
+  /** Le nouvel access token émis (et sa date d'expiration). */
+  readonly accessToken: AccessTokenOnly;
 }
 
 /**
@@ -19,11 +23,11 @@ export interface RefreshAccessTokenResult {
  */
 export interface RefreshAccessTokenUseCase {
   /**
-   * Émet une nouvelle paire de jetons à partir d'un refresh token valide, en révoquant
-   * l'ancien (rotation des refresh tokens).
+   * Émet un nouvel access token à partir d'un refresh token valide, **sans** révoquer ni
+   * faire tourner le refresh token (la session de l'appareil reste intacte).
    *
    * @param command - Le refresh token courant.
-   * @returns Un `Result` de succès (nouveaux jetons) ou d'échec métier
+   * @returns Un `Result` de succès (nouvel access token) ou d'échec métier
    *          (ex : {@link InvalidRefreshTokenError}).
    */
   execute(command: RefreshAccessTokenCommand): Promise<Result<RefreshAccessTokenResult, AppError>>;

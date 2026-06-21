@@ -4,7 +4,10 @@ import { AccountLockedError } from "@application/features/auth/errors/AccountLoc
 import { EmailAlreadyUsedError } from "@application/features/auth/errors/EmailAlreadyUsedError";
 import { InvalidCredentialsError } from "@application/features/auth/errors/InvalidCredentialsError";
 import { InvalidRefreshTokenError } from "@application/features/auth/errors/InvalidRefreshTokenError";
-import { AuthTokens } from "@application/features/auth/abstractions/services/AuthTokenService";
+import {
+  AccessTokenOnly,
+  AuthTokens,
+} from "@application/features/auth/abstractions/services/AuthTokenService";
 
 /** Nom du cookie portant l'access token. */
 export const ACCESS_TOKEN_COOKIE = "access_token";
@@ -52,6 +55,29 @@ export class AuthHttpMapper {
       REFRESH_TOKEN_COOKIE,
       tokens.refreshToken,
       AuthHttpMapper.cookieOptions(isProduction, tokens.refreshTokenExpiresAt),
+    );
+  }
+
+  /**
+   * Repose **uniquement** le cookie d'access token (rafraîchissement de session).
+   *
+   * Le cookie refresh_token n'est pas retouché : le client conserve celui qu'il possède déjà
+   * (modèle sans rotation). Ne pose donc qu'un seul cookie, contrairement à
+   * {@link setAuthCookies} qui ouvre une nouvelle session complète.
+   *
+   * @param res - La réponse Express.
+   * @param accessToken - Le nouvel access token et sa date d'expiration.
+   * @param isProduction - Indique si l'on tourne en production (impacte `secure`).
+   */
+  public static setAccessCookie(
+    res: Response,
+    accessToken: AccessTokenOnly,
+    isProduction: boolean,
+  ): void {
+    res.cookie(
+      ACCESS_TOKEN_COOKIE,
+      accessToken.accessToken,
+      AuthHttpMapper.cookieOptions(isProduction, accessToken.accessTokenExpiresAt),
     );
   }
 

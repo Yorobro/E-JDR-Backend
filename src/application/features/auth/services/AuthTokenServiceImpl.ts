@@ -1,4 +1,5 @@
 import {
+  AccessTokenOnly,
   AuthTokens,
   AuthTokenService,
 } from "@application/features/auth/abstractions/services/AuthTokenService";
@@ -59,6 +60,20 @@ export class AuthTokenServiceImpl implements AuthTokenService {
       accessTokenExpiresAt: accessToken.expiresAt,
       refreshToken: refreshToken.token,
       refreshTokenExpiresAt: refreshToken.expiresAt,
+    };
+  }
+
+  /**
+   * @inheritdoc
+   *
+   * Signe uniquement un nouvel access token pour l'identité fournie. Aucune écriture en base :
+   * le refresh token de la session reste inchangé (modèle multi-appareils sans rotation).
+   */
+  public issueAccessToken(userId: string, email: string): AccessTokenOnly {
+    const accessToken = this.tokenProvider.signAccessToken({ userId, email });
+    return {
+      accessToken: accessToken.token,
+      accessTokenExpiresAt: accessToken.expiresAt,
     };
   }
 

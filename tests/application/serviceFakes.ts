@@ -9,6 +9,7 @@ import {
   TokenPayload,
 } from "@application/features/auth/abstractions/services/TokenProviderService";
 import {
+  AccessTokenOnly,
   AuthTokens,
   AuthTokenService,
 } from "@application/features/auth/abstractions/services/AuthTokenService";
@@ -83,7 +84,10 @@ export class FakeTokenProvider implements TokenProviderService {
 
 /** Service de tokens factice : produit une paire fixe et trace les identités servies. */
 export class FakeAuthTokenService implements AuthTokenService {
+  /** Identités pour lesquelles une paire complète (access + refresh) a été émise. */
   public readonly issuedFor: string[] = [];
+  /** Identités pour lesquelles seul un access token a été émis (refresh sans rotation). */
+  public readonly accessIssuedFor: string[] = [];
 
   public async issueTokens(
     userId: string,
@@ -96,6 +100,14 @@ export class FakeAuthTokenService implements AuthTokenService {
       accessTokenExpiresAt: new Date("2999-01-01"),
       refreshToken: `refresh-for-${userId}`,
       refreshTokenExpiresAt: new Date("2999-01-01"),
+    };
+  }
+
+  public issueAccessToken(userId: string, _email: string): AccessTokenOnly {
+    this.accessIssuedFor.push(userId);
+    return {
+      accessToken: `access-for-${userId}`,
+      accessTokenExpiresAt: new Date("2999-01-01"),
     };
   }
 }
