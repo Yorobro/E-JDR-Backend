@@ -177,6 +177,7 @@ export function buildTestApp(): {
       groupAccessService,
       unitOfWork,
       logger,
+      realtimeNotifier,
     ),
     new GetSheetCampaignsUseCaseImpl(repos.characterSheets, repos.campaignCharacters, logger),
   );

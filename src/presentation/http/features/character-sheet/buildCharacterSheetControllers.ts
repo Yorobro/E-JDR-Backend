@@ -86,6 +86,7 @@ export function buildCharacterSheetController(
       deps.groupAccessService,
       deps.unitOfWork,
       deps.logger,
+      deps.realtimeNotifier,
     ),
     new GetSheetCampaignsUseCaseImpl(
       deps.characterSheetRepository,

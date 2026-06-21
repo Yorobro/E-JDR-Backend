@@ -19,6 +19,7 @@ import { toCharacterSheetDetail } from "@application/features/character-sheet/us
 import { FormationRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { PeupleRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { ReferenceItemNotFoundError } from "@application/features/reference/errors/ReferenceItemNotFoundError";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 /** Longueur maximale des champs de texte court (alignée sur `VARCHAR(255)`). */
 const SHORT_TEXT_MAX_LENGTH = 255;
@@ -68,6 +69,7 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
     private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(
@@ -155,6 +157,8 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
       characterSheetId: updated.id,
       ownerId: updated.ownerId,
     });
+
+    this.realtimeNotifier.notifySheetChanged(command.characterSheetId, "character-sheet-detail");
 
     return Result.success(toCharacterSheetDetail(updated));
   }
