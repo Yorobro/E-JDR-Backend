@@ -28,15 +28,15 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
       repos.campaigns,
       repos.campaignCharacters,
     );
-    return new UpdateCharacterSheetUseCaseImpl(
-      repos.characterSheets,
-      repos.formations,
-      repos.peoples,
+    return new UpdateCharacterSheetUseCaseImpl({
+      characterSheetRepository: repos.characterSheets,
+      formationRepository: repos.formations,
+      peupleRepository: repos.peoples,
       groupAccessService,
-      new FakeUnitOfWork(repos),
-      new FakeLogger(),
-      notifier ?? new FakeRealtimeNotifier(),
-    );
+      unitOfWork: new FakeUnitOfWork(repos),
+      logger: new FakeLogger(),
+      realtimeNotifier: notifier ?? new FakeRealtimeNotifier(),
+    });
   }
 
   beforeEach(() => {

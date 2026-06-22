@@ -21,21 +21,9 @@ import { RealtimeHub } from "@infrastructure/realtime/RealtimeHub";
 import { WsRealtimeNotifier } from "@infrastructure/realtime/WsRealtimeNotifier";
 import { buildRealtimeServer } from "@infrastructure/realtime/buildRealtimeServer";
 import { CharacterSheetGroupLookup } from "@infrastructure/realtime/CharacterSheetGroupLookup";
-import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
+import { createFriendGroupRepositories } from "@infrastructure/persistence/mysql/features/friend-group/createFriendGroupRepositories";
 
-// Application — ports repositories
-import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
-import { CredentialRepository } from "@application/features/auth/abstractions/repositories/CredentialRepository";
-import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
-import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
-import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
-import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
-import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
-// Application — ports services
-import { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
-import { TokenProviderService } from "@application/features/auth/abstractions/services/TokenProviderService";
-import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 // Application — implémentations
 import { Logger } from "@application/shared/Logger";
 import { AuthTokenServiceImpl } from "@application/features/auth/services/AuthTokenServiceImpl";
@@ -53,23 +41,18 @@ import { UserController } from "@presentation/http/features/auth/controllers/Use
 import { buildAuthRoutes } from "@presentation/http/features/auth/routes/authRoutes";
 import { buildUserRoutes } from "@presentation/http/features/auth/routes/userRoutes";
 // Presentation — feature campaign
-import { CampaignController } from "@presentation/http/features/campaign/controllers/CampaignController";
-import { CampaignCharacterController } from "@presentation/http/features/campaign/controllers/CampaignCharacterController";
 import {
   buildCampaignController,
   buildCampaignCharacterController,
 } from "@presentation/http/features/campaign/buildCampaignControllers";
 import { buildCampaignRoutes } from "@presentation/http/features/campaign/routes/campaignRoutes";
 // Presentation — feature session
-import { SessionController } from "@presentation/http/features/session/controllers/SessionController";
 import { buildSessionController } from "@presentation/http/features/session/buildSessionController";
 import {
   buildCampaignSessionRoutes,
   buildSessionByIdRoutes,
 } from "@presentation/http/features/session/routes/sessionRoutes";
 // Presentation — feature character-sheet
-import { CharacterSheetController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetController";
-import { CharacterSheetExportController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetExportController";
 import {
   buildCharacterSheetController,
   buildCharacterSheetExportController,
@@ -77,25 +60,23 @@ import {
 import { buildCharacterSheetRoutes } from "@presentation/http/features/character-sheet/routes/characterSheetRoutes";
 import { buildCharacterSheetExportRoutes } from "@presentation/http/features/character-sheet/routes/characterSheetExportRoutes";
 // Presentation — feature reference
-import { ReferenceController } from "@presentation/http/features/reference/controllers/ReferenceController";
 import { buildReferenceController } from "@presentation/http/features/reference/buildReferenceController";
 import {
   buildReferenceCatalogueRoutes,
   buildSheetReferenceLinkRoutes,
 } from "@presentation/http/features/reference/routes/referenceRoutes";
 // Presentation — feature friend-group
-import { GroupController } from "@presentation/http/features/friend-group/controllers/GroupController";
-import { InvitationController } from "@presentation/http/features/friend-group/controllers/InvitationController";
 import { buildGroupControllers } from "@presentation/http/features/friend-group/buildGroupControllers";
 import { buildGroupRoutes } from "@presentation/http/features/friend-group/routes/groupRoutes";
 import { buildInvitationRoutes } from "@presentation/http/features/friend-group/routes/invitationRoutes";
-// Infrastructure — friend-group
-import { createFriendGroupRepositories } from "@infrastructure/persistence/mysql/features/friend-group/createFriendGroupRepositories";
 // Presentation — shared middlewares
 import { requestIdMiddleware } from "@presentation/http/shared/middlewares/requestIdMiddleware";
 import { buildHttpLoggerMiddleware } from "@presentation/http/shared/middlewares/httpLoggerMiddleware";
 import { buildErrorHandler } from "@presentation/http/shared/middlewares/errorHandler";
 import { buildAuthMiddleware } from "@presentation/http/shared/middlewares/authMiddleware";
+
+// Types du composition root
+import type { AuthServices, HttpControllers, BuiltControllers } from "./main.types";
 
 /**
  * **Composition root** de l'application : seul endroit qui instancie les classes concrètes
@@ -105,31 +86,6 @@ import { buildAuthMiddleware } from "@presentation/http/shared/middlewares/authM
  * Le flux d'assemblage suit les dépendances : infrastructure → services/use cases (application)
  * → controller/routes (présentation) → application Express.
  */
-
-/**
- * Regroupe les services partagés construits **une seule fois** dans le composition root.
- *
- * Typer avec les ports applicatifs (interfaces) plutôt que les implémentations concrètes
- * garantit que cette structure reste indépendante de la couche infrastructure.
- */
-interface AuthServices {
-  userRepository: UserRepository;
-  credentialRepository: CredentialRepository;
-  refreshTokenRepository: RefreshTokenRepository;
-  campaignRepository: CampaignRepository;
-  sessionRepository: SessionRepository;
-  characterSheetRepository: CharacterSheetRepository;
-  campaignCharacterRepository: CampaignCharacterRepository;
-  referenceRepositories: ReturnType<typeof createReferenceRepositories>;
-  friendGroupRepositories: ReturnType<typeof createFriendGroupRepositories>;
-  unitOfWork: MysqlUnitOfWork;
-  passwordHasher: PasswordHasherServiceImpl;
-  tokenProvider: TokenProviderService;
-  tokenHasher: TokenHasherServiceImpl;
-  idGenerator: IdGeneratorServiceImpl;
-  authTokenService: AuthTokenService;
-  pdfGenerator: CharacterSheetPdfGenerator;
-}
 
 /**
  * Construit **une seule fois** les repositories, adapters de sécurité et services partagés.
@@ -241,25 +197,6 @@ function buildAuthController(
   );
 
   return new AuthController(registerUser, loginUser, logoutUser, refreshAccessToken, config);
-}
-
-/**
- * Regroupe les controllers HTTP montés par {@link buildHttpApp}.
- *
- * Les passer en un seul objet (plutôt qu'en paramètres séparés) garde la signature lisible
- * à mesure que de nouvelles features ajoutent leur controller.
- */
-export interface HttpControllers {
-  readonly auth: AuthController;
-  readonly user: UserController;
-  readonly campaign: CampaignController;
-  readonly campaignCharacter: CampaignCharacterController;
-  readonly session: SessionController;
-  readonly characterSheet: CharacterSheetController;
-  readonly characterSheetExport: CharacterSheetExportController;
-  readonly reference: ReferenceController;
-  readonly group: GroupController;
-  readonly invitation: InvitationController;
 }
 
 /**
@@ -389,16 +326,6 @@ async function bootstrap(): Promise<void> {
  * @param logger - Le logger applicatif.
  * @returns L'ensemble des controllers prêts à être montés par {@link buildHttpApp}.
  */
-/**
- * Résultat de {@link buildControllers} : les controllers HTTP + le `groupAccessService`
- * réexposé pour que le bootstrap puisse l'injecter dans l'autorisateur de canaux temps réel
- * (un abonnement `group:{id}` n'est accordé qu'à un membre du groupe).
- */
-interface BuiltControllers {
-  controllers: HttpControllers;
-  groupAccessService: GroupAccessService;
-}
-
 function buildControllers(
   services: AuthServices,
   config: AppConfig,

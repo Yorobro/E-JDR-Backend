@@ -170,15 +170,15 @@ export function buildTestApp(): {
       groupAccessService,
       logger,
     }),
-    new UpdateCharacterSheetUseCaseImpl(
-      repos.characterSheets,
-      repos.formations,
-      repos.peoples,
+    new UpdateCharacterSheetUseCaseImpl({
+      characterSheetRepository: repos.characterSheets,
+      formationRepository: repos.formations,
+      peupleRepository: repos.peoples,
       groupAccessService,
       unitOfWork,
       logger,
       realtimeNotifier,
-    ),
+    }),
     new GetSheetCampaignsUseCaseImpl(repos.characterSheets, repos.campaignCharacters, logger),
   );
 
