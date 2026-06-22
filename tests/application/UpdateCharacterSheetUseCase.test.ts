@@ -13,27 +13,36 @@ import {
   buildTestReferenceItem,
   buildTestMembership,
 } from "./fakes";
+import { FakeRealtimeNotifier } from "./serviceFakes";
 
 describe("UpdateCharacterSheetUseCaseImpl", () => {
   let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
   let useCase: UpdateCharacterSheetUseCaseImpl;
 
+  function buildUpdateUseCase(
+    repos: ReturnType<typeof buildFakeTransactionalRepositories>,
+    notifier?: FakeRealtimeNotifier,
+  ): UpdateCharacterSheetUseCaseImpl {
+    const groupAccessService = new GroupAccessServiceImpl(
+      repos.groupMembers,
+      repos.campaigns,
+      repos.campaignCharacters,
+    );
+    return new UpdateCharacterSheetUseCaseImpl({
+      characterSheetRepository: repos.characterSheets,
+      formationRepository: repos.formations,
+      peupleRepository: repos.peoples,
+      groupAccessService,
+      unitOfWork: new FakeUnitOfWork(repos),
+      logger: new FakeLogger(),
+      realtimeNotifier: notifier ?? new FakeRealtimeNotifier(),
+    });
+  }
+
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
-    const groupAccessService = new GroupAccessServiceImpl(
-      txRepos.groupMembers,
-      txRepos.campaigns,
-      txRepos.campaignCharacters,
-    );
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "owner-1" }));
-    useCase = new UpdateCharacterSheetUseCaseImpl(
-      txRepos.characterSheets,
-      txRepos.formations,
-      txRepos.peoples,
-      groupAccessService,
-      new FakeUnitOfWork(txRepos),
-      new FakeLogger(),
-    );
+    useCase = buildUpdateUseCase(txRepos);
   });
 
   it("met à jour le nom et les champs détaillés (dont la formation N‑1), en préservant id/ownerId/createdAt", async () => {
@@ -224,5 +233,39 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
     });
 
     expect(result.error).toBeInstanceOf(InvalidInputError);
+  });
+
+  it("notifie le canal sheet après une mise à jour réussie", async () => {
+    const notifier = new FakeRealtimeNotifier();
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
+    const uc = buildUpdateUseCase(txRepos, notifier);
+
+    const result = await uc.execute({
+      characterSheetId: "s-1",
+      ownerId: "owner-1",
+      name: "Strider",
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(notifier.notifications).toContainEqual({
+      kind: "sheet",
+      id: "s-1",
+      resource: "character-sheet-detail",
+    });
+  });
+
+  it("ne notifie pas le canal sheet si la mise à jour échoue", async () => {
+    const notifier = new FakeRealtimeNotifier();
+    const uc = buildUpdateUseCase(txRepos, notifier);
+
+    // fiche inexistante → échec
+    const result = await uc.execute({
+      characterSheetId: "ghost",
+      ownerId: "owner-1",
+      name: "X",
+    });
+
+    expect(result.isFailure).toBe(true);
+    expect(notifier.notifications.filter((n) => n.kind === "sheet")).toHaveLength(0);
   });
 });

@@ -486,5 +486,6 @@ export {
   FakeTokenProvider,
   FakeAuthTokenService,
   FakeCharacterSheetPdfGenerator,
+  FakeRealtimeNotifier,
   FakeLogger,
 } from "./serviceFakes";

@@ -19,6 +19,7 @@ import { toCharacterSheetDetail } from "@application/features/character-sheet/us
 import { FormationRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { PeupleRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { ReferenceItemNotFoundError } from "@application/features/reference/errors/ReferenceItemNotFoundError";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 /** Longueur maximale des champs de texte court (alignée sur `VARCHAR(255)`). */
 const SHORT_TEXT_MAX_LENGTH = 255;
@@ -54,6 +55,27 @@ function nonNegativeInt(raw: number | null | undefined): number | null {
 }
 
 /**
+ * Dépendances de [UpdateCharacterSheetUseCaseImpl] (groupées en objet pour respecter la limite
+ * de paramètres du constructeur, à l'instar des autres use cases riches du module).
+ */
+export interface UpdateCharacterSheetDeps {
+  /** Fiches de personnage (lecture + écriture). */
+  readonly characterSheetRepository: CharacterSheetRepository;
+  /** Catalogue des formations (vérifie l'accès à la formation portée par la fiche). */
+  readonly formationRepository: FormationRepository;
+  /** Catalogue des peuples (vérifie l'accès au peuple porté par la fiche). */
+  readonly peupleRepository: PeupleRepository;
+  /** Vérifie les droits d'édition (propriétaire ou éditeur du groupe). */
+  readonly groupAccessService: GroupAccessService;
+  /** Transaction de persistance. */
+  readonly unitOfWork: UnitOfWork;
+  /** Journalisation applicative. */
+  readonly logger: Logger;
+  /** Notifie le temps réel de la mise à jour de la fiche. */
+  readonly realtimeNotifier: RealtimeNotifier;
+}
+
+/**
  * Use case de mise à jour d'une fiche.
  *
  * Charge la fiche, vérifie via le domaine que le demandeur en est le **propriétaire**, revalide
@@ -61,14 +83,23 @@ function nonNegativeInt(raw: number | null | undefined): number | null {
  * l'entité immuable via `withDetails`, puis persiste. Aucune règle métier sur les valeurs.
  */
 export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseCase {
-  constructor(
-    private readonly characterSheetRepository: CharacterSheetRepository,
-    private readonly formationRepository: FormationRepository,
-    private readonly peupleRepository: PeupleRepository,
-    private readonly groupAccessService: GroupAccessService,
-    private readonly unitOfWork: UnitOfWork,
-    private readonly logger: Logger,
-  ) {}
+  private readonly characterSheetRepository: CharacterSheetRepository;
+  private readonly formationRepository: FormationRepository;
+  private readonly peupleRepository: PeupleRepository;
+  private readonly groupAccessService: GroupAccessService;
+  private readonly unitOfWork: UnitOfWork;
+  private readonly logger: Logger;
+  private readonly realtimeNotifier: RealtimeNotifier;
+
+  constructor(deps: UpdateCharacterSheetDeps) {
+    this.characterSheetRepository = deps.characterSheetRepository;
+    this.formationRepository = deps.formationRepository;
+    this.peupleRepository = deps.peupleRepository;
+    this.groupAccessService = deps.groupAccessService;
+    this.unitOfWork = deps.unitOfWork;
+    this.logger = deps.logger;
+    this.realtimeNotifier = deps.realtimeNotifier;
+  }
 
   public async execute(
     command: UpdateCharacterSheetCommand,
@@ -155,6 +186,8 @@ export class UpdateCharacterSheetUseCaseImpl implements UpdateCharacterSheetUseC
       characterSheetId: updated.id,
       ownerId: updated.ownerId,
     });
+
+    this.realtimeNotifier.notifySheetChanged(command.characterSheetId, "character-sheet-detail");
 
     return Result.success(toCharacterSheetDetail(updated));
   }

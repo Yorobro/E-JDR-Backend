@@ -9,9 +9,11 @@ import {
   TokenPayload,
 } from "@application/features/auth/abstractions/services/TokenProviderService";
 import {
+  AccessTokenOnly,
   AuthTokens,
   AuthTokenService,
 } from "@application/features/auth/abstractions/services/AuthTokenService";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 import { CharacterSheetPdfReferences } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfReferences";
 import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
@@ -83,7 +85,10 @@ export class FakeTokenProvider implements TokenProviderService {
 
 /** Service de tokens factice : produit une paire fixe et trace les identités servies. */
 export class FakeAuthTokenService implements AuthTokenService {
+  /** Identités pour lesquelles une paire complète (access + refresh) a été émise. */
   public readonly issuedFor: string[] = [];
+  /** Identités pour lesquelles seul un access token a été émis (refresh sans rotation). */
+  public readonly accessIssuedFor: string[] = [];
 
   public async issueTokens(
     userId: string,
@@ -96,6 +101,14 @@ export class FakeAuthTokenService implements AuthTokenService {
       accessTokenExpiresAt: new Date("2999-01-01"),
       refreshToken: `refresh-for-${userId}`,
       refreshTokenExpiresAt: new Date("2999-01-01"),
+    };
+  }
+
+  public issueAccessToken(userId: string, _email: string): AccessTokenOnly {
+    this.accessIssuedFor.push(userId);
+    return {
+      accessToken: `access-for-${userId}`,
+      accessTokenExpiresAt: new Date("2999-01-01"),
     };
   }
 }
@@ -114,6 +127,30 @@ export class FakeCharacterSheetPdfGenerator implements CharacterSheetPdfGenerato
     this.lastDetail = detail;
     this.lastReferences = references;
     return Buffer.from("%PDF-fake");
+  }
+}
+
+/** Type d'un appel de notification capturé par {@link FakeRealtimeNotifier}. */
+export interface CapturedNotification {
+  readonly kind: "user" | "group" | "sheet";
+  readonly id: string;
+  readonly resource: string;
+}
+
+/** Notifier temps réel factice : capture les appels `notify*` pour les vérifier en test. */
+export class FakeRealtimeNotifier implements RealtimeNotifier {
+  public readonly notifications: CapturedNotification[] = [];
+
+  public notifyUserChanged(userId: string, resource: string): void {
+    this.notifications.push({ kind: "user", id: userId, resource });
+  }
+
+  public notifyGroupChanged(groupId: string, resource: string): void {
+    this.notifications.push({ kind: "group", id: groupId, resource });
+  }
+
+  public notifySheetChanged(sheetId: string, resource: string): void {
+    this.notifications.push({ kind: "sheet", id: sheetId, resource });
   }
 }
 

@@ -4,6 +4,7 @@ import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import { DeleteCharacterSheetCommand } from "@application/features/character-sheet/commands/DeleteCharacterSheetCommand";
 import { DeleteCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/DeleteCharacterSheetUseCase";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
@@ -22,6 +23,7 @@ export class DeleteCharacterSheetUseCaseImpl implements DeleteCharacterSheetUseC
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
     private readonly groupAccessService: GroupAccessService,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(command: DeleteCharacterSheetCommand): Promise<Result<void, AppError>> {
@@ -50,6 +52,10 @@ export class DeleteCharacterSheetUseCaseImpl implements DeleteCharacterSheetUseC
       characterSheetId: sheet.id,
       ownerId: sheet.ownerId,
     });
+
+    // Rafraîchit la liste « Mes fiches » du PROPRIÉTAIRE (pas du demandeur : un éditeur du
+    // groupe peut supprimer la fiche d'autrui). Best-effort : n'impacte pas la suppression.
+    this.realtimeNotifier.notifyUserChanged(sheet.ownerId, "character-sheets");
 
     return Result.success(undefined);
   }
