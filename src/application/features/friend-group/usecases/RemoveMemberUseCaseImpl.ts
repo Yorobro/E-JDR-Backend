@@ -21,7 +21,13 @@ export class RemoveMemberUseCaseImpl implements RemoveMemberUseCase {
     actorId: string;
     targetUserId: string;
   }): Promise<Result<void, AppError>> {
-    const actorAccess = await this.groupAccessService.requireMember(params.actorId, params.groupId);
+    // Deux actions distinctes derrière un même use case :
+    // - **Quitter** (l'acteur se retire lui-même) : autorisé à tout membre du groupe.
+    // - **Retirer autrui** : action de gestion réservée aux admins.
+    const isSelfRemoval = params.actorId === params.targetUserId;
+    const actorAccess = isSelfRemoval
+      ? await this.groupAccessService.requireMember(params.actorId, params.groupId)
+      : await this.groupAccessService.requireAdmin(params.actorId, params.groupId);
     if (actorAccess.isFailure) return Result.failure(actorAccess.error);
 
     const targetMembership = await this.groupMemberRepository.findByUserIdAndGroupId(

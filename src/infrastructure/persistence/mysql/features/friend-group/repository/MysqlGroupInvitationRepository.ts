@@ -37,4 +37,8 @@ export class MysqlGroupInvitationRepository implements GroupInvitationRepository
   public async updateStatus(id: string, status: InvitationStatus): Promise<void> {
     await this.dao.updateStatus(id, status.value);
   }
+
+  public async deleteByGroupAndUser(groupId: string, invitedUserId: string): Promise<void> {
+    await this.dao.deleteByGroupAndUser(groupId, invitedUserId);
+  }
 }

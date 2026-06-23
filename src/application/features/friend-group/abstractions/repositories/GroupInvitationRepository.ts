@@ -19,4 +19,12 @@ export interface GroupInvitationRepository {
   ): Promise<GroupInvitation | null>;
   findPendingViewsByInvitedUser(invitedUserId: string): Promise<PendingInvitationView[]>;
   updateStatus(id: string, status: InvitationStatus): Promise<void>;
+  /**
+   * Supprime **toute** invitation (quel que soit son statut) pour ce couple groupe/invité.
+   *
+   * Utilisé avant de (ré)inviter : la contrainte d'unicité BDD `(group_id, invited_user_id)`
+   * ne distingue pas le statut, donc une invitation déjà résolue (ACCEPTED/DECLINED) bloquerait
+   * l'insertion d'une nouvelle invitation. On purge donc l'ancienne ligne d'abord.
+   */
+  deleteByGroupAndUser(groupId: string, invitedUserId: string): Promise<void>;
 }

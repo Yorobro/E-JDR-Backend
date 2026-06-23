@@ -92,6 +92,11 @@ export class InviteMemberUseCaseImpl implements InviteMemberUseCase {
     });
 
     await this.unitOfWork.execute(async (repos) => {
+      // Purge une éventuelle invitation déjà résolue (ACCEPTED/DECLINED) pour ce couple : la
+      // contrainte d'unicité `(group_id, invited_user_id)` ignore le statut, donc sans cette
+      // suppression la réinvitation après un refus/retrait violerait la contrainte (cf. #réinvitation).
+      // Le cas PENDING a déjà été écarté plus haut, on ne supprime donc qu'une ligne résolue.
+      await repos.groupInvitations.deleteByGroupAndUser(command.groupId, invitedUserId);
       await repos.groupInvitations.save(invitation);
     });
 
