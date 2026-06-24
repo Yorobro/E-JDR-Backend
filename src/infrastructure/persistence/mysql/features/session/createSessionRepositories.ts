@@ -2,6 +2,8 @@ import { DrizzleExecutor } from "@infrastructure/persistence/drizzle/DrizzleExec
 import { TransactionalRepositories } from "@application/shared/UnitOfWork";
 import { SessionDao } from "@infrastructure/persistence/mysql/features/session/dao/SessionDao";
 import { MysqlSessionRepository } from "@infrastructure/persistence/mysql/features/session/repository/MysqlSessionRepository";
+import { SessionParticipantDao } from "@infrastructure/persistence/mysql/features/session/dao/SessionParticipantDao";
+import { MysqlSessionParticipantRepository } from "@infrastructure/persistence/mysql/features/session/repository/MysqlSessionParticipantRepository";
 
 /**
  * Construit le jeu de repositories session sur un `DrizzleExecutor` donné.
@@ -12,8 +14,9 @@ import { MysqlSessionRepository } from "@infrastructure/persistence/mysql/featur
  */
 export function createSessionRepositories(
   executor: DrizzleExecutor,
-): Pick<TransactionalRepositories, "sessions"> {
+): Pick<TransactionalRepositories, "sessions" | "sessionParticipants"> {
   return {
     sessions: new MysqlSessionRepository(new SessionDao(executor)),
+    sessionParticipants: new MysqlSessionParticipantRepository(new SessionParticipantDao(executor)),
   };
 }

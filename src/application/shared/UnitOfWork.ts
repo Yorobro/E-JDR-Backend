@@ -3,6 +3,7 @@ import { CredentialRepository } from "@application/features/auth/abstractions/re
 import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
+import { SessionParticipantRepository } from "@application/features/session/abstractions/repositories/SessionParticipantRepository";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 import {
@@ -40,6 +41,7 @@ export interface TransactionalRepositories {
   readonly refreshTokens: RefreshTokenRepository;
   readonly campaigns: CampaignRepository;
   readonly sessions: SessionRepository;
+  readonly sessionParticipants: SessionParticipantRepository;
   readonly characterSheets: CharacterSheetRepository;
   readonly campaignCharacters: CampaignCharacterRepository;
   // Catalogues d'éléments de référence (un par type).
