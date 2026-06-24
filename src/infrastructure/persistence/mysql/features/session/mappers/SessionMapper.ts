@@ -1,5 +1,6 @@
 import { Session } from "@domain/features/session/entities/Session";
 import { SessionTitle } from "@domain/features/session/value-objects/SessionTitle";
+import { SessionStatus } from "@domain/features/session/value-objects/SessionStatus";
 import { SessionRow } from "@infrastructure/persistence/mysql/features/session/dao/SessionDao";
 
 /**
@@ -24,6 +25,8 @@ export class SessionMapper {
       title: SessionTitle.create(row.title),
       date: new Date(row.date),
       createdAt: new Date(row.created_at),
+      status: SessionStatus.create(row.status),
+      startedAt: row.started_at === null ? null : new Date(row.started_at),
     });
   }
 
