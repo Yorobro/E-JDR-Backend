@@ -1,7 +1,10 @@
 import { Session } from "@domain/features/session/entities/Session";
 import { SessionTitle } from "@domain/features/session/value-objects/SessionTitle";
 import { SessionStatus } from "@domain/features/session/value-objects/SessionStatus";
-import { SessionRow } from "@infrastructure/persistence/mysql/features/session/dao/SessionDao";
+import {
+  SessionRow,
+  SessionInsert,
+} from "@infrastructure/persistence/mysql/features/session/dao/SessionDao";
 
 /**
  * Traduit entre la représentation **persistance** (`SessionRow`) et l'**entité domaine**
@@ -36,19 +39,15 @@ export class SessionMapper {
    * @param session - L'entité `Session` à persister.
    * @returns Un objet dont les clés correspondent aux colonnes de la table `sessions`.
    */
-  public static toRow(session: Session): {
-    id: string;
-    campaign_id: string;
-    title: string;
-    date: Date;
-    created_at: Date;
-  } {
+  public static toRow(session: Session): SessionInsert {
     return {
       id: session.id,
       campaign_id: session.campaignId,
       title: session.title.value,
       date: session.date,
       created_at: session.createdAt,
+      status: session.status.value,
+      started_at: session.startedAt,
     };
   }
 }

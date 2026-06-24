@@ -38,6 +38,10 @@ export async function clearAllTables(pool: Pool): Promise<void> {
   await pool.execute("DELETE FROM character_sheets");
   await pool.execute("DELETE FROM refresh_tokens");
   await pool.execute("DELETE FROM credentials");
+  // session_participants cascade depuis sessions (elles-mêmes depuis campaigns) : on les
+  // supprime explicitement, enfants d'abord, pour la clarté.
+  await pool.execute("DELETE FROM session_participants");
+  await pool.execute("DELETE FROM sessions");
   await pool.execute("DELETE FROM campaigns");
   // friend_groups doit être supprimé après campaigns (FK RESTRICT sur campaigns.group_id).
   // Sa suppression cascade vers group_members, group_invitations et les tables de référence.
