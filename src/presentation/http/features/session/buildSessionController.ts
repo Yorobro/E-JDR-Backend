@@ -3,8 +3,10 @@ import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
+import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { CreateSessionUseCaseImpl } from "@application/features/session/usecases/CreateSessionUseCaseImpl";
+import { CreateLobbyUseCaseImpl } from "@application/features/session/usecases/CreateLobbyUseCaseImpl";
 import { ListCampaignSessionsUseCaseImpl } from "@application/features/session/usecases/ListCampaignSessionsUseCaseImpl";
 import { GetSessionUseCaseImpl } from "@application/features/session/usecases/GetSessionUseCaseImpl";
 import { UpdateSessionUseCaseImpl } from "@application/features/session/usecases/UpdateSessionUseCaseImpl";
@@ -20,6 +22,7 @@ import { SessionController } from "@presentation/http/features/session/controlle
 export interface SessionControllerDeps {
   readonly campaignRepository: CampaignRepository;
   readonly sessionRepository: SessionRepository;
+  readonly groupMemberRepository: GroupMemberRepository;
   readonly idGenerator: IdGeneratorService;
   readonly unitOfWork: UnitOfWork;
   readonly logger: Logger;
@@ -42,6 +45,14 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.unitOfWork,
     deps.logger,
     deps.groupAccessService,
+  );
+  const createLobby = new CreateLobbyUseCaseImpl(
+    deps.sessionRepository,
+    deps.campaignRepository,
+    deps.groupMemberRepository,
+    deps.groupAccessService,
+    deps.unitOfWork,
+    deps.logger,
   );
   const listCampaignSessions = new ListCampaignSessionsUseCaseImpl(
     deps.campaignRepository,
@@ -70,6 +81,7 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
 
   return new SessionController(
     createSession,
+    createLobby,
     listCampaignSessions,
     getSession,
     updateSession,

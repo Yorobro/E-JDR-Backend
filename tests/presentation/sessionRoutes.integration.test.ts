@@ -158,6 +158,75 @@ describe("Session routes (intégration HTTP)", () => {
     expect(res.body.code).toBe("NOT_GROUP_MEMBER");
   });
 
+  it("POST /sessions/:id/launch ouvre le lobby (200) puis renvoie 409 si déjà ouvert", async () => {
+    const mj = await authenticate("mj@test.com");
+    const grp = await mj.post("/groups").send({ name: "Table" });
+    const groupId = grp.body.id as string;
+
+    // Le joueur B rejoint le groupe via le flux d'invitation réel.
+    const playerB = request.agent(app);
+    const reg = await playerB
+      .post("/auth/register")
+      .send({ email: "player@test.com", pseudo: "Frodo", password: "password123" });
+    const playerId = reg.body.userId as string;
+    const inv = await mj.post(`/groups/${groupId}/invitations`).send({ email: "player@test.com" });
+    await playerB.post(`/invitations/${inv.body.invitationId}/accept`);
+
+    // Campagne dans ce groupe + session.
+    const camp = await mj.post("/campaigns").send({ name: "Camp", groupId });
+    const campaignId = camp.body.id as string;
+    const sess = await mj
+      .post(`/campaigns/${campaignId}/sessions`)
+      .send({ title: "Séance", date: "2026-06-20" });
+    const sessionId = sess.body.id as string;
+
+    const res = await mj
+      .post(`/sessions/${sessionId}/launch`)
+      .send({ participantUserIds: [playerId] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("LOBBY");
+    expect(res.body.participants).toEqual([
+      { userId: playerId, status: "INVITED", characterSheetId: null },
+    ]);
+
+    // Relancer une session déjà en lobby → conflit d'état.
+    const again = await mj
+      .post(`/sessions/${sessionId}/launch`)
+      .send({ participantUserIds: [playerId] });
+    expect(again.status).toBe(409);
+    expect(again.body.code).toBe("SESSION_NOT_LAUNCHABLE");
+  });
+
+  it("POST /sessions/:id/launch sans joueur sélectionné renvoie 400 (EMPTY_PARTICIPANT_SELECTION)", async () => {
+    const mj = await authenticate();
+    const campaignId = await createCampaign(mj);
+    const sess = await mj
+      .post(`/campaigns/${campaignId}/sessions`)
+      .send({ title: "Séance", date: "2026-06-20" });
+
+    const res = await mj.post(`/sessions/${sess.body.id}/launch`).send({ participantUserIds: [] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("EMPTY_PARTICIPANT_SELECTION");
+  });
+
+  it("POST /sessions/:id/launch par un non-membre renvoie 403 (NOT_GROUP_MEMBER)", async () => {
+    const mj = await authenticate("mj@test.com");
+    const campaignId = await createCampaign(mj);
+    const sess = await mj
+      .post(`/campaigns/${campaignId}/sessions`)
+      .send({ title: "Séance", date: "2026-06-20" });
+
+    const autre = await authenticate("autre@test.com");
+    const res = await autre
+      .post(`/sessions/${sess.body.id}/launch`)
+      .send({ participantUserIds: ["peu-importe"] });
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("NOT_GROUP_MEMBER");
+  });
+
   it("POST session sans cookie renvoie 401 (UNAUTHENTICATED)", async () => {
     const res = await request(app)
       .post("/campaigns/whatever/sessions")

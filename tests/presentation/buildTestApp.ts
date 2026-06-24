@@ -204,6 +204,7 @@ export function buildTestApp(): {
   const sessionController = buildSessionController({
     campaignRepository: repos.campaigns,
     sessionRepository: repos.sessions,
+    groupMemberRepository: repos.groupMembers,
     idGenerator,
     unitOfWork,
     logger,

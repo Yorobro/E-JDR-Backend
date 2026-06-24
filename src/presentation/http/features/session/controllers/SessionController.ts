@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { AppError } from "@application/errors/AppError";
 import { Result } from "@application/shared/Result";
 import { CreateSessionUseCase } from "@application/features/session/abstractions/usecases/CreateSessionUseCase";
+import { CreateLobbyUseCase } from "@application/features/session/abstractions/usecases/CreateLobbyUseCase";
 import { ListCampaignSessionsUseCase } from "@application/features/session/abstractions/usecases/ListCampaignSessionsUseCase";
 import { GetSessionUseCase } from "@application/features/session/abstractions/usecases/GetSessionUseCase";
 import { UpdateSessionUseCase } from "@application/features/session/abstractions/usecases/UpdateSessionUseCase";
@@ -20,6 +21,7 @@ import { SessionHttpMapper } from "@presentation/http/features/session/mappers/S
 export class SessionController {
   constructor(
     private readonly createSession: CreateSessionUseCase,
+    private readonly createLobby: CreateLobbyUseCase,
     private readonly listCampaignSessions: ListCampaignSessionsUseCase,
     private readonly getSession: GetSessionUseCase,
     private readonly updateSession: UpdateSessionUseCase,
@@ -40,6 +42,35 @@ export class SessionController {
       });
 
       this.respond(res, result, 201);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * `POST /sessions/:id/launch` — ouvre le lobby (réservé au MJ) et invite les joueurs cochés.
+   *
+   * Le corps porte `participantUserIds` (identifiants des joueurs sélectionnés). L'identité du
+   * MJ est prise de la session authentifiée, jamais du corps. Renvoie le lobby (statut `LOBBY`
+   * + liste des invitations).
+   */
+  public launch = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = req.body as { participantUserIds?: unknown };
+      const result = await this.createLobby.execute({
+        sessionId: req.params.id ?? "",
+        actorUserId: req.user!.userId,
+        participantUserIds: Array.isArray(body.participantUserIds)
+          ? (body.participantUserIds as string[])
+          : [],
+      });
+
+      if (result.isFailure) {
+        this.fail(res, result.error);
+        return;
+      }
+
+      res.status(200).json(result.value);
     } catch (error) {
       next(error);
     }

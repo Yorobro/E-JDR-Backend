@@ -371,6 +371,7 @@ function buildControllers(
   const sessionController = buildSessionController({
     campaignRepository: services.campaignRepository,
     sessionRepository: services.sessionRepository,
+    groupMemberRepository: services.friendGroupRepositories.groupMembers,
     idGenerator: services.idGenerator,
     unitOfWork: services.unitOfWork,
     logger,
