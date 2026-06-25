@@ -212,6 +212,6 @@ describe("InviteMemberUseCase — réinvitation après résolution", () => {
     });
 
     expect(result.isFailure).toBe(true);
-    expect(result.error.code).toBe("ALREADY_MEMBER");
+    expect(result.error.code).toBe("INVITATION_ALREADY_PENDING");
   });
 });

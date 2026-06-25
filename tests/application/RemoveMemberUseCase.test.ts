@@ -107,6 +107,36 @@ describe("RemoveMemberUseCase", () => {
     expect(await repos.groupMembers.findByUserIdAndGroupId("player-1", "group-1")).toBeNull();
   });
 
+  it("interdit à un admin de retirer un autre admin (CANNOT_REMOVE_ADMIN)", async () => {
+    repos.groupMembers.seed(buildTestMembership({ userId: "admin-1", role: GroupRole.ADMIN }));
+    repos.groupMembers.seed(buildTestMembership({ userId: "admin-2", role: GroupRole.ADMIN }));
+
+    const result = await useCase.execute({
+      groupId: "group-1",
+      actorId: "admin-1",
+      targetUserId: "admin-2",
+    });
+
+    expect(result.isFailure).toBe(true);
+    expect(result.error.code).toBe("CANNOT_REMOVE_ADMIN");
+    // La cible admin ne doit PAS avoir été retirée.
+    expect(await repos.groupMembers.findByUserIdAndGroupId("admin-2", "group-1")).not.toBeNull();
+  });
+
+  it("permet à un admin de quitter s'il reste un autre admin", async () => {
+    repos.groupMembers.seed(buildTestMembership({ userId: "admin-1", role: GroupRole.ADMIN }));
+    repos.groupMembers.seed(buildTestMembership({ userId: "admin-2", role: GroupRole.ADMIN }));
+
+    const result = await useCase.execute({
+      groupId: "group-1",
+      actorId: "admin-1",
+      targetUserId: "admin-1",
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(await repos.groupMembers.findByUserIdAndGroupId("admin-1", "group-1")).toBeNull();
+  });
+
   it("empêche le dernier admin de quitter le groupe (CANNOT_REMOVE_LAST_ADMIN)", async () => {
     repos.groupMembers.seed(buildTestMembership({ userId: "admin-1", role: GroupRole.ADMIN }));
 
