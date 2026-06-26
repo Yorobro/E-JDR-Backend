@@ -53,6 +53,7 @@ export class CampaignController {
       const campaigns = result.value.map((campaign) => ({
         id: campaign.id,
         name: campaign.name,
+        gameMasterId: campaign.gameMasterId,
         createdAt: campaign.createdAt.toISOString(),
       }));
       res.status(200).json({ campaigns });

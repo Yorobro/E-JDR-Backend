@@ -54,7 +54,7 @@ describe("ListMyCampaignsUseCaseImpl", () => {
     expect(result.error.code).toBe("NOT_GROUP_MEMBER");
   });
 
-  it("projette chaque campagne en résumé (id, name string, createdAt)", async () => {
+  it("projette chaque campagne en résumé (id, name string, gameMasterId, createdAt)", async () => {
     campaignRepo.seed(buildTestCampaign("c-1", "mj-1", "Alpha", "group-1"));
 
     const result = await useCase.execute({ groupId: "group-1", userId: "user-1" });
@@ -62,6 +62,7 @@ describe("ListMyCampaignsUseCaseImpl", () => {
     expect(result.value[0]).toEqual({
       id: "c-1",
       name: "Alpha",
+      gameMasterId: "mj-1",
       createdAt: new Date("2026-01-01T00:00:00Z"),
     });
   });
