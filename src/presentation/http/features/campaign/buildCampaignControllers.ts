@@ -3,15 +3,14 @@ import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
-import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import { CreateCampaignUseCaseImpl } from "@application/features/campaign/usecases/CreateCampaignUseCaseImpl";
 import { ListMyCampaignsUseCaseImpl } from "@application/features/campaign/usecases/ListMyCampaignsUseCaseImpl";
 import { DeleteCampaignUseCaseImpl } from "@application/features/campaign/usecases/DeleteCampaignUseCaseImpl";
-import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/LinkCharacterToCampaignUseCaseImpl";
-import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
 import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
-import { ListLinkableCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListLinkableCharactersUseCaseImpl";
+import { ListPendingCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListPendingCharactersUseCaseImpl";
+import { RespondToCampaignLinkRequestUseCaseImpl } from "@application/features/character-sheet/usecases/RespondToCampaignLinkRequestUseCaseImpl";
 import { CampaignController } from "@presentation/http/features/campaign/controllers/CampaignController";
 import { CampaignCharacterController } from "@presentation/http/features/campaign/controllers/CampaignCharacterController";
 
@@ -25,11 +24,11 @@ import { CampaignCharacterController } from "@presentation/http/features/campaig
 export interface CampaignControllerDeps {
   readonly campaignRepository: CampaignRepository;
   readonly characterSheetRepository: CharacterSheetRepository;
-  readonly campaignCharacterRepository: CampaignCharacterRepository;
   readonly groupAccessService: GroupAccessService;
   readonly idGenerator: IdGeneratorService;
   readonly unitOfWork: UnitOfWork;
   readonly logger: Logger;
+  readonly realtimeNotifier: RealtimeNotifier;
 }
 
 /**
@@ -63,40 +62,34 @@ export function buildCampaignController(deps: CampaignControllerDeps): CampaignC
 }
 
 /**
- * Assemble le controller de la liaison campagne↔fiches (rattacher / détacher / lister).
+ * Assemble le controller des personnages d'une campagne (lister validées / en attente, valider ou
+ * refuser une demande de rattachement).
  *
- * @param deps - Les services partagés requis par les use cases de liaison.
- * @returns Le controller de liaison câblé.
+ * @param deps - Les services partagés requis par les use cases.
+ * @returns Le controller câblé.
  */
 export function buildCampaignCharacterController(
   deps: CampaignControllerDeps,
 ): CampaignCharacterController {
-  const linkCharacter = new LinkCharacterToCampaignUseCaseImpl(
-    deps.campaignRepository,
-    deps.characterSheetRepository,
-    deps.campaignCharacterRepository,
-    deps.unitOfWork,
-    deps.logger,
-  );
-  const unlinkCharacter = new UnlinkCharacterFromCampaignUseCaseImpl(
-    deps.campaignRepository,
-    deps.characterSheetRepository,
-    deps.unitOfWork,
-    deps.logger,
-  );
   const listCampaignCharacters = new ListCampaignCharactersUseCaseImpl(
     deps.campaignRepository,
-    deps.campaignCharacterRepository,
+    deps.characterSheetRepository,
   );
-  const listLinkableCharacters = new ListLinkableCharactersUseCaseImpl(
+  const listPendingCharacters = new ListPendingCharactersUseCaseImpl(
     deps.campaignRepository,
     deps.characterSheetRepository,
+  );
+  const respondToLinkRequest = new RespondToCampaignLinkRequestUseCaseImpl(
+    deps.campaignRepository,
+    deps.characterSheetRepository,
+    deps.unitOfWork,
+    deps.logger,
+    deps.realtimeNotifier,
   );
 
   return new CampaignCharacterController(
-    linkCharacter,
-    unlinkCharacter,
     listCampaignCharacters,
-    listLinkableCharacters,
+    listPendingCharacters,
+    respondToLinkRequest,
   );
 }

@@ -20,7 +20,7 @@ describe("GetCharacterSheetUseCaseImpl", () => {
     const groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     useCase = new GetCharacterSheetUseCaseImpl({
       characterSheetRepository: txRepos.characterSheets,

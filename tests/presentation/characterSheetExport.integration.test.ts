@@ -3,13 +3,21 @@ import request from "supertest";
 import type { Application } from "express";
 
 import { buildTestApp } from "./buildTestApp";
+import {
+  type Agent,
+  authenticate,
+  createGroup,
+  joinGroup,
+  createPendingSheet,
+} from "./sheetTestHelpers";
 
 /**
  * Tests d'intégration HTTP de l'export PDF d'une fiche (`GET /character-sheets/:id/export-pdf`),
  * pile Express réelle sur doublures (générateur PDF factice).
  *
- * Contrat « groupe d'amis » : l'export reste réservé au PROPRIÉTAIRE de la fiche (et non à tout
- * le groupe). Les fiches sont créées dans un groupe.
+ * Contrat « groupe d'amis » : l'export reste réservé au PROPRIÉTAIRE de la fiche (ou au MJ de sa
+ * campagne). Les fiches sont créées dans un groupe et rattachées à une campagne (modèle « une
+ * fiche = une campagne »).
  */
 describe("Character sheet export PDF (intégration HTTP)", () => {
   let app: Application;
@@ -18,38 +26,8 @@ describe("Character sheet export PDF (intégration HTTP)", () => {
     app = buildTestApp().app;
   });
 
-  /** Inscrit un utilisateur et renvoie un agent conservant ses cookies de session. */
-  async function authenticate(email: string): Promise<ReturnType<typeof request.agent>> {
-    const agent = request.agent(app);
-    await agent.post("/auth/register").send({ email, pseudo: "Gandalf", password: "password123" });
-    return agent;
-  }
-
-  /** Crée un groupe et renvoie son ID. */
-  async function createGroup(
-    agent: ReturnType<typeof request.agent>,
-    name = "Mon groupe",
-  ): Promise<string> {
-    const res = await agent.post("/groups").send({ name });
-    return res.body.id as string;
-  }
-
-  /**
-   * Fait entrer `invitee` dans le groupe `groupId` : `inviter` invite par email, `invitee`
-   * accepte. Les deux utilisateurs deviennent alors membres du même groupe.
-   */
-  async function joinGroup(
-    inviter: ReturnType<typeof request.agent>,
-    groupId: string,
-    invitee: ReturnType<typeof request.agent>,
-    inviteeEmail: string,
-  ): Promise<void> {
-    const inv = await inviter.post(`/groups/${groupId}/invitations`).send({ email: inviteeEmail });
-    await invitee.post(`/invitations/${inv.body.invitationId}/accept`);
-  }
-
   /** Collecte le corps binaire de la réponse dans un `Buffer`. */
-  function collectBinary(agent: ReturnType<typeof request.agent>, id: string) {
+  function collectBinary(agent: Agent, id: string) {
     return agent
       .get(`/character-sheets/${id}/export-pdf`)
       .buffer(true)
@@ -61,11 +39,11 @@ describe("Character sheet export PDF (intégration HTTP)", () => {
   }
 
   it("GET /character-sheets/:id/export-pdf renvoie le PDF (200)", async () => {
-    const agent = await authenticate("p@test.com");
+    const agent = await authenticate(app, "p@test.com");
     const groupId = await createGroup(agent);
-    const created = await agent.post("/character-sheets").send({ name: "Aragorn", groupId });
+    const { sheet } = await createPendingSheet(app, agent, groupId, "Aragorn");
 
-    const res = await collectBinary(agent, created.body.id);
+    const res = await collectBinary(agent, sheet.id);
 
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("application/pdf");
@@ -77,15 +55,15 @@ describe("Character sheet export PDF (intégration HTTP)", () => {
   });
 
   it("export de la fiche d'un autre (même membre du groupe) renvoie 403", async () => {
-    // L'export reste réservé au propriétaire, même pour un autre membre du groupe.
-    const owner = await authenticate("owner@test.com");
+    // L'export reste réservé au propriétaire (ou au MJ), même pour un autre membre du groupe.
+    const owner = await authenticate(app, "owner@test.com");
     const groupId = await createGroup(owner);
-    const created = await owner.post("/character-sheets").send({ name: "Privée", groupId });
+    const { sheet } = await createPendingSheet(app, owner, groupId, "Privée");
 
-    const mate = await authenticate("mate@test.com");
+    const mate = await authenticate(app, "mate@test.com");
     await joinGroup(owner, groupId, mate, "mate@test.com");
 
-    const res = await mate.get(`/character-sheets/${created.body.id}/export-pdf`);
+    const res = await mate.get(`/character-sheets/${sheet.id}/export-pdf`);
 
     expect(res.status).toBe(403);
     expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");

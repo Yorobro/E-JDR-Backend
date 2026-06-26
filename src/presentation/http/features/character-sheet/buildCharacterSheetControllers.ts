@@ -1,8 +1,8 @@
 import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
+import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
-import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
@@ -15,6 +15,7 @@ import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character
 import { GetCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/GetCharacterSheetUseCaseImpl";
 import { UpdateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/UpdateCharacterSheetUseCaseImpl";
 import { GetSheetCampaignsUseCaseImpl } from "@application/features/character-sheet/usecases/GetSheetCampaignsUseCaseImpl";
+import { CopyCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CopyCharacterSheetUseCaseImpl";
 import { ExportCharacterSheetPdfUseCaseImpl } from "@application/features/character-sheet/usecases/ExportCharacterSheetPdfUseCaseImpl";
 import { CharacterSheetController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetController";
 import { CharacterSheetExportController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetExportController";
@@ -22,7 +23,7 @@ import { CharacterSheetExportController } from "@presentation/http/features/char
 /** Services partagés requis pour assembler les controllers de fiches. */
 export interface CharacterSheetControllerDeps {
   readonly characterSheetRepository: CharacterSheetRepository;
-  readonly campaignCharacterRepository: CampaignCharacterRepository;
+  readonly campaignRepository: CampaignRepository;
   readonly formationRepository: ReferenceRepository;
   readonly peupleRepository: ReferenceRepository;
   readonly competenceRepository: ReferenceRepository;
@@ -53,23 +54,27 @@ export interface CharacterSheetControllerDeps {
 export function buildCharacterSheetController(
   deps: CharacterSheetControllerDeps,
 ): CharacterSheetController {
-  return new CharacterSheetController(
-    new CreateCharacterSheetUseCaseImpl(
+  return new CharacterSheetController({
+    createCharacterSheet: new CreateCharacterSheetUseCaseImpl(
       deps.idGenerator,
+      deps.campaignRepository,
       deps.groupAccessService,
       deps.unitOfWork,
       deps.logger,
       deps.realtimeNotifier,
     ),
-    new ListMyCharacterSheetsUseCaseImpl(deps.characterSheetRepository, deps.groupAccessService),
-    new DeleteCharacterSheetUseCaseImpl(
+    listMyCharacterSheets: new ListMyCharacterSheetsUseCaseImpl(
+      deps.characterSheetRepository,
+      deps.groupAccessService,
+    ),
+    deleteCharacterSheet: new DeleteCharacterSheetUseCaseImpl(
       deps.characterSheetRepository,
       deps.unitOfWork,
       deps.logger,
       deps.groupAccessService,
       deps.realtimeNotifier,
     ),
-    new GetCharacterSheetUseCaseImpl({
+    getCharacterSheet: new GetCharacterSheetUseCaseImpl({
       characterSheetRepository: deps.characterSheetRepository,
       formationRepository: deps.formationRepository,
       peupleRepository: deps.peupleRepository,
@@ -79,7 +84,7 @@ export function buildCharacterSheetController(
       groupAccessService: deps.groupAccessService,
       logger: deps.logger,
     }),
-    new UpdateCharacterSheetUseCaseImpl({
+    updateCharacterSheet: new UpdateCharacterSheetUseCaseImpl({
       characterSheetRepository: deps.characterSheetRepository,
       formationRepository: deps.formationRepository,
       peupleRepository: deps.peupleRepository,
@@ -88,12 +93,24 @@ export function buildCharacterSheetController(
       logger: deps.logger,
       realtimeNotifier: deps.realtimeNotifier,
     }),
-    new GetSheetCampaignsUseCaseImpl(
-      deps.characterSheetRepository,
-      deps.campaignCharacterRepository,
-      deps.logger,
-    ),
-  );
+    getSheetCampaigns: new GetSheetCampaignsUseCaseImpl(deps.characterSheetRepository, deps.logger),
+    copyCharacterSheet: new CopyCharacterSheetUseCaseImpl({
+      idGenerator: deps.idGenerator,
+      campaignRepository: deps.campaignRepository,
+      characterSheetRepository: deps.characterSheetRepository,
+      sourceLinks: {
+        armes: deps.sheetArmesRepository,
+        armures: deps.sheetArmuresRepository,
+        competences: deps.sheetCompetencesRepository,
+        equipements: deps.sheetEquipementsRepository,
+        sorts: deps.sheetSortsRepository,
+        miracles: deps.sheetMiraclesRepository,
+      },
+      unitOfWork: deps.unitOfWork,
+      logger: deps.logger,
+      realtimeNotifier: deps.realtimeNotifier,
+    }),
+  });
 }
 
 /**

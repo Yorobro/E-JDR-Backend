@@ -3,25 +3,25 @@ import { AppError } from "@application/errors/AppError";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { CampaignNotFoundError } from "@application/features/campaign/errors/CampaignNotFoundError";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
-import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
-import { ListLinkableCharactersQuery } from "@application/features/character-sheet/query/ListLinkableCharactersQuery";
-import { ListLinkableCharactersUseCase } from "@application/features/character-sheet/abstractions/usecases/ListLinkableCharactersUseCase";
+import { ListCampaignCharactersQuery } from "@application/features/character-sheet/query/ListCampaignCharactersQuery";
+import { ListPendingCharactersUseCase } from "@application/features/character-sheet/abstractions/usecases/ListPendingCharactersUseCase";
 import { CharacterSheetSummary } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetSummary";
+import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 
 /**
- * Use case « lister les fiches rattachables à une campagne » (lecture pure).
+ * Use case « lister les demandes de rattachement en attente (PENDING) d'une campagne » (lecture).
  *
- * Réservé au maître du jeu : il peut rattacher n'importe quelle fiche d'un AUTRE joueur. La liste
- * exclut ses propres fiches (règle MJ≠joueur) et les fiches déjà rattachées à la campagne.
+ * Réservé au **maître du jeu** de la campagne : c'est lui qui valide/refuse les demandes depuis
+ * le détail de la campagne.
  */
-export class ListLinkableCharactersUseCaseImpl implements ListLinkableCharactersUseCase {
+export class ListPendingCharactersUseCaseImpl implements ListPendingCharactersUseCase {
   constructor(
     private readonly campaignRepository: CampaignRepository,
     private readonly characterSheetRepository: CharacterSheetRepository,
   ) {}
 
   public async execute(
-    query: ListLinkableCharactersQuery,
+    query: ListCampaignCharactersQuery,
   ): Promise<Result<CharacterSheetSummary[], AppError>> {
     const campaign = await this.campaignRepository.findById(query.campaignId);
     if (campaign === null) {
@@ -32,10 +32,9 @@ export class ListLinkableCharactersUseCaseImpl implements ListLinkableCharacters
       return Result.failure(new CharacterSheetAccessDeniedError());
     }
 
-    const sheets = await this.characterSheetRepository.findLinkableForCampaign(
-      campaign.groupId,
-      query.actorUserId,
+    const sheets = await this.characterSheetRepository.findByCampaignIdAndStatus(
       query.campaignId,
+      "PENDING",
     );
 
     const summaries: CharacterSheetSummary[] = sheets.map((sheet) => ({

@@ -23,7 +23,7 @@ describe("ChangeMemberRoleUseCase", () => {
     const accessService = new GroupAccessServiceImpl(
       repos.groupMembers,
       repos.campaigns,
-      repos.campaignCharacters,
+      repos.characterSheets,
     );
     useCase = new ChangeMemberRoleUseCaseImpl(
       repos.groupMembers,

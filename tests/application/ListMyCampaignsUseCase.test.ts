@@ -21,7 +21,7 @@ describe("ListMyCampaignsUseCaseImpl", () => {
     const groupAccessService = new GroupAccessServiceImpl(
       memberRepo,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     useCase = new ListMyCampaignsUseCaseImpl(campaignRepo, groupAccessService);
     // user-1 est membre de group-1

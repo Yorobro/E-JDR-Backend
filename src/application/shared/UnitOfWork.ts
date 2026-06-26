@@ -4,7 +4,6 @@ import { RefreshTokenRepository } from "@application/features/auth/abstractions/
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
-import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 import {
   ArmeRepository,
   ArmureRepository,
@@ -41,7 +40,6 @@ export interface TransactionalRepositories {
   readonly campaigns: CampaignRepository;
   readonly sessions: SessionRepository;
   readonly characterSheets: CharacterSheetRepository;
-  readonly campaignCharacters: CampaignCharacterRepository;
   // Catalogues d'éléments de référence (un par type).
   readonly formations: FormationRepository;
   readonly peoples: PeupleRepository;

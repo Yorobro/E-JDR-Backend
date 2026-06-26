@@ -12,7 +12,6 @@ import {
 } from "./referenceFakes";
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
-import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 import { SheetCampaignView } from "@application/features/character-sheet/abstractions/repositories/SheetCampaignView";
 
 import { UserRepository } from "@application/features/auth/abstractions/repositories/UserRepository";
@@ -200,15 +199,19 @@ export class FakeSessionRepository implements SessionRepository {
   }
 }
 
-/** Repository de fiches de personnage en mémoire (indexé par id). */
+/**
+ * Repository de fiches de personnage en mémoire (indexé par id).
+ *
+ * Modèle « une fiche = une campagne » : la fiche porte directement sa `campaignId` et son
+ * `linkStatus`. Les lectures cross‑agrégat (`findCampaignViewBySheetId`) résolvent le nom de la
+ * campagne et le pseudo du MJ via les repos campagnes/utilisateurs branchés par {@link attachLookups}.
+ */
 export class FakeCharacterSheetRepository implements CharacterSheetRepository {
   private readonly sheets = new Map<string, CharacterSheet>();
 
-  /**
-   * Repository de liaison, source de vérité des fiches déjà rattachées (renseigné après
-   * construction par {@link attachCampaignCharacters} pour éviter la dépendance circulaire).
-   */
-  private campaignCharacters?: FakeCampaignCharacterRepository;
+  /** Repos de lecture pour enrichir la vue de campagne (nom de campagne + pseudo du MJ). */
+  private campaigns?: FakeCampaignRepository;
+  private users?: FakeUserRepository;
 
   public async save(sheet: CharacterSheet): Promise<void> {
     this.sheets.set(sheet.id, sheet);
@@ -234,115 +237,55 @@ export class FakeCharacterSheetRepository implements CharacterSheetRepository {
     this.sheets.delete(id);
   }
 
-  /**
-   * Branche le repository de liaison pour que `findLinkableForCampaign` consulte les
-   * vraies liaisons (celles créées via `link()`), comme le `NOT EXISTS` du SQL réel.
-   */
-  public attachCampaignCharacters(campaignCharacters: FakeCampaignCharacterRepository): void {
-    this.campaignCharacters = campaignCharacters;
-  }
-
-  public async findLinkableForCampaign(
-    groupId: string,
-    gameMasterId: string,
+  public async findByCampaignIdAndStatus(
     campaignId: string,
+    status: string,
   ): Promise<CharacterSheet[]> {
-    const candidates = [...this.sheets.values()].filter(
-      (sheet) => sheet.isInGroup(groupId) && !sheet.isOwnedBy(gameMasterId),
+    return [...this.sheets.values()].filter(
+      (sheet) => sheet.campaignId === campaignId && sheet.linkStatus.value === status,
     );
-    const linkable: CharacterSheet[] = [];
-    for (const sheet of candidates) {
-      const alreadyLinked =
-        (await this.campaignCharacters?.existsByCampaignAndSheet(campaignId, sheet.id)) ?? false;
-      if (!alreadyLinked) {
-        linkable.push(sheet);
-      }
+  }
+
+  public async updateLinkStatus(id: string, status: string): Promise<void> {
+    const sheet = this.sheets.get(id);
+    if (sheet === undefined) {
+      return;
     }
-    return linkable;
+    // Reconstruit la fiche avec le nouveau statut (l'entité est immuable de l'extérieur).
+    const updated = status === "ACCEPTED" ? sheet.accept() : sheet;
+    this.sheets.set(id, updated);
   }
-
-  /** Aide de test : pré-remplit le repository avec une fiche. */
-  public seed(sheet: CharacterSheet): void {
-    this.sheets.set(sheet.id, sheet);
-  }
-}
-
-/**
- * Repository de liaison campagne↔fiches en mémoire.
- *
- * Stocke les paires `campaignId::sheetId` et résout les fiches via le repository de fiches
- * fourni (pour `findSheetsByCampaignId`), reproduisant le JOIN de l'implémentation MySQL.
- */
-export class FakeCampaignCharacterRepository implements CampaignCharacterRepository {
-  private readonly links = new Set<string>();
-
-  /** Repos de lecture pour enrichir les vues (nom de campagne + pseudo du MJ). */
-  private campaigns?: FakeCampaignRepository;
-  private users?: FakeUserRepository;
-
-  constructor(private readonly sheetRepository: FakeCharacterSheetRepository) {}
 
   /**
-   * Branche les repos campagnes/utilisateurs pour que `findCampaignViewsBySheetId` résolve
-   * le nom de la campagne et le pseudo du MJ (reproduit le double JOIN du SQL réel).
+   * Branche les repos campagnes/utilisateurs pour que `findCampaignViewBySheetId` résolve le nom
+   * de la campagne et le pseudo du MJ (reproduit le double JOIN du SQL réel).
    */
   public attachLookups(campaigns: FakeCampaignRepository, users: FakeUserRepository): void {
     this.campaigns = campaigns;
     this.users = users;
   }
 
-  private key(campaignId: string, sheetId: string): string {
-    return `${campaignId}::${sheetId}`;
-  }
-
-  public async link(campaignId: string, characterSheetId: string): Promise<void> {
-    this.links.add(this.key(campaignId, characterSheetId));
-  }
-
-  public async unlink(campaignId: string, characterSheetId: string): Promise<void> {
-    this.links.delete(this.key(campaignId, characterSheetId));
-  }
-
-  public async existsByCampaignAndSheet(
-    campaignId: string,
-    characterSheetId: string,
-  ): Promise<boolean> {
-    return this.links.has(this.key(campaignId, characterSheetId));
-  }
-
-  public async findSheetsByCampaignId(campaignId: string): Promise<CharacterSheet[]> {
-    const prefix = `${campaignId}::`;
-    const sheetIds = [...this.links]
-      .filter((k) => k.startsWith(prefix))
-      .map((k) => k.slice(prefix.length));
-    const sheets: CharacterSheet[] = [];
-    for (const id of sheetIds) {
-      const sheet = await this.sheetRepository.findById(id);
-      if (sheet !== null) {
-        sheets.push(sheet);
-      }
+  public async findCampaignViewBySheetId(sheetId: string): Promise<SheetCampaignView | null> {
+    const sheet = this.sheets.get(sheetId);
+    if (sheet === undefined) {
+      return null;
     }
-    return sheets;
+    const campaign = await this.campaigns?.findById(sheet.campaignId);
+    if (campaign == null) {
+      return null;
+    }
+    const gameMaster = await this.users?.findById(campaign.gameMasterId);
+    return {
+      campaignId: campaign.id,
+      campaignName: campaign.name.value,
+      gameMasterPseudo: gameMaster?.pseudo ?? "",
+      linkStatus: sheet.linkStatus.value,
+    };
   }
 
-  public async findCampaignViewsBySheetId(characterSheetId: string): Promise<SheetCampaignView[]> {
-    const suffix = `::${characterSheetId}`;
-    const campaignIds = [...this.links]
-      .filter((k) => k.endsWith(suffix))
-      .map((k) => k.slice(0, k.length - suffix.length));
-    const views: SheetCampaignView[] = [];
-    for (const campaignId of campaignIds) {
-      const campaign = await this.campaigns?.findById(campaignId);
-      if (campaign != null) {
-        const gameMaster = await this.users?.findById(campaign.gameMasterId);
-        views.push({
-          campaignId,
-          campaignName: campaign.name.value,
-          gameMasterPseudo: gameMaster?.pseudo ?? "",
-        });
-      }
-    }
-    return views;
+  /** Aide de test : pré-remplit le repository avec une fiche. */
+  public seed(sheet: CharacterSheet): void {
+    this.sheets.set(sheet.id, sheet);
   }
 }
 
@@ -377,7 +320,6 @@ export function buildFakeTransactionalRepositories(overrides?: {
   campaigns: FakeCampaignRepository;
   sessions: FakeSessionRepository;
   characterSheets: FakeCharacterSheetRepository;
-  campaignCharacters: FakeCampaignCharacterRepository;
   formations: FakeReferenceRepository;
   peoples: FakeReferenceRepository;
   armes: FakeReferenceRepository;
@@ -398,14 +340,10 @@ export function buildFakeTransactionalRepositories(overrides?: {
   groupInvitations: FakeGroupInvitationRepository;
 } {
   const characterSheets = overrides?.characterSheets ?? new FakeCharacterSheetRepository();
-  // La liaison résout les fiches via le repo de fiches (reproduit le JOIN MySQL).
-  const campaignCharacters = new FakeCampaignCharacterRepository(characterSheets);
-  // Lien retour : `findLinkableForCampaign` doit voir les vraies liaisons (NOT EXISTS du SQL).
-  characterSheets.attachCampaignCharacters(campaignCharacters);
   const users = overrides?.users ?? new FakeUserRepository();
   const campaigns = overrides?.campaigns ?? new FakeCampaignRepository();
-  // La liaison enrichit ses vues via campagnes + utilisateurs (reproduit le double JOIN MySQL).
-  campaignCharacters.attachLookups(campaigns, users);
+  // La fiche enrichit sa vue de campagne via campagnes + utilisateurs (reproduit le double JOIN MySQL).
+  characterSheets.attachLookups(campaigns, users);
 
   // Catalogues de référence (un par type) + liaisons N‑N (chacune branchée sur son catalogue
   // pour que `findItemsBySheet` résolve les éléments, comme le JOIN SQL).
@@ -425,7 +363,6 @@ export function buildFakeTransactionalRepositories(overrides?: {
     campaigns,
     sessions: overrides?.sessions ?? new FakeSessionRepository(),
     characterSheets,
-    campaignCharacters,
     formations,
     peoples,
     armes,
