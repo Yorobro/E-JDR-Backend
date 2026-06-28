@@ -7,6 +7,7 @@ import {
   FakeLogger,
   buildFakeTransactionalRepositories,
   buildTestCharacterSheet,
+  buildTestCampaign,
   buildTestMembership,
   buildTestReferenceItem,
 } from "./fakes";
@@ -24,6 +25,7 @@ describe("GetCharacterSheetUseCaseImpl", () => {
     );
     useCase = new GetCharacterSheetUseCaseImpl({
       characterSheetRepository: txRepos.characterSheets,
+      campaignRepository: txRepos.campaigns,
       formationRepository: txRepos.formations,
       peupleRepository: txRepos.peoples,
       competenceRepository: txRepos.competences,
@@ -49,6 +51,19 @@ describe("GetCharacterSheetUseCaseImpl", () => {
     expect(result.value.peupleId).toBe("peuple-1");
     expect(result.value.vigueur).toBe(6);
     expect(result.value.notes).toBeNull();
+  });
+
+  it("expose la campagne de rattachement (id + nom résolu + statut)", async () => {
+    txRepos.campaigns.seed(buildTestCampaign("campaign-1", "mj-1", "La Quête", "group-1"));
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
+    txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "owner-1" }));
+
+    const result = await useCase.execute({ characterSheetId: "s-1", userId: "owner-1" });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.campaignId).toBe("campaign-1");
+    expect(result.value.campaignName).toBe("La Quête");
+    expect(result.value.linkStatus).toBe("PENDING");
   });
 
   it("échoue avec CharacterSheetNotFoundError si la fiche n'existe pas", async () => {

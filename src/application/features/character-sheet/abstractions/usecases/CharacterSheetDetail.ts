@@ -11,6 +11,12 @@ export interface CharacterSheetDetail {
   readonly ownerId: string;
   readonly name: string;
   readonly createdAt: Date;
+  // Campagne de rattachement (modèle « une fiche = une campagne »).
+  readonly campaignId: string;
+  /** Nom de la campagne (renseigné par le use case de lecture ; `""` par défaut dans la projection). */
+  readonly campaignName: string;
+  /** Statut du rattachement : `"PENDING"` ou `"ACCEPTED"`. */
+  readonly linkStatus: string;
   // Identité — formation/peuple = id de l'élément de référence (ou null), niveau/âge entiers
   readonly formationId: string | null;
   readonly niveau: number | null;

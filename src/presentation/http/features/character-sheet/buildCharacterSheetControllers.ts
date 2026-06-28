@@ -65,6 +65,7 @@ export function buildCharacterSheetController(
     ),
     listMyCharacterSheets: new ListMyCharacterSheetsUseCaseImpl(
       deps.characterSheetRepository,
+      deps.campaignRepository,
       deps.groupAccessService,
     ),
     deleteCharacterSheet: new DeleteCharacterSheetUseCaseImpl(
@@ -76,6 +77,7 @@ export function buildCharacterSheetController(
     ),
     getCharacterSheet: new GetCharacterSheetUseCaseImpl({
       characterSheetRepository: deps.characterSheetRepository,
+      campaignRepository: deps.campaignRepository,
       formationRepository: deps.formationRepository,
       peupleRepository: deps.peupleRepository,
       competenceRepository: deps.competenceRepository,

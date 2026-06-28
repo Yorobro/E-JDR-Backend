@@ -8,7 +8,7 @@ import { Logger } from "@application/shared/Logger";
 import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
-import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { CampaignAccessDeniedError } from "@application/features/campaign/errors/CampaignAccessDeniedError";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
 import { SessionNotFoundError } from "@application/features/session/errors/SessionNotFoundError";
 import { UpdateSessionCommand } from "@application/features/session/commands/UpdateSessionCommand";
@@ -18,9 +18,9 @@ import { SessionView } from "@application/features/session/abstractions/usecases
 /**
  * Use case de mise à jour d'une session.
  *
- * Charge la session, remonte à la campagne parente, vérifie que le demandeur est **éditeur**
- * du groupe (`requireEditor`), valide les nouveaux titre/date via le domaine, puis persiste
- * via le `UnitOfWork`.
+ * Charge la session, remonte à la campagne parente, vérifie que le demandeur en est le **maître
+ * du jeu** (`campaign.isGameMaster`), valide les nouveaux titre/date via le domaine, puis persiste
+ * via le `UnitOfWork`. Seul le MJ de la campagne peut modifier ses sessions.
  */
 export class UpdateSessionUseCaseImpl implements UpdateSessionUseCase {
   constructor(
@@ -28,7 +28,6 @@ export class UpdateSessionUseCaseImpl implements UpdateSessionUseCase {
     private readonly campaignRepository: CampaignRepository,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
-    private readonly groupAccessService: GroupAccessService,
   ) {}
 
   public async execute(command: UpdateSessionCommand): Promise<Result<SessionView, AppError>> {
@@ -42,11 +41,9 @@ export class UpdateSessionUseCaseImpl implements UpdateSessionUseCase {
       return Result.failure(new SessionNotFoundError());
     }
 
-    const access = await this.groupAccessService.requireEditor(
-      command.actorUserId,
-      campaign.groupId,
-    );
-    if (access.isFailure) return Result.failure(access.error);
+    if (!campaign.isGameMaster(command.actorUserId)) {
+      return Result.failure(new CampaignAccessDeniedError());
+    }
 
     let title: SessionTitle;
     let date: SessionDate;
