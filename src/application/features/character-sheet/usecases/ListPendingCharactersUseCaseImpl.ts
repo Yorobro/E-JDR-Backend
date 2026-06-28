@@ -42,6 +42,9 @@ export class ListPendingCharactersUseCaseImpl implements ListPendingCharactersUs
       ownerId: sheet.ownerId,
       name: sheet.name.value,
       createdAt: sheet.createdAt,
+      campaignId: campaign.id,
+      campaignName: campaign.name.value,
+      linkStatus: "PENDING",
     }));
 
     return Result.success(summaries);

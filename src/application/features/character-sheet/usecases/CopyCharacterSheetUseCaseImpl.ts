@@ -16,6 +16,7 @@ import {
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 import { GameMasterCannotJoinOwnCampaignError } from "@application/features/character-sheet/errors/GameMasterCannotJoinOwnCampaignError";
+import { SameCampaignCopyError } from "@application/features/character-sheet/errors/SameCampaignCopyError";
 
 /** Repos de lecture des liaisons N‑N fiche ↔ éléments de référence (pour dupliquer la source). */
 export interface CopyCharacterSheetLinkRepositories {
@@ -83,6 +84,11 @@ export class CopyCharacterSheetUseCaseImpl implements CopyCharacterSheetUseCase 
     // Seul le propriétaire peut copier sa fiche.
     if (!source.isOwnedBy(command.actorUserId)) {
       return Result.failure(new CharacterSheetAccessDeniedError());
+    }
+
+    // Une copie doit viser une AUTRE campagne que celle de la fiche source.
+    if (source.campaignId === command.targetCampaignId) {
+      return Result.failure(new SameCampaignCopyError());
     }
 
     const targetCampaign = await this.campaignRepository.findById(command.targetCampaignId);

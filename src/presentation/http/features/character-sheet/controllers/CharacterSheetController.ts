@@ -136,6 +136,9 @@ export class CharacterSheetController {
         ownerId: sheet.ownerId,
         name: sheet.name,
         createdAt: sheet.createdAt.toISOString(),
+        campaignId: sheet.campaignId,
+        campaignName: sheet.campaignName,
+        linkStatus: sheet.linkStatus,
       }));
       res.status(200).json({ characterSheets });
     } catch (error) {

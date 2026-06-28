@@ -4,6 +4,7 @@ import { CampaignNotFoundError } from "@application/features/campaign/errors/Cam
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
 import { CharacterSheetAccessDeniedError } from "@application/features/character-sheet/errors/CharacterSheetAccessDeniedError";
 import { GameMasterCannotJoinOwnCampaignError } from "@application/features/character-sheet/errors/GameMasterCannotJoinOwnCampaignError";
+import { SameCampaignCopyError } from "@application/features/character-sheet/errors/SameCampaignCopyError";
 import {
   FakeLogger,
   FakeIdGenerator,
@@ -124,6 +125,16 @@ describe("CopyCharacterSheetUseCaseImpl", () => {
     });
 
     expect(result.error).toBeInstanceOf(CharacterSheetAccessDeniedError);
+  });
+
+  it("échoue avec SameCampaignCopyError si la cible est la campagne actuelle de la fiche", async () => {
+    const result = await useCase.execute({
+      sourceSheetId: "src",
+      targetCampaignId: "camp-source",
+      actorUserId: "owner-1",
+    });
+
+    expect(result.error).toBeInstanceOf(SameCampaignCopyError);
   });
 
   it("échoue avec GameMasterCannotJoinOwnCampaignError si l'acteur est le MJ de la cible", async () => {

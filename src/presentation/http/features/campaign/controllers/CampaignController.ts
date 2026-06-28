@@ -28,8 +28,8 @@ export class CampaignController {
         return;
       }
 
-      const { id, name, createdAt } = result.value;
-      res.status(201).json({ id, name, createdAt: createdAt.toISOString() });
+      const { id, name, gameMasterId, createdAt } = result.value;
+      res.status(201).json({ id, name, gameMasterId, createdAt: createdAt.toISOString() });
     } catch (error) {
       next(error);
     }
