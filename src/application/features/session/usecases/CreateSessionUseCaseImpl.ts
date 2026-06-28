@@ -11,7 +11,7 @@ import { IdGeneratorService } from "@application/features/auth/abstractions/serv
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { CampaignNotFoundError } from "@application/features/campaign/errors/CampaignNotFoundError";
-import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { CampaignAccessDeniedError } from "@application/features/campaign/errors/CampaignAccessDeniedError";
 import { CreateSessionCommand } from "@application/features/session/commands/CreateSessionCommand";
 import { CreateSessionUseCase } from "@application/features/session/abstractions/usecases/CreateSessionUseCase";
 import { SessionView } from "@application/features/session/abstractions/usecases/GetSessionUseCase";
@@ -19,9 +19,12 @@ import { SessionView } from "@application/features/session/abstractions/usecases
 /**
  * Use case de création d'une session dans une campagne.
  *
- * Orchestration pure : vérifie que la campagne existe et que le demandeur est **éditeur**
- * du groupe (`requireEditor`), valide le titre et la date via le domaine, crée l'entité
+ * Orchestration pure : vérifie que la campagne existe et que le demandeur en est le **maître
+ * du jeu** (`campaign.isGameMaster`), valide le titre et la date via le domaine, crée l'entité
  * `Session` puis la persiste via le `UnitOfWork`. La validation métier vit dans le domaine.
+ *
+ * Règle d'autorisation : seul le MJ de la campagne (son créateur) gère ses sessions ; le rôle
+ * dans le groupe d'amis ne confère aucun droit d'écriture sur une campagne dont on n'est pas MJ.
  */
 export class CreateSessionUseCaseImpl implements CreateSessionUseCase {
   constructor(
@@ -29,7 +32,6 @@ export class CreateSessionUseCaseImpl implements CreateSessionUseCase {
     private readonly idGenerator: IdGeneratorService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
-    private readonly groupAccessService: GroupAccessService,
   ) {}
 
   public async execute(command: CreateSessionCommand): Promise<Result<SessionView, AppError>> {
@@ -38,11 +40,9 @@ export class CreateSessionUseCaseImpl implements CreateSessionUseCase {
       return Result.failure(new CampaignNotFoundError());
     }
 
-    const access = await this.groupAccessService.requireEditor(
-      command.actorUserId,
-      campaign.groupId,
-    );
-    if (access.isFailure) return Result.failure(access.error);
+    if (!campaign.isGameMaster(command.actorUserId)) {
+      return Result.failure(new CampaignAccessDeniedError());
+    }
 
     let title: SessionTitle;
     let date: SessionDate;

@@ -10,6 +10,8 @@ export interface CreateCampaignResult {
   readonly id: string;
   /** Nom (normalisé) de la campagne. */
   readonly name: string;
+  /** Identifiant du maître du jeu (créateur) de la campagne. */
+  readonly gameMasterId: string;
   /** Date de création de la campagne. */
   readonly createdAt: Date;
 }

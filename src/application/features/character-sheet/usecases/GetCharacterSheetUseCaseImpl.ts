@@ -2,6 +2,7 @@ import { Result } from "@application/shared/Result";
 import { AppError } from "@application/errors/AppError";
 import { Logger } from "@application/shared/Logger";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { GetCharacterSheetQuery } from "@application/features/character-sheet/query/GetCharacterSheetQuery";
 import { GetCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/GetCharacterSheetUseCase";
@@ -21,6 +22,8 @@ import { SheetReferenceLinkRepository } from "@application/features/reference/ab
 export interface GetCharacterSheetDeps {
   /** Fiches de personnage (lecture). */
   readonly characterSheetRepository: CharacterSheetRepository;
+  /** Campagnes (résolution du nom de la campagne de rattachement de la fiche). */
+  readonly campaignRepository: CampaignRepository;
   /** Catalogue des formations (résolution du nom + bonus de la formation portée par la fiche). */
   readonly formationRepository: ReferenceRepository;
   /** Catalogue des peuples (résolution du nom + bonus du peuple porté par la fiche). */
@@ -48,6 +51,7 @@ export interface GetCharacterSheetDeps {
  */
 export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
   private readonly characterSheetRepository: CharacterSheetRepository;
+  private readonly campaignRepository: CampaignRepository;
   private readonly referenceResolver: CharacterSheetReferenceResolver;
   private readonly sheetArmures: SheetReferenceLinkRepository;
   private readonly groupAccessService: GroupAccessService;
@@ -55,6 +59,7 @@ export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
 
   constructor(deps: GetCharacterSheetDeps) {
     this.characterSheetRepository = deps.characterSheetRepository;
+    this.campaignRepository = deps.campaignRepository;
     this.referenceResolver = new CharacterSheetReferenceResolver({
       formationRepository: deps.formationRepository,
       peupleRepository: deps.peupleRepository,
@@ -85,6 +90,8 @@ export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
     }
 
     const detail = toCharacterSheetDetail(sheet);
+    const campaign = await this.campaignRepository.findById(sheet.campaignId);
+    const campaignName = campaign?.name.value ?? "";
     const { formation, peuple } = await this.referenceResolver.resolve(
       detail.formationId,
       detail.peupleId,
@@ -108,6 +115,7 @@ export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
 
     return Result.success({
       ...detail,
+      campaignName,
       formation,
       peuple,
       dexteriteTotale: statTotals.dexterite,

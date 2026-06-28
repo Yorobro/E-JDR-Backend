@@ -9,6 +9,10 @@ export function toCharacterSheetDetail(sheet: CharacterSheet): CharacterSheetDet
     ownerId: sheet.ownerId,
     name: sheet.name.value,
     createdAt: sheet.createdAt,
+    // Campagne : id + statut portés par l'entité ; le nom est résolu par le use case de lecture.
+    campaignId: sheet.campaignId,
+    campaignName: "",
+    linkStatus: sheet.linkStatus.value,
     formationId: d.formationId,
     niveau: d.niveau,
     peupleId: d.peupleId,
