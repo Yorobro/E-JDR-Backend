@@ -23,7 +23,7 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
     const groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     useCase = new ExportCharacterSheetPdfUseCaseImpl({
       characterSheetRepository: txRepos.characterSheets,
@@ -67,11 +67,12 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
     expect(result.error).toBeInstanceOf(CharacterSheetAccessDeniedError);
   });
 
-  it("autorise le MJ d'une campagne où la fiche est liée à exporter la fiche", async () => {
-    // La fiche appartient à owner-1 ; elle est liée à une campagne dont mj-7 est le MJ.
-    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
+  it("autorise le MJ de la campagne de la fiche à exporter la fiche", async () => {
+    // La fiche appartient à owner-1 ; elle est rattachée à une campagne dont mj-7 est le MJ.
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", {}, "group-1", "camp-1"),
+    );
     txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-7", "Donjon", "group-1"));
-    await txRepos.campaignCharacters.link("camp-1", "s-1");
 
     const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "mj-7" });
 

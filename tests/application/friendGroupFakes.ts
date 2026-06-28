@@ -156,6 +156,14 @@ export class FakeGroupInvitationRepository implements GroupInvitationRepository 
     }
   }
 
+  public async deleteByGroupAndUser(groupId: string, invitedUserId: string): Promise<void> {
+    for (const [id, inv] of this.invitations.entries()) {
+      if (inv.groupId === groupId && inv.invitedUserId === invitedUserId) {
+        this.invitations.delete(id);
+      }
+    }
+  }
+
   public seed(invitation: GroupInvitation): void {
     this.invitations.set(invitation.id, invitation);
   }

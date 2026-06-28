@@ -30,11 +30,11 @@ export function createTestPool(): Pool {
 export async function clearAllTables(pool: Pool): Promise<void> {
   // Ordre FK : enfants d'abord.
   // sheet_* cascadent depuis character_sheets, mais on les supprime explicitement pour clarté.
-  await pool.execute("DELETE FROM campaign_characters");
   await pool.execute("DELETE FROM sheet_armes");
   await pool.execute("DELETE FROM sheet_armures");
   await pool.execute("DELETE FROM sheet_competences");
   await pool.execute("DELETE FROM sheet_equipements");
+  // character_sheets référence campaigns (FK campaign_id) : à supprimer AVANT campaigns.
   await pool.execute("DELETE FROM character_sheets");
   await pool.execute("DELETE FROM refresh_tokens");
   await pool.execute("DELETE FROM credentials");
@@ -78,4 +78,26 @@ export async function insertUser(pool: Pool, id: string, pseudo = `pseudo-${id}`
     pseudo,
     new Date("2026-01-01T10:00:00Z"),
   ]);
+}
+
+/**
+ * Insère une campagne minimale (satisfait la FK `character_sheets.campaign_id`).
+ *
+ * @param pool - Le pool de test.
+ * @param id - L'identifiant de la campagne.
+ * @param groupId - L'identifiant du groupe parent (doit exister dans `friend_groups`).
+ * @param gameMasterId - L'identifiant du MJ (doit exister dans `users`).
+ * @param name - Le nom de la campagne (par défaut dérivé de l'id).
+ */
+export async function insertCampaign(
+  pool: Pool,
+  id: string,
+  groupId: string,
+  gameMasterId: string,
+  name = `campagne-${id}`,
+): Promise<void> {
+  await pool.execute(
+    "INSERT INTO campaigns (id, group_id, game_master_id, name, created_at) VALUES (?, ?, ?, ?, ?)",
+    [id, groupId, gameMasterId, name, new Date("2026-01-01T10:00:00Z")],
+  );
 }

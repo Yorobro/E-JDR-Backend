@@ -26,7 +26,7 @@ describe("UpdateReferenceItemUseCase — types simples (testé sur `armes`)", ()
     groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     // u-1 est admin de group-1
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "u-1" }));
@@ -168,7 +168,7 @@ describe("UpdateReferenceItemUseCase — formations (stat/bonus + compétences)"
     groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "u-1" }));
   });

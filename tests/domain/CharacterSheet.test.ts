@@ -3,6 +3,7 @@ import { CharacterSheet } from "@domain/features/character-sheet/entities/Charac
 import { CharacterSheetName } from "@domain/features/character-sheet/value-objects/CharacterSheetName";
 import { Sex } from "@domain/features/character-sheet/value-objects/Sex";
 import { Purse } from "@domain/features/character-sheet/value-objects/Purse";
+import { LinkStatus } from "@domain/features/character-sheet/value-objects/LinkStatus";
 
 describe("CharacterSheet (entité)", () => {
   const build = (ownerId = "user-1", groupId = "group-1"): CharacterSheet =>
@@ -10,6 +11,7 @@ describe("CharacterSheet (entité)", () => {
       id: "sheet-1",
       ownerId,
       groupId,
+      campaignId: "campaign-1",
       name: CharacterSheetName.create("Aragorn"),
       createdAt: new Date("2026-01-01T00:00:00Z"),
     });
@@ -57,6 +59,7 @@ describe("CharacterSheet (entité)", () => {
       id: "sheet-1",
       ownerId: "user-1",
       groupId: "group-1",
+      campaignId: "campaign-1",
       name: CharacterSheetName.create("Aragorn"),
       createdAt: new Date("2026-01-01T00:00:00Z"),
     });
@@ -82,6 +85,7 @@ describe("CharacterSheet (entité)", () => {
       id: "sheet-1",
       ownerId: "user-1",
       groupId: "group-1",
+      campaignId: "campaign-1",
       name: CharacterSheetName.create("Aragorn"),
       createdAt: new Date("2026-01-01T00:00:00Z"),
       niveau: 5,
@@ -99,6 +103,8 @@ describe("CharacterSheet (entité)", () => {
       id: "sheet-9",
       ownerId: "owner-9",
       groupId: "group-9",
+      campaignId: "campaign-9",
+      linkStatus: LinkStatus.PENDING,
       name: CharacterSheetName.create("Legolas"),
       createdAt: new Date("2026-02-03T10:00:00Z"),
       formationId: null,
@@ -132,6 +138,8 @@ describe("CharacterSheet (entité)", () => {
     const sheet = CharacterSheet.create({
       id: "sheet-1",
       ownerId: "user-1",
+      groupId: "group-1",
+      campaignId: "campaign-1",
       name: CharacterSheetName.create("Aragorn"),
       createdAt: new Date("2026-01-01T00:00:00Z"),
       peupleId: "peuple-1",
@@ -177,6 +185,8 @@ describe("CharacterSheet (entité)", () => {
       id: "sheet-9",
       ownerId: "owner-9",
       groupId: "group-9",
+      campaignId: "campaign-9",
+      linkStatus: LinkStatus.ACCEPTED,
       name: CharacterSheetName.create("Legolas"),
       createdAt: new Date("2026-02-03T10:00:00Z"),
       perception: 8,
@@ -184,8 +194,36 @@ describe("CharacterSheet (entité)", () => {
     expect(sheet.id).toBe("sheet-9");
     expect(sheet.ownerId).toBe("owner-9");
     expect(sheet.groupId).toBe("group-9");
+    expect(sheet.campaignId).toBe("campaign-9");
+    expect(sheet.linkStatus).toBe(LinkStatus.ACCEPTED);
     expect(sheet.name.value).toBe("Legolas");
     expect(sheet.createdAt.getTime()).toBe(new Date("2026-02-03T10:00:00Z").getTime());
     expect(sheet.details.perception).toBe(8);
+  });
+
+  it("create établit la campagne et le statut PENDING par défaut", () => {
+    const sheet = build();
+    expect(sheet.campaignId).toBe("campaign-1");
+    expect(sheet.isPending()).toBe(true);
+    expect(sheet.linkStatus).toBe(LinkStatus.PENDING);
+  });
+
+  it("accept passe le statut à ACCEPTED sans muter l'originale", () => {
+    const original = build();
+    const accepted = original.accept();
+    expect(original.isPending()).toBe(true);
+    expect(accepted.isPending()).toBe(false);
+    expect(accepted.linkStatus).toBe(LinkStatus.ACCEPTED);
+  });
+
+  it("copyTo duplique la fiche vers une autre campagne en PENDING avec un nouvel id", () => {
+    const source = build().accept();
+    const copy = source.copyTo("sheet-copie", "campaign-2", new Date("2026-05-05T00:00:00Z"));
+    expect(copy.id).toBe("sheet-copie");
+    expect(copy.campaignId).toBe("campaign-2");
+    expect(copy.isPending()).toBe(true);
+    expect(copy.ownerId).toBe(source.ownerId);
+    expect(copy.name.value).toBe(source.name.value);
+    expect(copy.createdAt.getTime()).toBe(new Date("2026-05-05T00:00:00Z").getTime());
   });
 });

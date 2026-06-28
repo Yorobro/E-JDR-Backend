@@ -7,4 +7,6 @@ export interface SheetCampaignView {
   readonly campaignId: string;
   readonly campaignName: string;
   readonly gameMasterPseudo: string;
+  /** Statut du rattachement de la fiche à cette campagne : `"PENDING"` ou `"ACCEPTED"`. */
+  readonly linkStatus: string;
 }

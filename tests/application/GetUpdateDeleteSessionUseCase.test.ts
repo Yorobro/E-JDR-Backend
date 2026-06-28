@@ -26,7 +26,7 @@ describe("GetSessionUseCaseImpl", () => {
     const groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     useCase = new GetSessionUseCaseImpl(txRepos.sessions, txRepos.campaigns, groupAccessService);
     // Campagne dans group-1
@@ -77,7 +77,7 @@ describe("UpdateSessionUseCaseImpl", () => {
     const groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     useCase = new UpdateSessionUseCaseImpl(
       txRepos.sessions,
@@ -185,7 +185,7 @@ describe("DeleteSessionUseCaseImpl", () => {
     const groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     useCase = new DeleteSessionUseCaseImpl(
       txRepos.sessions,

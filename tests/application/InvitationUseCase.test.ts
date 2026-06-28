@@ -4,14 +4,17 @@ import { InvitationStatus } from "@domain/features/friend-group/value-objects/In
 import { AcceptInvitationUseCaseImpl } from "@application/features/friend-group/usecases/AcceptInvitationUseCaseImpl";
 import { DeclineInvitationUseCaseImpl } from "@application/features/friend-group/usecases/DeclineInvitationUseCaseImpl";
 import { RemoveMemberUseCaseImpl } from "@application/features/friend-group/usecases/RemoveMemberUseCaseImpl";
+import { InviteMemberUseCaseImpl } from "@application/features/friend-group/usecases/InviteMemberUseCaseImpl";
 import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
 import {
   buildFakeTransactionalRepositories,
   FakeUnitOfWork,
   FakeLogger,
+  FakeIdGenerator,
   buildTestFriendGroup,
   buildTestMembership,
   buildTestInvitation,
+  buildTestCredential,
 } from "./fakes";
 
 describe("AcceptInvitationUseCase", () => {
@@ -93,7 +96,7 @@ describe("RemoveMemberUseCase", () => {
     const accessService = new GroupAccessServiceImpl(
       repos.groupMembers,
       repos.campaigns,
-      repos.campaignCharacters,
+      repos.characterSheets,
     );
     useCase = new RemoveMemberUseCaseImpl(
       repos.groupMembers,
@@ -141,5 +144,74 @@ describe("RemoveMemberUseCase", () => {
     });
 
     expect(result.error.code).toBe("NOT_GROUP_MEMBER");
+  });
+});
+
+describe("InviteMemberUseCase — réinvitation après résolution", () => {
+  let repos: ReturnType<typeof buildFakeTransactionalRepositories>;
+  let useCase: InviteMemberUseCaseImpl;
+
+  beforeEach(() => {
+    repos = buildFakeTransactionalRepositories();
+    repos.groupMembers.seed(buildTestMembership({ userId: "user-1", role: GroupRole.ADMIN }));
+    // L'invité (user-2) doit avoir un compte (anti-énumération → 404 sinon).
+    repos.credentials.seed(buildTestCredential("invite@test.com", "pwd", "user-2", "cred-2"));
+    const accessService = new GroupAccessServiceImpl(
+      repos.groupMembers,
+      repos.campaigns,
+      repos.characterSheets,
+    );
+    useCase = new InviteMemberUseCaseImpl({
+      credentialRepository: repos.credentials,
+      groupMemberRepository: repos.groupMembers,
+      groupInvitationRepository: repos.groupInvitations,
+      groupAccessService: accessService,
+      idGenerator: new FakeIdGenerator(),
+      unitOfWork: new FakeUnitOfWork(repos),
+      logger: new FakeLogger(),
+    });
+  });
+
+  it("autorise la réinvitation quand une invitation DECLINED existe déjà pour ce couple", async () => {
+    // Une invitation résolue (refusée) traîne en base pour (group-1, user-2).
+    repos.groupInvitations.seed(
+      buildTestInvitation({
+        id: "old-inv",
+        invitedUserId: "user-2",
+        status: InvitationStatus.DECLINED,
+      }),
+    );
+
+    const result = await useCase.execute({
+      groupId: "group-1",
+      invitedByUserId: "user-1",
+      inviteeEmail: "invite@test.com",
+    });
+
+    // La réinvitation doit réussir (l'ancienne ligne résolue ne doit pas bloquer l'INSERT).
+    expect(result.isSuccess).toBe(true);
+    const pending = await repos.groupInvitations.findPendingByGroupAndUser("group-1", "user-2");
+    expect(pending).not.toBeNull();
+    // L'ancienne invitation résolue a été supprimée (pas d'accumulation / pas de violation d'unicité).
+    expect(await repos.groupInvitations.findById("old-inv")).toBeNull();
+  });
+
+  it("refuse une nouvelle invitation s'il existe déjà une invitation PENDING", async () => {
+    repos.groupInvitations.seed(
+      buildTestInvitation({
+        id: "pending-inv",
+        invitedUserId: "user-2",
+        status: InvitationStatus.PENDING,
+      }),
+    );
+
+    const result = await useCase.execute({
+      groupId: "group-1",
+      invitedByUserId: "user-1",
+      inviteeEmail: "invite@test.com",
+    });
+
+    expect(result.isFailure).toBe(true);
+    expect(result.error.code).toBe("INVITATION_ALREADY_PENDING");
   });
 });

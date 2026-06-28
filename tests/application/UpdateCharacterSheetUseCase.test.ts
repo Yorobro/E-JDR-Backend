@@ -26,7 +26,7 @@ describe("UpdateCharacterSheetUseCaseImpl", () => {
     const groupAccessService = new GroupAccessServiceImpl(
       repos.groupMembers,
       repos.campaigns,
-      repos.campaignCharacters,
+      repos.characterSheets,
     );
     return new UpdateCharacterSheetUseCaseImpl({
       characterSheetRepository: repos.characterSheets,

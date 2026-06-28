@@ -13,6 +13,7 @@ export function buildCharacterSheetRoutes(controller: CharacterSheetController):
   const router = Router();
 
   router.post("/", controller.create);
+  router.post("/:id/copy", controller.copy);
   router.get("/", controller.list);
   router.get("/:id", controller.getById);
   router.get("/:id/campaigns", controller.campaigns);

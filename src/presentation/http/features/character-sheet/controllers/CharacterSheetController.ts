@@ -5,6 +5,7 @@ import { DeleteCharacterSheetUseCase } from "@application/features/character-she
 import { GetCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/GetCharacterSheetUseCase";
 import { UpdateCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/UpdateCharacterSheetUseCase";
 import { GetSheetCampaignsUseCase } from "@application/features/character-sheet/abstractions/usecases/GetSheetCampaignsUseCase";
+import { CopyCharacterSheetUseCase } from "@application/features/character-sheet/abstractions/usecases/CopyCharacterSheetUseCase";
 import { CharacterSheetDetail } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
 import { UpdateCharacterSheetCommand } from "@application/features/character-sheet/commands/UpdateCharacterSheetCommand";
 import { CharacterSheetHttpMapper } from "@presentation/http/features/character-sheet/mappers/CharacterSheetHttpMapper";
@@ -49,28 +50,55 @@ function toPurseCommand(
 }
 
 /**
+ * Use cases consommés par le {@link CharacterSheetController}, regroupés dans un objet pour rester
+ * sous la limite de paramètres de constructeur (`ejdr/parameter-count`).
+ */
+export interface CharacterSheetControllerUseCases {
+  readonly createCharacterSheet: CreateCharacterSheetUseCase;
+  readonly listMyCharacterSheets: ListMyCharacterSheetsUseCase;
+  readonly deleteCharacterSheet: DeleteCharacterSheetUseCase;
+  readonly getCharacterSheet: GetCharacterSheetUseCase;
+  readonly updateCharacterSheet: UpdateCharacterSheetUseCase;
+  readonly getSheetCampaigns: GetSheetCampaignsUseCase;
+  readonly copyCharacterSheet: CopyCharacterSheetUseCase;
+}
+
+/**
  * Controller HTTP des fiches de personnage (CRUD des fiches de l'utilisateur courant).
  *
  * Monté derrière le middleware d'authentification : `req.user` est toujours renseigné. Le
  * `ownerId` est **toujours** pris de la session, jamais du corps de la requête.
  */
 export class CharacterSheetController {
-  constructor(
-    private readonly createCharacterSheet: CreateCharacterSheetUseCase,
-    private readonly listMyCharacterSheets: ListMyCharacterSheetsUseCase,
-    private readonly deleteCharacterSheet: DeleteCharacterSheetUseCase,
-    private readonly getCharacterSheet: GetCharacterSheetUseCase,
-    private readonly updateCharacterSheet: UpdateCharacterSheetUseCase,
-    private readonly getSheetCampaigns: GetSheetCampaignsUseCase,
-  ) {}
+  private readonly createCharacterSheet: CreateCharacterSheetUseCase;
+  private readonly listMyCharacterSheets: ListMyCharacterSheetsUseCase;
+  private readonly deleteCharacterSheet: DeleteCharacterSheetUseCase;
+  private readonly getCharacterSheet: GetCharacterSheetUseCase;
+  private readonly updateCharacterSheet: UpdateCharacterSheetUseCase;
+  private readonly getSheetCampaigns: GetSheetCampaignsUseCase;
+  private readonly copyCharacterSheet: CopyCharacterSheetUseCase;
 
-  /** `POST /character-sheets` — crée une fiche dans le groupe actif, possédée par l'utilisateur. */
+  constructor(useCases: CharacterSheetControllerUseCases) {
+    this.createCharacterSheet = useCases.createCharacterSheet;
+    this.listMyCharacterSheets = useCases.listMyCharacterSheets;
+    this.deleteCharacterSheet = useCases.deleteCharacterSheet;
+    this.getCharacterSheet = useCases.getCharacterSheet;
+    this.updateCharacterSheet = useCases.updateCharacterSheet;
+    this.getSheetCampaigns = useCases.getSheetCampaigns;
+    this.copyCharacterSheet = useCases.copyCharacterSheet;
+  }
+
+  /**
+   * `POST /character-sheets` — crée une fiche dans le groupe actif, possédée par l'utilisateur et
+   * **rattachée à une campagne** (en attente de validation du MJ).
+   */
   public create = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const body = req.body as { name?: unknown; groupId?: unknown };
+      const body = req.body as { name?: unknown; groupId?: unknown; campaignId?: unknown };
       const result = await this.createCharacterSheet.execute({
         ownerId: req.user!.userId,
         groupId: body.groupId as string,
+        campaignId: (body.campaignId as string) ?? "",
         name: body.name as string,
       });
 
@@ -155,8 +183,36 @@ export class CharacterSheetController {
         campaignId: view.campaignId,
         campaignName: view.campaignName,
         gameMasterPseudo: view.gameMasterPseudo,
+        linkStatus: view.linkStatus,
       }));
       res.status(200).json({ campaigns });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * `POST /character-sheets/:id/copy` — copie la fiche vers une autre campagne (nouvelle fiche
+   * PENDING). Seul le propriétaire peut copier sa fiche.
+   */
+  public copy = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = req.body as { targetCampaignId?: unknown };
+      const result = await this.copyCharacterSheet.execute({
+        sourceSheetId: req.params.id ?? "",
+        targetCampaignId: (body.targetCampaignId as string) ?? "",
+        actorUserId: req.user!.userId,
+      });
+
+      if (result.isFailure) {
+        res
+          .status(CharacterSheetHttpMapper.statusFor(result.error))
+          .json({ code: result.error.code, message: result.error.message });
+        return;
+      }
+
+      const { id, ownerId, name, createdAt } = result.value;
+      res.status(201).json({ id, ownerId, name, createdAt: createdAt.toISOString() });
     } catch (error) {
       next(error);
     }

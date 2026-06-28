@@ -81,4 +81,15 @@ export class GroupInvitationDao {
   public async updateStatus(id: string, status: string): Promise<void> {
     await this.executor.update(groupInvitations).set({ status }).where(eq(groupInvitations.id, id));
   }
+
+  public async deleteByGroupAndUser(groupId: string, invitedUserId: string): Promise<void> {
+    await this.executor
+      .delete(groupInvitations)
+      .where(
+        and(
+          eq(groupInvitations.group_id, groupId),
+          eq(groupInvitations.invited_user_id, invitedUserId),
+        ),
+      );
+  }
 }

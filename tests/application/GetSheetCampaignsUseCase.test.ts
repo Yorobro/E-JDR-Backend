@@ -16,18 +16,16 @@ describe("GetSheetCampaignsUseCaseImpl", () => {
 
   beforeEach(() => {
     txRepos = buildFakeTransactionalRepositories();
-    useCase = new GetSheetCampaignsUseCaseImpl(
-      txRepos.characterSheets,
-      txRepos.campaignCharacters,
-      new FakeLogger(),
-    );
+    useCase = new GetSheetCampaignsUseCaseImpl(txRepos.characterSheets, new FakeLogger());
   });
 
-  it("renvoie les campagnes rattachées avec le pseudo du MJ si le demandeur est propriétaire", async () => {
-    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
+  it("renvoie la campagne rattachée avec le pseudo du MJ et le statut si le demandeur est propriétaire", async () => {
     txRepos.users.seed(buildTestUser("mj-1", "MJDuRoyaume"));
     txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1", "La Quête de l'Anneau"));
-    await txRepos.campaignCharacters.link("camp-1", "s-1");
+    // Modèle « une fiche = une campagne » : la fiche porte directement sa campagne (statut PENDING).
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", {}, "group-1", "camp-1"),
+    );
 
     const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "owner-1" });
 
@@ -37,11 +35,15 @@ describe("GetSheetCampaignsUseCaseImpl", () => {
       campaignId: "camp-1",
       campaignName: "La Quête de l'Anneau",
       gameMasterPseudo: "MJDuRoyaume",
+      linkStatus: "PENDING",
     });
   });
 
-  it("renvoie une liste vide si la fiche n'est rattachée à aucune campagne", async () => {
-    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1"));
+  it("renvoie une liste vide si la campagne de la fiche n'existe pas (vue introuvable)", async () => {
+    // La fiche pointe vers une campagne absente : la vue cross‑agrégat ne peut être projetée.
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", {}, "group-1", "camp-absente"),
+    );
 
     const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "owner-1" });
 

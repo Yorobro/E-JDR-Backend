@@ -12,7 +12,7 @@ describe("GroupAccessService.requireEditor", () => {
     service = new GroupAccessServiceImpl(
       repos.groupMembers,
       repos.campaigns,
-      repos.campaignCharacters,
+      repos.characterSheets,
     );
   });
 

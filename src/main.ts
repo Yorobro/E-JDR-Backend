@@ -108,10 +108,9 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
 
   const { sessions: sessionRepository } = createSessionRepositories(connection.getDb());
 
-  const {
-    characterSheets: characterSheetRepository,
-    campaignCharacters: campaignCharacterRepository,
-  } = createCharacterSheetRepositories(connection.getDb());
+  const { characterSheets: characterSheetRepository } = createCharacterSheetRepositories(
+    connection.getDb(),
+  );
 
   const referenceRepositories = createReferenceRepositories(connection.getDb());
   const friendGroupRepositories = createFriendGroupRepositories(connection.getDb());
@@ -143,7 +142,6 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     campaignRepository,
     sessionRepository,
     characterSheetRepository,
-    campaignCharacterRepository,
     referenceRepositories,
     friendGroupRepositories,
     unitOfWork,
@@ -352,7 +350,7 @@ function buildControllers(
     groupMemberRepository: services.friendGroupRepositories.groupMembers,
     groupInvitationRepository: services.friendGroupRepositories.groupInvitations,
     campaignRepository: services.campaignRepository,
-    campaignCharacterRepository: services.campaignCharacterRepository,
+    characterSheetRepository: services.characterSheetRepository,
     credentialRepository: services.credentialRepository,
     idGenerator: services.idGenerator,
     unitOfWork: services.unitOfWork,
@@ -362,11 +360,11 @@ function buildControllers(
   const campaignDeps = {
     campaignRepository: services.campaignRepository,
     characterSheetRepository: services.characterSheetRepository,
-    campaignCharacterRepository: services.campaignCharacterRepository,
     groupAccessService,
     idGenerator: services.idGenerator,
     unitOfWork: services.unitOfWork,
     logger,
+    realtimeNotifier,
   };
   const sessionController = buildSessionController({
     campaignRepository: services.campaignRepository,
@@ -378,7 +376,7 @@ function buildControllers(
   });
   const characterSheetDeps = {
     characterSheetRepository: services.characterSheetRepository,
-    campaignCharacterRepository: services.campaignCharacterRepository,
+    campaignRepository: services.campaignRepository,
     formationRepository: services.referenceRepositories.formations,
     peupleRepository: services.referenceRepositories.peoples,
     competenceRepository: services.referenceRepositories.competences,
