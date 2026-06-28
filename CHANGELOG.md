@@ -1,3 +1,9 @@
+## 1.15.0 (2026-06-28)
+
+* Merge pull request #21 from Yorobro/feat/droits-campagne-et-affichage-fiche ([e622a45](https://github.com/Yorobro/E-JDR-Backend/commit/e622a45)), closes [#21](https://github.com/Yorobro/E-JDR-Backend/issues/21)
+* Merge pull request #22 from Yorobro/develop ([7318533](https://github.com/Yorobro/E-JDR-Backend/commit/7318533)), closes [#22](https://github.com/Yorobro/E-JDR-Backend/issues/22)
+* feat(campagnes/fiches): droits MJ-de-la-campagne + campagne sur les fiches + correctifs ([ae5880b](https://github.com/Yorobro/E-JDR-Backend/commit/ae5880b))
+
 ## 1.14.0 (2026-06-28)
 
 * Merge pull request #17 from Yorobro/main ([954e64d](https://github.com/Yorobro/E-JDR-Backend/commit/954e64d)), closes [#17](https://github.com/Yorobro/E-JDR-Backend/issues/17)
