@@ -14,26 +14,16 @@ import { ChangePasswordUseCaseImpl } from "@application/features/auth/usecases/C
 import { AuthController } from "@presentation/http/features/auth/controllers/AuthController";
 import { UserController } from "@presentation/http/features/auth/controllers/UserController";
 import { buildAuthMiddleware } from "@presentation/http/shared/middlewares/authMiddleware";
-import { CreateCampaignUseCaseImpl } from "@application/features/campaign/usecases/CreateCampaignUseCaseImpl";
-import { ListMyCampaignsUseCaseImpl } from "@application/features/campaign/usecases/ListMyCampaignsUseCaseImpl";
-import { DeleteCampaignUseCaseImpl } from "@application/features/campaign/usecases/DeleteCampaignUseCaseImpl";
-import { CampaignController } from "@presentation/http/features/campaign/controllers/CampaignController";
-import { CampaignCharacterController } from "@presentation/http/features/campaign/controllers/CampaignCharacterController";
+import {
+  buildCampaignController,
+  buildCampaignCharacterController,
+} from "@presentation/http/features/campaign/buildCampaignControllers";
 import { buildSessionController } from "@presentation/http/features/session/buildSessionController";
 import { buildReferenceController } from "@presentation/http/features/reference/buildReferenceController";
-import { CreateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/CreateCharacterSheetUseCaseImpl";
-import { ListMyCharacterSheetsUseCaseImpl } from "@application/features/character-sheet/usecases/ListMyCharacterSheetsUseCaseImpl";
-import { DeleteCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/DeleteCharacterSheetUseCaseImpl";
-import { GetCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/GetCharacterSheetUseCaseImpl";
-import { UpdateCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/UpdateCharacterSheetUseCaseImpl";
-import { GetSheetCampaignsUseCaseImpl } from "@application/features/character-sheet/usecases/GetSheetCampaignsUseCaseImpl";
-import { LinkCharacterToCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/LinkCharacterToCampaignUseCaseImpl";
-import { UnlinkCharacterFromCampaignUseCaseImpl } from "@application/features/character-sheet/usecases/UnlinkCharacterFromCampaignUseCaseImpl";
-import { ListCampaignCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListCampaignCharactersUseCaseImpl";
-import { ListLinkableCharactersUseCaseImpl } from "@application/features/character-sheet/usecases/ListLinkableCharactersUseCaseImpl";
-import { CharacterSheetController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetController";
-import { ExportCharacterSheetPdfUseCaseImpl } from "@application/features/character-sheet/usecases/ExportCharacterSheetPdfUseCaseImpl";
-import { CharacterSheetExportController } from "@presentation/http/features/character-sheet/controllers/CharacterSheetExportController";
+import {
+  buildCharacterSheetController,
+  buildCharacterSheetExportController,
+} from "@presentation/http/features/character-sheet/buildCharacterSheetControllers";
 
 import {
   buildFakeTransactionalRepositories,
@@ -61,6 +51,7 @@ export function buildTestApp(): {
   const tokenHasher = new FakeTokenHasher();
   const tokenProvider = new FakeTokenProvider();
   const logger = new FakeLogger();
+  const realtimeNotifier = new FakeRealtimeNotifier();
 
   const authTokenService = new AuthTokenServiceImpl(
     tokenProvider,
@@ -112,94 +103,49 @@ export function buildTestApp(): {
     groupMemberRepository: repos.groupMembers,
     groupInvitationRepository: repos.groupInvitations,
     campaignRepository: repos.campaigns,
-    campaignCharacterRepository: repos.campaignCharacters,
+    characterSheetRepository: repos.characterSheets,
     credentialRepository: repos.credentials,
     idGenerator,
     unitOfWork,
     logger,
   });
 
-  const campaignController = new CampaignController(
-    new CreateCampaignUseCaseImpl(idGenerator, groupAccessService, unitOfWork, logger),
-    new ListMyCampaignsUseCaseImpl(repos.campaigns, groupAccessService),
-    new DeleteCampaignUseCaseImpl(repos.campaigns, groupAccessService, unitOfWork, logger),
-  );
+  // Dépendances campagne (créer / lister / supprimer + personnages de campagne).
+  const campaignDeps = {
+    campaignRepository: repos.campaigns,
+    characterSheetRepository: repos.characterSheets,
+    groupAccessService,
+    idGenerator,
+    unitOfWork,
+    logger,
+    realtimeNotifier,
+  };
+  const campaignController = buildCampaignController(campaignDeps);
+  const campaignCharacterController = buildCampaignCharacterController(campaignDeps);
 
-  const campaignCharacterController = new CampaignCharacterController(
-    new LinkCharacterToCampaignUseCaseImpl(
-      repos.campaigns,
-      repos.characterSheets,
-      repos.campaignCharacters,
-      unitOfWork,
-      logger,
-    ),
-    new UnlinkCharacterFromCampaignUseCaseImpl(
-      repos.campaigns,
-      repos.characterSheets,
-      unitOfWork,
-      logger,
-    ),
-    new ListCampaignCharactersUseCaseImpl(repos.campaigns, repos.campaignCharacters),
-    new ListLinkableCharactersUseCaseImpl(repos.campaigns, repos.characterSheets),
-  );
-
-  const realtimeNotifier = new FakeRealtimeNotifier();
-  const characterSheetController = new CharacterSheetController(
-    new CreateCharacterSheetUseCaseImpl(
-      idGenerator,
-      groupAccessService,
-      unitOfWork,
-      logger,
-      realtimeNotifier,
-    ),
-    new ListMyCharacterSheetsUseCaseImpl(repos.characterSheets, groupAccessService),
-    new DeleteCharacterSheetUseCaseImpl(
-      repos.characterSheets,
-      unitOfWork,
-      logger,
-      groupAccessService,
-      realtimeNotifier,
-    ),
-    new GetCharacterSheetUseCaseImpl({
-      characterSheetRepository: repos.characterSheets,
-      formationRepository: repos.formations,
-      peupleRepository: repos.peoples,
-      competenceRepository: repos.competences,
-      formationCompetenceLink: repos.formationCompetences,
-      sheetArmures: repos.sheetArmures,
-      groupAccessService,
-      logger,
-    }),
-    new UpdateCharacterSheetUseCaseImpl({
-      characterSheetRepository: repos.characterSheets,
-      formationRepository: repos.formations,
-      peupleRepository: repos.peoples,
-      groupAccessService,
-      unitOfWork,
-      logger,
-      realtimeNotifier,
-    }),
-    new GetSheetCampaignsUseCaseImpl(repos.characterSheets, repos.campaignCharacters, logger),
-  );
-
-  const characterSheetExportController = new CharacterSheetExportController(
-    new ExportCharacterSheetPdfUseCaseImpl({
-      characterSheetRepository: repos.characterSheets,
-      pdfGenerator: new FakeCharacterSheetPdfGenerator(),
-      logger,
-      groupAccessService,
-      formationRepository: repos.formations,
-      peupleRepository: repos.peoples,
-      competenceRepository: repos.competences,
-      formationCompetenceLink: repos.formationCompetences,
-      sheetArmes: repos.sheetArmes,
-      sheetArmures: repos.sheetArmures,
-      sheetCompetences: repos.sheetCompetences,
-      sheetEquipements: repos.sheetEquipements,
-      sheetSorts: repos.sheetSorts,
-      sheetMiracles: repos.sheetMiracles,
-    }),
-  );
+  // Dépendances fiches (CRUD + copie + export PDF), assemblées via les builders réels de `main.ts`.
+  const characterSheetDeps = {
+    characterSheetRepository: repos.characterSheets,
+    campaignRepository: repos.campaigns,
+    formationRepository: repos.formations,
+    peupleRepository: repos.peoples,
+    competenceRepository: repos.competences,
+    formationCompetenceLinkRepository: repos.formationCompetences,
+    sheetArmesRepository: repos.sheetArmes,
+    sheetArmuresRepository: repos.sheetArmures,
+    sheetCompetencesRepository: repos.sheetCompetences,
+    sheetEquipementsRepository: repos.sheetEquipements,
+    sheetSortsRepository: repos.sheetSorts,
+    sheetMiraclesRepository: repos.sheetMiracles,
+    groupAccessService,
+    pdfGenerator: new FakeCharacterSheetPdfGenerator(),
+    idGenerator,
+    unitOfWork,
+    logger,
+    realtimeNotifier,
+  };
+  const characterSheetController = buildCharacterSheetController(characterSheetDeps);
+  const characterSheetExportController = buildCharacterSheetExportController(characterSheetDeps);
 
   const sessionController = buildSessionController({
     campaignRepository: repos.campaigns,

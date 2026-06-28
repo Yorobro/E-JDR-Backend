@@ -27,7 +27,6 @@ export class CharacterSheetHttpMapper {
       case "NOT_GROUP_MEMBER":
         return 403;
       case "GM_CANNOT_JOIN_OWN_CAMPAIGN":
-      case "SHEET_ALREADY_IN_CAMPAIGN":
         return 409;
       default:
         return 400;

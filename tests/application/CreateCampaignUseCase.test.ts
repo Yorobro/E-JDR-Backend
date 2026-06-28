@@ -20,7 +20,7 @@ describe("CreateCampaignUseCaseImpl", () => {
     const groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     const unitOfWork = new FakeUnitOfWork(txRepos);
     useCase = new CreateCampaignUseCaseImpl(

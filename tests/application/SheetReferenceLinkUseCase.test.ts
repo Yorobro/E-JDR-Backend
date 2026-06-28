@@ -26,7 +26,7 @@ describe("Sheet reference link use cases (génériques, testés sur `armes`)", (
     groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "u-1" }));
   });

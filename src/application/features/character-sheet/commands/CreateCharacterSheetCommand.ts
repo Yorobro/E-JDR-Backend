@@ -9,6 +9,11 @@ export interface CreateCharacterSheetCommand {
   readonly ownerId: string;
   /** Identifiant du groupe d'amis dans lequel la fiche est créée (le propriétaire doit en être membre). */
   readonly groupId: string;
+  /**
+   * Identifiant de la campagne à laquelle rattacher la fiche dès sa création (**obligatoire** :
+   * une fiche = une campagne). Le rattachement part en attente de validation du MJ (PENDING).
+   */
+  readonly campaignId: string;
   /** Nom de la fiche saisi par l'utilisateur (brut, non encore validé). */
   readonly name: string;
 }

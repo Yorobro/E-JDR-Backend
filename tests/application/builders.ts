@@ -30,7 +30,9 @@ import { CharacterSheetName } from "@domain/features/character-sheet/value-objec
  * @param ownerId - L'identifiant du propriétaire (par défaut "user-1").
  * @param name - Le nom de la fiche (par défaut "Aragorn").
  * @param details - Champs détaillés optionnels (identité, caractéristiques, textes longs).
- * @returns Une entité `CharacterSheet` prête pour les tests.
+ * @param groupId - L'identifiant du groupe de la fiche (par défaut "group-1").
+ * @param campaignId - L'identifiant de la campagne **obligatoire** rattachée (par défaut "campaign-1").
+ * @returns Une entité `CharacterSheet` prête pour les tests (statut PENDING par défaut via `create`).
  */
 export function buildTestCharacterSheet(
   id = "sheet-1",
@@ -38,11 +40,13 @@ export function buildTestCharacterSheet(
   name = "Aragorn",
   details: Partial<CharacterSheetDetails> = {},
   groupId = "group-1",
+  campaignId = "campaign-1",
 ): CharacterSheet {
   return CharacterSheet.create({
     id,
     ownerId,
     groupId,
+    campaignId,
     name: CharacterSheetName.create(name),
     createdAt: new Date("2026-01-01T00:00:00Z"),
     ...details,
