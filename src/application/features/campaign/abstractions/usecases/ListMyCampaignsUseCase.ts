@@ -10,6 +10,8 @@ export interface CampaignSummary {
   readonly id: string;
   /** Nom (normalisé) de la campagne. */
   readonly name: string;
+  /** Identifiant du maître du jeu propriétaire (permet au front d'exclure ses propres campagnes). */
+  readonly gameMasterId: string;
   /** Date de création de la campagne. */
   readonly createdAt: Date;
 }

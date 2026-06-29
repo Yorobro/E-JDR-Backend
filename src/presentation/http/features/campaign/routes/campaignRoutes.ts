@@ -23,11 +23,11 @@ export function buildCampaignRoutes(
   router.get("/", controller.list);
   router.delete("/:id", controller.remove);
 
-  // Liaison campagne↔fiches.
-  router.post("/:campaignId/characters", characterController.link);
+  // Personnages d'une campagne (modèle « une fiche = une campagne »).
   router.get("/:campaignId/characters", characterController.list);
-  router.delete("/:campaignId/characters/:characterSheetId", characterController.unlink);
-  router.get("/:campaignId/linkable-characters", characterController.listLinkable);
+  router.get("/:campaignId/pending-characters", characterController.listPending);
+  router.post("/:campaignId/characters/:characterSheetId/accept", characterController.accept);
+  router.post("/:campaignId/characters/:characterSheetId/refuse", characterController.refuse);
 
   return router;
 }

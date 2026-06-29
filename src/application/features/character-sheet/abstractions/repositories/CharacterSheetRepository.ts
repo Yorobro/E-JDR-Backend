@@ -1,4 +1,5 @@
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
+import { SheetCampaignView } from "@application/features/character-sheet/abstractions/repositories/SheetCampaignView";
 
 /**
  * Port « out » d'accès aux fiches de personnage.
@@ -54,18 +55,31 @@ export interface CharacterSheetRepository {
   deleteById(id: string): Promise<void>;
 
   /**
-   * Récupère les fiches rattachables à une campagne : toutes les fiches **du groupe de la
-   * campagne** dont le propriétaire n'est PAS le maître du jeu, en excluant les fiches déjà
-   * rattachées à cette campagne (D6 : le MJ pioche parmi toutes les fiches du groupe).
+   * Récupère les fiches rattachées à une campagne ayant un statut donné (PENDING ou ACCEPTED).
    *
-   * @param groupId - Identifiant du groupe de la campagne (limite la liste à ce groupe).
-   * @param gameMasterId - Identifiant du MJ de la campagne (ses fiches sont exclues).
-   * @param campaignId - Identifiant de la campagne (les fiches déjà liées sont exclues).
-   * @returns Les fiches rattachables (tableau éventuellement vide).
+   * - ACCEPTED : les personnages réellement présents dans la campagne.
+   * - PENDING : les demandes de rattachement en attente de validation du MJ.
+   *
+   * @param campaignId - Identifiant de la campagne.
+   * @param status - Statut de rattachement recherché (`"PENDING"` ou `"ACCEPTED"`).
+   * @returns Les fiches correspondantes (tableau éventuellement vide).
    */
-  findLinkableForCampaign(
-    groupId: string,
-    gameMasterId: string,
-    campaignId: string,
-  ): Promise<CharacterSheet[]>;
+  findByCampaignIdAndStatus(campaignId: string, status: string): Promise<CharacterSheet[]>;
+
+  /**
+   * Met à jour le seul statut de rattachement d'une fiche (validation MJ : PENDING → ACCEPTED).
+   *
+   * @param id - Identifiant de la fiche.
+   * @param status - Nouveau statut (`"PENDING"` ou `"ACCEPTED"`).
+   */
+  updateLinkStatus(id: string, status: string): Promise<void>;
+
+  /**
+   * Vue de la campagne **unique** à laquelle la fiche est rattachée (nom + pseudo du MJ + statut),
+   * ou `null` si la fiche n'existe pas (modèle « une fiche = une campagne »).
+   *
+   * @param sheetId - Identifiant de la fiche.
+   * @returns La vue de campagne, ou `null`.
+   */
+  findCampaignViewBySheetId(sheetId: string): Promise<SheetCampaignView | null>;
 }

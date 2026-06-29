@@ -2,6 +2,7 @@ import { CharacterSheet } from "@domain/features/character-sheet/entities/Charac
 import { CharacterSheetName } from "@domain/features/character-sheet/value-objects/CharacterSheetName";
 import { Sex } from "@domain/features/character-sheet/value-objects/Sex";
 import { Purse } from "@domain/features/character-sheet/value-objects/Purse";
+import { LinkStatus } from "@domain/features/character-sheet/value-objects/LinkStatus";
 import {
   CharacterSheetRow,
   CharacterSheetWriteRow,
@@ -27,6 +28,10 @@ export class CharacterSheetMapper {
       id: row.id,
       ownerId: row.owner_id,
       groupId: row.group_id,
+      // campaign_id / status sont NOT NULL en base ; le fallback couvre les projections partielles
+      // (listes « nom seul ») où ces colonnes seraient absentes, par cohérence avec les autres champs.
+      campaignId: row.campaign_id ?? "",
+      linkStatus: LinkStatus.create(row.campaign_link_status ?? "PENDING"),
       name: CharacterSheetName.create(row.name),
       createdAt: new Date(row.created_at),
       formationId: row.formation_id ?? null,
@@ -61,6 +66,8 @@ export class CharacterSheetMapper {
       id: sheet.id,
       owner_id: sheet.ownerId,
       group_id: sheet.groupId,
+      campaign_id: sheet.campaignId,
+      campaign_link_status: sheet.linkStatus.value,
       name: sheet.name.value,
       created_at: sheet.createdAt,
       formation_id: d.formationId,

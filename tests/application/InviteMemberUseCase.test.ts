@@ -27,7 +27,7 @@ describe("InviteMemberUseCase", () => {
     const accessService = new GroupAccessServiceImpl(
       repos.groupMembers,
       repos.campaigns,
-      repos.campaignCharacters,
+      repos.characterSheets,
     );
     useCase = new InviteMemberUseCaseImpl({
       credentialRepository: repos.credentials,

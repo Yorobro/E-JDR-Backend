@@ -24,7 +24,7 @@ describe("DeleteCharacterSheetUseCaseImpl", () => {
     const groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     useCase = new DeleteCharacterSheetUseCaseImpl(
       txRepos.characterSheets,

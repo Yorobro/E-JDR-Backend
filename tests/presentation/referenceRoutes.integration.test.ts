@@ -3,6 +3,7 @@ import request from "supertest";
 import type { Application } from "express";
 
 import { buildTestApp } from "./buildTestApp";
+import { createPendingSheet } from "./sheetTestHelpers";
 
 describe("Reference routes (intégration HTTP)", () => {
   let app: Application;
@@ -99,8 +100,8 @@ describe("Reference routes (intégration HTTP)", () => {
   it("cycle de liaison N-N : créer une fiche + une arme, lier, lister, délier", async () => {
     const agent = await authenticate();
     const groupId = await createGroup(agent);
-    const sheet = await agent.post("/character-sheets").send({ name: "Aragorn", groupId });
-    const sheetId = sheet.body.id as string;
+    const result = await createPendingSheet(app, agent, groupId, "Aragorn");
+    const sheetId = result.sheet.id;
     const arme = await agent.post("/reference/armes").send({ name: "Andúril", groupId });
     const armeId = arme.body.id as string;
 
@@ -122,8 +123,8 @@ describe("Reference routes (intégration HTTP)", () => {
   it("une armure liée remonte ses points de protection, et la fiche dérive sa protection", async () => {
     const agent = await authenticate();
     const groupId = await createGroup(agent);
-    const sheet = await agent.post("/character-sheets").send({ name: "Conan", groupId });
-    const sheetId = sheet.body.id as string;
+    const result = await createPendingSheet(app, agent, groupId, "Conan");
+    const sheetId = result.sheet.id;
     const a1 = await agent
       .post("/reference/armures")
       .send({ name: "Plastron", groupId, protectionPoints: 3 });
@@ -148,8 +149,8 @@ describe("Reference routes (intégration HTTP)", () => {
   it("liaison N-1 : affecter une formation via PUT /character-sheets/:id (formationId)", async () => {
     const agent = await authenticate();
     const groupId = await createGroup(agent);
-    const sheet = await agent.post("/character-sheets").send({ name: "Aragorn", groupId });
-    const sheetId = sheet.body.id as string;
+    const result = await createPendingSheet(app, agent, groupId, "Aragorn");
+    const sheetId = result.sheet.id;
     const formation = await agent.post("/reference/formations").send({ name: "Rôdeur", groupId });
     const formationId = formation.body.id as string;
 
@@ -163,8 +164,8 @@ describe("Reference routes (intégration HTTP)", () => {
   it("PUT avec une formation d'un autre groupe renvoie 404 (REFERENCE_ITEM_NOT_FOUND)", async () => {
     const me = await authenticate("me@test.com");
     const meGroupId = await createGroup(me, "Groupe Me");
-    const sheet = await me.post("/character-sheets").send({ name: "Aragorn", groupId: meGroupId });
-    const sheetId = sheet.body.id as string;
+    const result = await createPendingSheet(app, me, meGroupId, "Aragorn");
+    const sheetId = result.sheet.id;
 
     const other = await authenticate("other@test.com");
     const otherGroupId = await createGroup(other, "Groupe Other");
@@ -298,8 +299,8 @@ describe("Reference routes (intégration HTTP)", () => {
   it("cycle de liaison N-N sorts : créer fiche + sort, lier, lister, délier", async () => {
     const agent = await authenticate();
     const groupId = await createGroup(agent);
-    const sheet = await agent.post("/character-sheets").send({ name: "Gandalf", groupId });
-    const sheetId = sheet.body.id as string;
+    const result = await createPendingSheet(app, agent, groupId, "Gandalf");
+    const sheetId = result.sheet.id;
     const sort = await agent.post("/reference/sorts").send({ name: "Lumière", groupId });
     const sortId = sort.body.id as string;
 
@@ -321,8 +322,8 @@ describe("Reference routes (intégration HTTP)", () => {
   it("cycle de liaison N-N miracles : lier puis lister", async () => {
     const agent = await authenticate();
     const groupId = await createGroup(agent);
-    const sheet = await agent.post("/character-sheets").send({ name: "Prêtresse", groupId });
-    const sheetId = sheet.body.id as string;
+    const result = await createPendingSheet(app, agent, groupId, "Prêtresse");
+    const sheetId = result.sheet.id;
     const miracle = await agent.post("/reference/miracles").send({ name: "Bénédiction", groupId });
     const miracleId = miracle.body.id as string;
 

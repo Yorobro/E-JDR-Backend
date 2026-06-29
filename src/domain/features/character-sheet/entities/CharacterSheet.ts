@@ -1,6 +1,7 @@
 import { CharacterSheetName } from "@domain/features/character-sheet/value-objects/CharacterSheetName";
 import { Sex } from "@domain/features/character-sheet/value-objects/Sex";
 import { Purse } from "@domain/features/character-sheet/value-objects/Purse";
+import { LinkStatus } from "@domain/features/character-sheet/value-objects/LinkStatus";
 
 /**
  * Champs **détaillés et éditables** d'une fiche (hors identité technique : id, ownerId,
@@ -82,6 +83,10 @@ export interface CharacterSheetSnapshot extends CharacterSheetDetails {
   readonly ownerId: string;
   /** Identifiant du groupe d'amis auquel la fiche appartient (visibilité = tout le groupe). */
   readonly groupId: string;
+  /** Identifiant de la campagne **unique** à laquelle la fiche est rattachée (D : 1 fiche = 1 campagne). */
+  readonly campaignId: string;
+  /** Statut du rattachement à la campagne : PENDING (en attente MJ) ou ACCEPTED (validé). */
+  readonly linkStatus: LinkStatus;
   /** Nom de la fiche (value object garantissant la validité). */
   readonly name: CharacterSheetName;
   /** Date de création de la fiche. */
@@ -124,6 +129,7 @@ export class CharacterSheet {
       id: string;
       ownerId: string;
       groupId: string;
+      campaignId: string;
       name: CharacterSheetName;
       createdAt: Date;
     } & Partial<CharacterSheetDetails>,
@@ -131,6 +137,8 @@ export class CharacterSheet {
     return new CharacterSheet({
       ...EMPTY_DETAILS,
       ...CREATION_DEFAULTS,
+      // À la création par un joueur, le rattachement est en attente de validation du MJ.
+      linkStatus: LinkStatus.PENDING,
       ...params,
     });
   }
@@ -160,6 +168,16 @@ export class CharacterSheet {
     return this.props.groupId;
   }
 
+  /** @returns L'identifiant de la campagne à laquelle la fiche est rattachée. */
+  public get campaignId(): string {
+    return this.props.campaignId;
+  }
+
+  /** @returns Le statut du rattachement à la campagne (PENDING/ACCEPTED). */
+  public get linkStatus(): LinkStatus {
+    return this.props.linkStatus;
+  }
+
   /** @returns Le nom de la fiche (value object). */
   public get name(): CharacterSheetName {
     return this.props.name;
@@ -175,10 +193,13 @@ export class CharacterSheet {
    *   Utile pour projeter la fiche complète sans exposer le value object `name`.
    */
   public get details(): CharacterSheetDetails {
-    const { id, ownerId, groupId, name, createdAt, ...details } = this.props;
+    const { id, ownerId, groupId, campaignId, linkStatus, name, createdAt, ...details } =
+      this.props;
     void id;
     void ownerId;
     void groupId;
+    void campaignId;
+    void linkStatus;
     void name;
     void createdAt;
     return details;
@@ -222,5 +243,45 @@ export class CharacterSheet {
     changes: { name?: CharacterSheetName } & Partial<CharacterSheetDetails>,
   ): CharacterSheet {
     return new CharacterSheet({ ...this.props, ...changes });
+  }
+
+  /** @returns `true` si le rattachement à la campagne attend encore la validation du MJ. */
+  public isPending(): boolean {
+    return this.props.linkStatus.isPending();
+  }
+
+  /**
+   * Produit une **nouvelle** instance dont le rattachement est validé (ACCEPTED), sans muter
+   * l'originale. Utilisé quand le MJ accepte la demande de rattachement.
+   *
+   * @returns Une nouvelle `CharacterSheet` au statut ACCEPTED.
+   */
+  public accept(): CharacterSheet {
+    return new CharacterSheet({ ...this.props, linkStatus: LinkStatus.ACCEPTED });
+  }
+
+  /**
+   * Produit une **copie** de la fiche rattachée à une autre campagne : tous les champs détaillés
+   * (caractéristiques, identité, bourse, notes) et le nom sont conservés, mais l'identité technique
+   * est neuve (`newId`), le propriétaire reste le même, et le rattachement repart en `PENDING`
+   * (la copie devra être validée par le MJ de la campagne cible).
+   *
+   * Remplace l'ancien « rattacher une même fiche à plusieurs campagnes » (modèle N‑N abandonné).
+   * Les liaisons N‑N d'éléments de référence (armes/armures/…) sont dupliquées hors de cette
+   * entité, par le use case de copie, car elles ne font pas partie de l'état de l'entité.
+   *
+   * @param newId - Identifiant unique de la copie (généré en amont).
+   * @param targetCampaignId - Campagne cible de la copie.
+   * @param createdAt - Horodatage de création de la copie.
+   * @returns Une nouvelle `CharacterSheet`, copie de celle-ci pour la campagne cible.
+   */
+  public copyTo(newId: string, targetCampaignId: string, createdAt: Date): CharacterSheet {
+    return new CharacterSheet({
+      ...this.props,
+      id: newId,
+      campaignId: targetCampaignId,
+      linkStatus: LinkStatus.PENDING,
+      createdAt,
+    });
   }
 }

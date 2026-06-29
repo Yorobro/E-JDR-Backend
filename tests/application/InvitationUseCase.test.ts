@@ -96,7 +96,7 @@ describe("RemoveMemberUseCase", () => {
     const accessService = new GroupAccessServiceImpl(
       repos.groupMembers,
       repos.campaigns,
-      repos.campaignCharacters,
+      repos.characterSheets,
     );
     useCase = new RemoveMemberUseCaseImpl(
       repos.groupMembers,
@@ -159,7 +159,7 @@ describe("InviteMemberUseCase — réinvitation après résolution", () => {
     const accessService = new GroupAccessServiceImpl(
       repos.groupMembers,
       repos.campaigns,
-      repos.campaignCharacters,
+      repos.characterSheets,
     );
     useCase = new InviteMemberUseCaseImpl({
       credentialRepository: repos.credentials,
@@ -212,6 +212,6 @@ describe("InviteMemberUseCase — réinvitation après résolution", () => {
     });
 
     expect(result.isFailure).toBe(true);
-    expect(result.error.code).toBe("ALREADY_MEMBER");
+    expect(result.error.code).toBe("INVITATION_ALREADY_PENDING");
   });
 });

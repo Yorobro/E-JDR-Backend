@@ -19,7 +19,6 @@ import type { RefreshTokenRepository } from "@application/features/auth/abstract
 import type { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import type { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
 import type { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
-import type { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
 
 // Application — ports services
 import type { AuthTokenService } from "@application/features/auth/abstractions/services/AuthTokenService";
@@ -52,7 +51,6 @@ export interface AuthServices {
   campaignRepository: CampaignRepository;
   sessionRepository: SessionRepository;
   characterSheetRepository: CharacterSheetRepository;
-  campaignCharacterRepository: CampaignCharacterRepository;
   referenceRepositories: ReturnType<typeof createReferenceRepositories>;
   friendGroupRepositories: ReturnType<typeof createFriendGroupRepositories>;
   unitOfWork: MysqlUnitOfWork;

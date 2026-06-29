@@ -63,6 +63,7 @@ export class CreateCampaignUseCaseImpl implements CreateCampaignUseCase {
     return Result.success({
       id: campaign.id,
       name: campaign.name.value,
+      gameMasterId: campaign.gameMasterId,
       createdAt: campaign.createdAt,
     });
   }

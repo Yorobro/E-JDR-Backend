@@ -14,6 +14,7 @@ import { GroupMemberRepository } from "@application/features/friend-group/abstra
 import { GroupInvitationRepository } from "@application/features/friend-group/abstractions/repositories/GroupInvitationRepository";
 import { InvitedUserNotFoundError } from "@application/features/friend-group/errors/InvitedUserNotFoundError";
 import { AlreadyMemberError } from "@application/features/friend-group/errors/AlreadyMemberError";
+import { InvitationAlreadyPendingError } from "@application/features/friend-group/errors/InvitationAlreadyPendingError";
 import {
   InviteMemberUseCase,
   InviteMemberCommand,
@@ -80,7 +81,7 @@ export class InviteMemberUseCaseImpl implements InviteMemberUseCase {
       command.groupId,
       invitedUserId,
     );
-    if (existingInvitation !== null) return Result.failure(new AlreadyMemberError());
+    if (existingInvitation !== null) return Result.failure(new InvitationAlreadyPendingError());
 
     const invitation = GroupInvitation.create({
       id: this.idGenerator.generate(),

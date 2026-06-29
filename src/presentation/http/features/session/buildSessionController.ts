@@ -16,8 +16,9 @@ import { SessionController } from "@presentation/http/features/session/controlle
 /**
  * Dépendances nécessaires à l'assemblage du controller session.
  *
- * Les use cases gèrent l'autorisation via le `groupAccessService` (rôle dans le groupe
- * de la campagne parente), d'où la présence du `campaignRepository` à côté du `sessionRepository`.
+ * Les lectures (get/list sessions) autorisent tout **membre** du groupe via le `groupAccessService` ;
+ * les écritures (create/update/delete) sont réservées au **MJ de la campagne** (`campaign.isGameMaster`),
+ * d'où la présence du `campaignRepository` à côté du `sessionRepository`.
  */
 export interface SessionControllerDeps {
   readonly campaignRepository: CampaignRepository;
@@ -44,7 +45,6 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.idGenerator,
     deps.unitOfWork,
     deps.logger,
-    deps.groupAccessService,
   );
   const createLobby = new CreateLobbyUseCaseImpl(
     deps.sessionRepository,
@@ -69,14 +69,12 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.campaignRepository,
     deps.unitOfWork,
     deps.logger,
-    deps.groupAccessService,
   );
   const deleteSession = new DeleteSessionUseCaseImpl(
     deps.sessionRepository,
     deps.campaignRepository,
     deps.unitOfWork,
     deps.logger,
-    deps.groupAccessService,
   );
 
   return new SessionController(

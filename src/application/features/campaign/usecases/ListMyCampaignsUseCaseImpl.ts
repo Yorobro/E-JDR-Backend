@@ -23,6 +23,7 @@ export class ListMyCampaignsUseCaseImpl implements ListMyCampaignsUseCase {
     const summaries: CampaignSummary[] = campaigns.map((campaign) => ({
       id: campaign.id,
       name: campaign.name.value,
+      gameMasterId: campaign.gameMasterId,
       createdAt: campaign.createdAt,
     }));
 

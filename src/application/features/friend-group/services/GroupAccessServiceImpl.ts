@@ -3,7 +3,7 @@ import { AppError } from "@application/errors/AppError";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
-import { CampaignCharacterRepository } from "@application/features/character-sheet/abstractions/repositories/CampaignCharacterRepository";
+import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { NotGroupMemberError } from "@application/features/friend-group/errors/NotGroupMemberError";
 import { NotGroupAdminError } from "@application/features/friend-group/errors/NotGroupAdminError";
 import { NotGroupEditorError } from "@application/features/friend-group/errors/NotGroupEditorError";
@@ -12,7 +12,7 @@ export class GroupAccessServiceImpl implements GroupAccessService {
   constructor(
     private readonly groupMemberRepository: GroupMemberRepository,
     private readonly campaignRepository: CampaignRepository,
-    private readonly campaignCharacterRepository: CampaignCharacterRepository,
+    private readonly characterSheetRepository: CharacterSheetRepository,
   ) {}
 
   public async requireMember(userId: string, groupId: string): Promise<Result<void, AppError>> {
@@ -46,13 +46,12 @@ export class GroupAccessServiceImpl implements GroupAccessService {
   }
 
   public async isGameMasterOfSheetCampaign(userId: string, sheetId: string): Promise<boolean> {
-    const views = await this.campaignCharacterRepository.findCampaignViewsBySheetId(sheetId);
-    for (const view of views) {
-      const campaign = await this.campaignRepository.findById(view.campaignId);
-      if (campaign !== null && campaign.isGameMaster(userId)) {
-        return true;
-      }
+    // Modèle « une fiche = une campagne » : la fiche porte directement sa campagne.
+    const sheet = await this.characterSheetRepository.findById(sheetId);
+    if (sheet === null) {
+      return false;
     }
-    return false;
+    const campaign = await this.campaignRepository.findById(sheet.campaignId);
+    return campaign !== null && campaign.isGameMaster(userId);
   }
 }

@@ -3,13 +3,16 @@ import request from "supertest";
 import type { Application } from "express";
 
 import { buildTestApp } from "./buildTestApp";
+import { authenticate, createGroup, joinGroup, createPendingSheet } from "./sheetTestHelpers";
 
 /**
  * Tests d'intégration HTTP de `GET /character-sheets/:id/campaigns` : pile Express réelle sur
- * doublures. Valide la projection (nom de campagne + pseudo du MJ) et l'autorisation propriétaire.
+ * doublures. Valide la projection (nom de campagne + pseudo du MJ + statut de rattachement) et
+ * l'autorisation propriétaire.
  *
- * Contrat « groupe d'amis » : la consultation des campagnes d'une fiche reste réservée au
- * PROPRIÉTAIRE de la fiche (et non à tout le groupe). Les fiches sont créées dans un groupe.
+ * Modèle « une fiche = une campagne » : une fiche est créée rattachée à une campagne (statut
+ * PENDING) ; l'endpoint renvoie donc toujours 0 ou 1 campagne. La consultation reste réservée au
+ * PROPRIÉTAIRE de la fiche (et non à tout le groupe).
  */
 describe("GET /character-sheets/:id/campaigns (intégration HTTP)", () => {
   let app: Application;
@@ -18,93 +21,39 @@ describe("GET /character-sheets/:id/campaigns (intégration HTTP)", () => {
     app = buildTestApp().app;
   });
 
-  /** Inscrit un utilisateur (avec son pseudo) et renvoie un agent conservant ses cookies. */
-  async function authenticate(
-    email: string,
-    pseudo: string,
-  ): Promise<ReturnType<typeof request.agent>> {
-    const agent = request.agent(app);
-    await agent.post("/auth/register").send({ email, pseudo, password: "password123" });
-    return agent;
-  }
+  it("renvoie la campagne rattachée à la fiche avec le pseudo du MJ et le statut (200)", async () => {
+    const player = await authenticate(app, "player@test.com", "Joueur");
+    const groupId = await createGroup(player);
+    const { sheet, campaignId } = await createPendingSheet(app, player, groupId, "Legolas");
 
-  /** Crée un groupe et renvoie son ID. */
-  async function createGroup(
-    agent: ReturnType<typeof request.agent>,
-    name = "Mon groupe",
-  ): Promise<string> {
-    const res = await agent.post("/groups").send({ name });
-    return res.body.id as string;
-  }
-
-  /**
-   * Fait entrer `invitee` dans le groupe `groupId` : `inviter` invite par email, `invitee`
-   * accepte. Les deux utilisateurs deviennent alors membres du même groupe.
-   */
-  async function joinGroup(
-    inviter: ReturnType<typeof request.agent>,
-    groupId: string,
-    invitee: ReturnType<typeof request.agent>,
-    inviteeEmail: string,
-  ): Promise<void> {
-    const inv = await inviter.post(`/groups/${groupId}/invitations`).send({ email: inviteeEmail });
-    await invitee.post(`/invitations/${inv.body.invitationId}/accept`);
-  }
-
-  it("renvoie les campagnes rattachées à la fiche avec le pseudo du MJ (200)", async () => {
-    const mj = await authenticate("mj@test.com", "MJ");
-    const groupId = await createGroup(mj);
-    const campaign = await mj.post("/campaigns").send({ name: "La campagne du MJ", groupId });
-
-    // Le joueur rejoint le groupe de la campagne et y crée sa fiche.
-    const player = await authenticate("player@test.com", "Joueur");
-    await joinGroup(mj, groupId, player, "player@test.com");
-    const sheet = await player.post("/character-sheets").send({ name: "Legolas", groupId });
-
-    // Seul le MJ peut rattacher la fiche d'un joueur à sa campagne.
-    const link = await mj
-      .post(`/campaigns/${campaign.body.id}/characters`)
-      .send({ characterSheetId: sheet.body.id });
-    expect(link.status).toBe(201);
-
-    // Le propriétaire de la fiche (le joueur) consulte les campagnes rattachées.
-    const res = await player.get(`/character-sheets/${sheet.body.id}/campaigns`);
+    const res = await player.get(`/character-sheets/${sheet.id}/campaigns`);
 
     expect(res.status).toBe(200);
     expect(res.body.campaigns).toHaveLength(1);
-    expect(res.body.campaigns[0].campaignId).toBe(campaign.body.id);
-    expect(res.body.campaigns[0].campaignName).toBe("La campagne du MJ");
+    expect(res.body.campaigns[0].campaignId).toBe(campaignId);
+    expect(res.body.campaigns[0].campaignName).toBe("Campagne du MJ");
     expect(res.body.campaigns[0].gameMasterPseudo).toBe("MJ");
-  });
-
-  it("renvoie une liste vide si la fiche n'est rattachée à aucune campagne (200)", async () => {
-    const player = await authenticate("player@test.com", "Joueur");
-    const groupId = await createGroup(player);
-    const sheet = await player.post("/character-sheets").send({ name: "Gimli", groupId });
-
-    const res = await player.get(`/character-sheets/${sheet.body.id}/campaigns`);
-
-    expect(res.status).toBe(200);
-    expect(res.body.campaigns).toHaveLength(0);
+    // La fiche fraîchement créée est en attente de validation du MJ.
+    expect(res.body.campaigns[0].linkStatus).toBe("PENDING");
   });
 
   it("renvoie 403 si le demandeur n'est pas le propriétaire de la fiche (même membre du groupe)", async () => {
     // L'accès aux campagnes d'une fiche reste réservé au propriétaire, même pour un autre membre.
-    const owner = await authenticate("owner@test.com", "Owner");
+    const owner = await authenticate(app, "owner@test.com", "Owner");
     const groupId = await createGroup(owner);
-    const sheet = await owner.post("/character-sheets").send({ name: "Privée", groupId });
+    const { sheet } = await createPendingSheet(app, owner, groupId, "Privée");
 
-    const mate = await authenticate("mate@test.com", "Mate");
+    const mate = await authenticate(app, "mate@test.com", "Mate");
     await joinGroup(owner, groupId, mate, "mate@test.com");
 
-    const res = await mate.get(`/character-sheets/${sheet.body.id}/campaigns`);
+    const res = await mate.get(`/character-sheets/${sheet.id}/campaigns`);
 
     expect(res.status).toBe(403);
     expect(res.body.code).toBe("CHARACTER_SHEET_ACCESS_DENIED");
   });
 
   it("renvoie 404 pour une fiche inconnue", async () => {
-    const player = await authenticate("player@test.com", "Joueur");
+    const player = await authenticate(app, "player@test.com", "Joueur");
     const res = await player.get("/character-sheets/inconnu/campaigns");
     expect(res.status).toBe(404);
     expect(res.body.code).toBe("CHARACTER_SHEET_NOT_FOUND");

@@ -20,7 +20,7 @@ describe("ListCampaignSessionsUseCaseImpl", () => {
     const groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     useCase = new ListCampaignSessionsUseCaseImpl(
       txRepos.campaigns,

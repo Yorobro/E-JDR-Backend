@@ -20,7 +20,7 @@ describe("CreateCampaignUseCaseImpl", () => {
     const groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     const unitOfWork = new FakeUnitOfWork(txRepos);
     useCase = new CreateCampaignUseCaseImpl(
@@ -42,6 +42,7 @@ describe("CreateCampaignUseCaseImpl", () => {
 
     expect(result.isSuccess).toBe(true);
     expect(result.value.name).toBe("Donjon");
+    expect(result.value.gameMasterId).toBe("mj-1");
     expect(typeof result.value.id).toBe("string");
 
     const stored = await txRepos.campaigns.findByGroupId("group-1");

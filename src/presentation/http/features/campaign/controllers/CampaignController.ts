@@ -28,8 +28,8 @@ export class CampaignController {
         return;
       }
 
-      const { id, name, createdAt } = result.value;
-      res.status(201).json({ id, name, createdAt: createdAt.toISOString() });
+      const { id, name, gameMasterId, createdAt } = result.value;
+      res.status(201).json({ id, name, gameMasterId, createdAt: createdAt.toISOString() });
     } catch (error) {
       next(error);
     }
@@ -53,6 +53,7 @@ export class CampaignController {
       const campaigns = result.value.map((campaign) => ({
         id: campaign.id,
         name: campaign.name,
+        gameMasterId: campaign.gameMasterId,
         createdAt: campaign.createdAt.toISOString(),
       }));
       res.status(200).json({ campaigns });

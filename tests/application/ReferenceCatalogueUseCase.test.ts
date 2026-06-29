@@ -27,7 +27,7 @@ describe("Reference catalogue use cases (génériques, testés sur le type `arme
     groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     // u-1 est admin de group-1 (membre seulement de group-1)
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "u-1" }));
@@ -262,7 +262,7 @@ describe("Reference catalogue use cases — description (sorts/miracles)", () =>
     groupAccessService = new GroupAccessServiceImpl(
       txRepos.groupMembers,
       txRepos.campaigns,
-      txRepos.campaignCharacters,
+      txRepos.characterSheets,
     );
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "u-1" }));
   });

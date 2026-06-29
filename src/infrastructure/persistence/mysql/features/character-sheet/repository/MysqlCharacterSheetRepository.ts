@@ -1,5 +1,6 @@
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
+import { SheetCampaignView } from "@application/features/character-sheet/abstractions/repositories/SheetCampaignView";
 import { CharacterSheetDao } from "@infrastructure/persistence/mysql/features/character-sheet/dao/CharacterSheetDao";
 import { CharacterSheetMapper } from "@infrastructure/persistence/mysql/features/character-sheet/mappers/CharacterSheetMapper";
 
@@ -38,16 +39,28 @@ export class MysqlCharacterSheetRepository implements CharacterSheetRepository {
     await this.characterSheetDao.deleteById(id);
   }
 
-  public async findLinkableForCampaign(
-    groupId: string,
-    gameMasterId: string,
+  public async findByCampaignIdAndStatus(
     campaignId: string,
+    status: string,
   ): Promise<CharacterSheet[]> {
-    const rows = await this.characterSheetDao.findLinkableForCampaign(
-      groupId,
-      gameMasterId,
-      campaignId,
-    );
+    const rows = await this.characterSheetDao.findByCampaignIdAndStatus(campaignId, status);
     return rows.map((row) => CharacterSheetMapper.toDomain(row));
+  }
+
+  public async updateLinkStatus(id: string, status: string): Promise<void> {
+    await this.characterSheetDao.updateLinkStatus(id, status);
+  }
+
+  public async findCampaignViewBySheetId(sheetId: string): Promise<SheetCampaignView | null> {
+    const row = await this.characterSheetDao.findCampaignViewBySheetId(sheetId);
+    if (row === null) {
+      return null;
+    }
+    return {
+      campaignId: row.campaign_id,
+      campaignName: row.campaign_name,
+      gameMasterPseudo: row.game_master_pseudo,
+      linkStatus: row.link_status,
+    };
   }
 }

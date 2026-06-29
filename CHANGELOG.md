@@ -1,3 +1,14 @@
+## 1.14.0 (2026-06-28)
+
+* Merge pull request #17 from Yorobro/main ([954e64d](https://github.com/Yorobro/E-JDR-Backend/commit/954e64d)), closes [#17](https://github.com/Yorobro/E-JDR-Backend/issues/17)
+* Merge pull request #18 from Yorobro/develop ([02bb5e1](https://github.com/Yorobro/E-JDR-Backend/commit/02bb5e1)), closes [#18](https://github.com/Yorobro/E-JDR-Backend/issues/18) [#17](https://github.com/Yorobro/E-JDR-Backend/issues/17)
+* Merge pull request #19 from Yorobro/feat/fiche-campagne-obligatoire ([328200c](https://github.com/Yorobro/E-JDR-Backend/commit/328200c)), closes [#19](https://github.com/Yorobro/E-JDR-Backend/issues/19)
+* Merge pull request #20 from Yorobro/develop ([d1152b1](https://github.com/Yorobro/E-JDR-Backend/commit/d1152b1)), closes [#20](https://github.com/Yorobro/E-JDR-Backend/issues/20)
+* feat(campagnes): exposer gameMasterId dans la liste des campagnes ([fc43119](https://github.com/Yorobro/E-JDR-Backend/commit/fc43119))
+* feat(fiches): une fiche = une campagne (rattachement à la création + validation MJ + copie) ([ba6ef6a](https://github.com/Yorobro/E-JDR-Backend/commit/ba6ef6a))
+* fix(friend-group): interdire le retrait admin↔admin et clarifier la réinvitation ([ecc9aaf](https://github.com/Yorobro/E-JDR-Backend/commit/ecc9aaf))
+* fix(friend-group): restreindre le retrait de membre et corriger la réinvitation ([8ccd9cd](https://github.com/Yorobro/E-JDR-Backend/commit/8ccd9cd))
+
 ## 1.13.0 (2026-06-22)
 
 * Merge pull request #16 from Yorobro/develop ([3fce88a](https://github.com/Yorobro/E-JDR-Backend/commit/3fce88a)), closes [#16](https://github.com/Yorobro/E-JDR-Backend/issues/16)

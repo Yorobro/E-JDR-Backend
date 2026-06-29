@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "9a742a17-8d1d-44e4-900a-40287b51da27",
+  "id": "0a1b2c3d-4e5f-4a1b-9c2d-0011fiche0011",
   "prevId": "80237ae1-c26d-454d-a23c-6ea412034e3e",
   "tables": {
     "credentials": {
@@ -318,122 +318,6 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
-    "session_participants": {
-      "name": "session_participants",
-      "columns": {
-        "session_id": {
-          "name": "session_id",
-          "type": "char(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "char(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "character_sheet_id": {
-          "name": "character_sheet_id",
-          "type": "char(36)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'INVITED'"
-        },
-        "invited_at": {
-          "name": "invited_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "responded_at": {
-          "name": "responded_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "idx_session_participants_user_id": {
-          "name": "idx_session_participants_user_id",
-          "columns": [
-            "user_id"
-          ],
-          "isUnique": false
-        },
-        "idx_session_participants_sheet_id": {
-          "name": "idx_session_participants_sheet_id",
-          "columns": [
-            "character_sheet_id"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "session_participants_session_id_sessions_id_fk": {
-          "name": "session_participants_session_id_sessions_id_fk",
-          "tableFrom": "session_participants",
-          "tableTo": "sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "session_participants_user_id_users_id_fk": {
-          "name": "session_participants_user_id_users_id_fk",
-          "tableFrom": "session_participants",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "session_participants_character_sheet_id_character_sheets_id_fk": {
-          "name": "session_participants_character_sheet_id_character_sheets_id_fk",
-          "tableFrom": "session_participants",
-          "tableTo": "character_sheets",
-          "columnsFrom": [
-            "character_sheet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "session_participants_session_id_user_id_pk": {
-          "name": "session_participants_session_id_user_id_pk",
-          "columns": [
-            "session_id",
-            "user_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
     "sessions": {
       "name": "sessions",
       "columns": {
@@ -471,21 +355,6 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'PLANNED'"
-        },
-        "started_at": {
-          "name": "started_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         }
       },
       "indexes": {
@@ -517,80 +386,6 @@
           "name": "sessions_id",
           "columns": [
             "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
-    "campaign_characters": {
-      "name": "campaign_characters",
-      "columns": {
-        "campaign_id": {
-          "name": "campaign_id",
-          "type": "char(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "character_sheet_id": {
-          "name": "character_sheet_id",
-          "type": "char(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "idx_campaign_characters_sheet": {
-          "name": "idx_campaign_characters_sheet",
-          "columns": [
-            "character_sheet_id"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "campaign_characters_campaign_id_campaigns_id_fk": {
-          "name": "campaign_characters_campaign_id_campaigns_id_fk",
-          "tableFrom": "campaign_characters",
-          "tableTo": "campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "campaign_characters_character_sheet_id_character_sheets_id_fk": {
-          "name": "campaign_characters_character_sheet_id_character_sheets_id_fk",
-          "tableFrom": "campaign_characters",
-          "tableTo": "character_sheets",
-          "columnsFrom": [
-            "character_sheet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "campaign_characters_campaign_id_character_sheet_id_pk": {
-          "name": "campaign_characters_campaign_id_character_sheet_id_pk",
-          "columns": [
-            "campaign_id",
-            "character_sheet_id"
           ]
         }
       },
@@ -767,6 +562,20 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "campaign_id": {
+          "name": "campaign_id",
+          "type": "char(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaign_link_status": {
+          "name": "campaign_link_status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -781,6 +590,13 @@
           "name": "idx_character_sheets_group_id",
           "columns": [
             "group_id"
+          ],
+          "isUnique": false
+        },
+        "idx_character_sheets_campaign_id": {
+          "name": "idx_character_sheets_campaign_id",
+          "columns": [
+            "campaign_id"
           ],
           "isUnique": false
         }
@@ -836,6 +652,19 @@
             "id"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "character_sheets_campaign_id_campaigns_id_fk": {
+          "name": "character_sheets_campaign_id_campaigns_id_fk",
+          "tableFrom": "character_sheets",
+          "tableTo": "campaigns",
+          "columnsFrom": [
+            "campaign_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

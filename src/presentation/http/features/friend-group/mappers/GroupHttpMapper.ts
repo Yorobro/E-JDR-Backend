@@ -15,7 +15,11 @@ export class GroupHttpMapper {
         return 403;
       case "NOT_GROUP_ADMIN":
         return 403;
+      case "CANNOT_REMOVE_ADMIN":
+        return 403;
       case "ALREADY_MEMBER":
+        return 409;
+      case "INVITATION_ALREADY_PENDING":
         return 409;
       case "INVITATION_ALREADY_RESOLVED":
         return 409;

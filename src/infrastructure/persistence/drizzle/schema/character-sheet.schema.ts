@@ -1,13 +1,4 @@
-import {
-  mysqlTable,
-  char,
-  varchar,
-  datetime,
-  int,
-  text,
-  index,
-  primaryKey,
-} from "drizzle-orm/mysql-core";
+import { mysqlTable, char, varchar, datetime, int, text, index } from "drizzle-orm/mysql-core";
 import { users } from "./auth.schema";
 import { campaigns } from "./campaign.schema";
 import { friendGroups } from "./friend-group.schema";
@@ -27,6 +18,14 @@ export const characterSheets = mysqlTable(
       .references(() => friendGroups.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 120 }).notNull(),
     created_at: datetime("created_at", { mode: "date" }).notNull(),
+    // campaign_id : la campagne **unique** à laquelle la fiche est rattachée (modèle « une fiche =
+    // une campagne »). NOT NULL : une fiche existe toujours pour une campagne donnée. ON DELETE
+    // cascade : si la campagne disparaît, ses fiches disparaissent.
+    campaign_id: char("campaign_id", { length: 36 })
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    // campaign_link_status : PENDING (en attente de validation du MJ) ou ACCEPTED (validée).
+    campaign_link_status: varchar("campaign_link_status", { length: 20 }).notNull(),
     // formation / peuple : N‑1 vers les catalogues de l'utilisateur (nullable, SET NULL si l'élément est supprimé).
     formation_id: char("formation_id", { length: 36 }).references(() => formations.id, {
       onDelete: "set null",
@@ -57,23 +56,6 @@ export const characterSheets = mysqlTable(
   (table) => [
     index("idx_character_sheets_owner_id").on(table.owner_id),
     index("idx_character_sheets_group_id").on(table.group_id),
-  ],
-);
-
-/** Table `campaign_characters` — liaison N-N campagnes ↔ fiches. */
-export const campaignCharacters = mysqlTable(
-  "campaign_characters",
-  {
-    campaign_id: char("campaign_id", { length: 36 })
-      .notNull()
-      .references(() => campaigns.id, { onDelete: "cascade" }),
-    character_sheet_id: char("character_sheet_id", { length: 36 })
-      .notNull()
-      .references(() => characterSheets.id, { onDelete: "cascade" }),
-    created_at: datetime("created_at", { mode: "date" }).notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.campaign_id, table.character_sheet_id] }),
-    index("idx_campaign_characters_sheet").on(table.character_sheet_id),
+    index("idx_character_sheets_campaign_id").on(table.campaign_id),
   ],
 );

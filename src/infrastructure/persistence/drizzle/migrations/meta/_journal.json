@@ -82,8 +82,15 @@
     {
       "idx": 11,
       "version": "5",
-      "when": 1782288410603,
-      "tag": "0011_amazing_venus",
+      "when": 1782000000000,
+      "tag": "0011_fiche_campagne_obligatoire",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1782756907531,
+      "tag": "0012_session_statut_et_participants",
       "breakpoints": true
     }
   ]
