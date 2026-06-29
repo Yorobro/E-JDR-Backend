@@ -175,6 +175,7 @@ export class SessionController {
     campaignId: string;
     title: string;
     date: string;
+    status: string;
     createdAt: string;
   } {
     return {
@@ -182,6 +183,7 @@ export class SessionController {
       campaignId: view.campaignId,
       title: view.title,
       date: view.date,
+      status: view.status,
       createdAt: view.createdAt.toISOString(),
     };
   }

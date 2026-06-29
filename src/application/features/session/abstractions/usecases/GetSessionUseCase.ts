@@ -18,6 +18,8 @@ export interface SessionView {
   readonly title: string;
   /** Date de la session au format `YYYY-MM-DD`. */
   readonly date: string;
+  /** Statut courant de la session (`PLANNED`, `LOBBY`, `ACTIVE`, `ENDED`). */
+  readonly status: string;
   /** Date de création de l'enregistrement. */
   readonly createdAt: Date;
 }

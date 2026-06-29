@@ -76,6 +76,7 @@ export class UpdateSessionUseCaseImpl implements UpdateSessionUseCase {
       campaignId: updated.campaignId,
       title: updated.title.value,
       date: SessionDate.fromDate(updated.date).toIsoDate(),
+      status: updated.status.value,
       createdAt: updated.createdAt,
     });
   }

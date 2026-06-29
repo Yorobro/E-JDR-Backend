@@ -75,6 +75,7 @@ export class CreateSessionUseCaseImpl implements CreateSessionUseCase {
       campaignId: session.campaignId,
       title: session.title.value,
       date: SessionDate.fromDate(session.date).toIsoDate(),
+      status: session.status.value,
       createdAt: session.createdAt,
     });
   }

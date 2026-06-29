@@ -40,6 +40,7 @@ export class ListCampaignSessionsUseCaseImpl implements ListCampaignSessionsUseC
       campaignId: session.campaignId,
       title: session.title.value,
       date: SessionDate.fromDate(session.date).toIsoDate(),
+      status: session.status.value,
       createdAt: session.createdAt,
     }));
 
