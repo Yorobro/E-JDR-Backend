@@ -1,0 +1,27 @@
+# MySQL local pour le développement du backend E-JDR.
+# Fournit la base que le back lit via .env (DB_HOST=localhost, DB_PORT=3306,
+# DB_USER=root, DB_PASSWORD=root, DB_NAME=e_jdr).
+# Usage : `docker compose up -d` (ou `npm run db:up`), puis `npm run db:migrate`.
+# Ne concerne QUE le dev local ; les tests (test:db) utilisent testcontainers.
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ejdr-mysql-local
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: e_jdr
+    volumes:
+      - ejdr-mysql-data:/var/lib/mysql
+    healthcheck:
+      # Vérifie que MySQL accepte réellement les connexions (init ~10-20 s au 1er boot).
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  ejdr-mysql-data:
