@@ -163,6 +163,8 @@ npm run dev
 > (base `e_jdr`, root/root) persistant via le volume `ejdr-mysql-data`.
 > `docker compose down` arrête la base sans perdre les données ;
 > `docker compose down -v` réinitialise tout (supprime le volume).
+> Si le port `3306` est déjà utilisé (autre MySQL local), libère-le ou ajuste le
+> mapping de ports dans `docker-compose.yml`.
 > Les tests d'intégration (`npm run test:db`) sont indépendants : ils utilisent
 > testcontainers et ne nécessitent pas ce conteneur.
 
