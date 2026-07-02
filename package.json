@@ -26,6 +26,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:custom": "drizzle-kit generate --custom",
     "db:reset": "ts-node --transpile-only -r tsconfig-paths/register db/reset.ts",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
     "prepare": "husky",
     "release": "semantic-release"
   },
