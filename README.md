@@ -146,15 +146,27 @@ npm install
 # 2. Lancer les tests unitaires (aucune BDD requise)
 npm run test
 
-# 3. Configurer l'environnement (BDD locale)
-cp .env.example .env   # puis renseigner les accès MySQL (DB_HOST=localhost) et les secrets JWT
+# 3. Configurer l'environnement (les valeurs par défaut matchent le docker-compose fourni)
+cp .env.example .env   # puis renseigner les secrets JWT
 
-# 4. Appliquer les migrations (crée les tables)
+# 4. Démarrer le MySQL local (prérequis : Docker Desktop)
+docker compose up -d   # ou : npm run db:up
+
+# 5. Appliquer les migrations (crée les tables)
 npm run db:migrate
 
-# 5. Démarrer le serveur en développement
+# 6. Démarrer le serveur en développement
 npm run dev
 ```
+
+> **Base de données locale** — Le `docker-compose.yml` fournit un MySQL 8
+> (base `e_jdr`, root/root) persistant via le volume `ejdr-mysql-data`.
+> `docker compose down` arrête la base sans perdre les données ;
+> `docker compose down -v` réinitialise tout (supprime le volume).
+> Si le port `3306` est déjà utilisé (autre MySQL local), libère-le ou ajuste le
+> mapping de ports dans `docker-compose.yml`.
+> Les tests d'intégration (`npm run test:db`) sont indépendants : ils utilisent
+> testcontainers et ne nécessitent pas ce conteneur.
 
 ## Scripts
 
@@ -169,6 +181,8 @@ npm run dev
 | `npm run format` / `npm run format:check` | Applique / vérifie le formatage Prettier. |
 | `npm run db:generate` | Génère une migration SQL à partir du schema Drizzle modifié. |
 | `npm run db:migrate` | Applique les migrations Drizzle en attente. |
+| `npm run db:up` | Démarre le MySQL local (Docker). |
+| `npm run db:down` | Arrête le MySQL local (données conservées ; `-v` pour réinitialiser). |
 | `npm run db:custom -- --name=<desc>` | Crée une migration SQL vide à écrire à la main (transformations de données). |
 
 > **Migrations forward-only** — Le projet n'applique pas de rollback automatique : annuler
