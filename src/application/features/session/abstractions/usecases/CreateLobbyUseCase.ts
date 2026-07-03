@@ -8,8 +8,6 @@ export interface LobbyParticipantView {
   readonly userId: string;
   /** État de la participation (`INVITED` à l'ouverture du lobby). */
   readonly status: string;
-  /** Fiche choisie par le joueur, ou `null` tant qu'il n'a pas accepté. */
-  readonly characterSheetId: string | null;
 }
 
 /**

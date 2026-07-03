@@ -1,7 +1,6 @@
 import { mysqlTable, char, varchar, datetime, index, primaryKey } from "drizzle-orm/mysql-core";
 import { campaigns } from "./campaign.schema";
 import { users } from "./auth.schema";
-import { characterSheets } from "./character-sheet.schema";
 
 /** Table `sessions` — une session de jeu rattachée à une campagne (1‑N). */
 export const sessions = mysqlTable(
@@ -25,11 +24,13 @@ export const sessions = mysqlTable(
 /**
  * Table `session_participants` — joueurs invités à une session.
  *
- * - `status` : INVITED (invitation envoyée) | ACCEPTED (joueur a rejoint le lobby + choisi sa fiche)
+ * - `status` : INVITED (invitation envoyée) | ACCEPTED (joueur a rejoint le lobby)
  *              | REFUSED (joueur a refusé)
- * - `character_sheet_id` : null à l'invitation, rempli quand le joueur accepte et choisit sa fiche.
- *   SET NULL si la fiche est supprimée après la session (préserve l'historique de participation).
  * - `responded_at` : null tant que le joueur n'a pas répondu. Remis à null si le MJ ré-invite.
+ *
+ * Pas de colonne fiche : un joueur n'a qu'une fiche par campagne et la session porte sa
+ * `campaign_id`, donc la fiche du participant se déduit du couple (campagne, joueur) au besoin,
+ * sans duplication ici.
  */
 export const sessionParticipants = mysqlTable(
   "session_participants",
@@ -40,10 +41,6 @@ export const sessionParticipants = mysqlTable(
     user_id: char("user_id", { length: 36 })
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    character_sheet_id: char("character_sheet_id", { length: 36 }).references(
-      () => characterSheets.id,
-      { onDelete: "set null" },
-    ),
     status: varchar("status", { length: 10 }).notNull().default("INVITED"),
     invited_at: datetime("invited_at", { mode: "date" }).notNull(),
     responded_at: datetime("responded_at", { mode: "date" }),
@@ -51,6 +48,5 @@ export const sessionParticipants = mysqlTable(
   (table) => [
     primaryKey({ columns: [table.session_id, table.user_id] }),
     index("idx_session_participants_user_id").on(table.user_id),
-    index("idx_session_participants_sheet_id").on(table.character_sheet_id),
   ],
 );

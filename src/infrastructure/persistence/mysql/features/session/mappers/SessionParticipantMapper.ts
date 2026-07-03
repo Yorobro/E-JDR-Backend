@@ -24,7 +24,6 @@ export class SessionParticipantMapper {
     return SessionParticipant.restore({
       sessionId: row.session_id,
       userId: row.user_id,
-      characterSheetId: row.character_sheet_id,
       status: SessionParticipantStatus.create(row.status),
       invitedAt: new Date(row.invited_at),
       respondedAt: row.responded_at === null ? null : new Date(row.responded_at),
@@ -41,7 +40,6 @@ export class SessionParticipantMapper {
     return {
       session_id: participant.sessionId,
       user_id: participant.userId,
-      character_sheet_id: participant.characterSheetId,
       status: participant.status.value,
       invited_at: participant.invitedAt,
       responded_at: participant.respondedAt,

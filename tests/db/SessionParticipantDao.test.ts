@@ -47,7 +47,6 @@ describe("SessionParticipantDao (intégration MySQL via Drizzle)", () => {
     return {
       session_id: "s-1",
       user_id: userId,
-      character_sheet_id: null,
       status: "INVITED",
       invited_at: new Date("2026-06-24T10:00:00Z"),
       responded_at: null,
@@ -60,7 +59,6 @@ describe("SessionParticipantDao (intégration MySQL via Drizzle)", () => {
     const rows = await dao.findBySessionId("s-1");
     expect(rows.map((r) => r.user_id).sort()).toEqual(["p-2", "p-3"]);
     expect(rows.every((r) => r.status === "INVITED")).toBe(true);
-    expect(rows.every((r) => r.character_sheet_id === null)).toBe(true);
   });
 
   it("insertMany avec un lot vide est sans effet", async () => {
