@@ -106,7 +106,6 @@ export class CreateLobbyUseCaseImpl implements CreateLobbyUseCase {
       participants: participants.map((participant) => ({
         userId: participant.userId,
         status: participant.status.value,
-        characterSheetId: participant.characterSheetId,
       })),
     });
   }

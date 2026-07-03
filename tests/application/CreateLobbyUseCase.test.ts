@@ -62,7 +62,6 @@ describe("CreateLobbyUseCaseImpl", () => {
     expect(result.value.status).toBe("LOBBY");
     expect(result.value.participants).toHaveLength(2);
     expect(result.value.participants.every((p) => p.status === "INVITED")).toBe(true);
-    expect(result.value.participants.every((p) => p.characterSheetId === null)).toBe(true);
 
     // La session est persistée au statut LOBBY...
     const stored = await txRepos.sessions.findById("sess-1");

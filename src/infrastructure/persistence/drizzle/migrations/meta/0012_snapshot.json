@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "ce08ad60-82ae-4986-b548-e701a15fdded",
+  "id": "32958227-47be-4a5f-b649-cd04e3bfc4c1",
   "prevId": "0a1b2c3d-4e5f-4a1b-9c2d-0011fiche0011",
   "tables": {
     "credentials": {
@@ -335,13 +335,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "character_sheet_id": {
-          "name": "character_sheet_id",
-          "type": "char(36)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "status": {
           "name": "status",
           "type": "varchar(10)",
@@ -372,13 +365,6 @@
             "user_id"
           ],
           "isUnique": false
-        },
-        "idx_session_participants_sheet_id": {
-          "name": "idx_session_participants_sheet_id",
-          "columns": [
-            "character_sheet_id"
-          ],
-          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -406,19 +392,6 @@
             "id"
           ],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "session_participants_character_sheet_id_character_sheets_id_fk": {
-          "name": "session_participants_character_sheet_id_character_sheets_id_fk",
-          "tableFrom": "session_participants",
-          "tableTo": "character_sheets",
-          "columnsFrom": [
-            "character_sheet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

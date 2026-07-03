@@ -186,9 +186,7 @@ describe("Session routes (intégration HTTP)", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("LOBBY");
-    expect(res.body.participants).toEqual([
-      { userId: playerId, status: "INVITED", characterSheetId: null },
-    ]);
+    expect(res.body.participants).toEqual([{ userId: playerId, status: "INVITED" }]);
 
     // Relancer une session déjà en lobby → conflit d'état.
     const again = await mj

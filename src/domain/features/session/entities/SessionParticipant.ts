@@ -10,11 +10,6 @@ export interface SessionParticipantSnapshot {
   readonly sessionId: string;
   /** Identifiant de l'utilisateur invité. */
   readonly userId: string;
-  /**
-   * Fiche de personnage choisie par le joueur en rejoignant le lobby ; `null` tant qu'il n'a
-   * pas accepté (ou si la fiche a été supprimée depuis — la colonne est `ON DELETE SET NULL`).
-   */
-  readonly characterSheetId: string | null;
   /** État de la participation (INVITED → ACCEPTED / REFUSED). */
   readonly status: SessionParticipantStatus;
   /** Horodatage de l'envoi de l'invitation. */
@@ -44,8 +39,7 @@ export class SessionParticipant {
   /**
    * Crée une **nouvelle** invitation pour un joueur, au statut `INVITED`.
    *
-   * Aucune fiche n'est encore choisie (`characterSheetId` à `null`) et le joueur n'a pas
-   * répondu (`respondedAt` à `null`) : ces invariants sont posés ici.
+   * Le joueur n'a pas encore répondu (`respondedAt` à `null`) : cet invariant est posé ici.
    *
    * @param params.sessionId - La session concernée.
    * @param params.userId - L'utilisateur invité.
@@ -60,7 +54,6 @@ export class SessionParticipant {
     return new SessionParticipant({
       sessionId: params.sessionId,
       userId: params.userId,
-      characterSheetId: null,
       status: SessionParticipantStatus.INVITED,
       invitedAt: params.invitedAt,
       respondedAt: null,
@@ -87,11 +80,6 @@ export class SessionParticipant {
     return this.props.userId;
   }
 
-  /** @returns L'identifiant de la fiche choisie, ou `null` si aucune. */
-  public get characterSheetId(): string | null {
-    return this.props.characterSheetId;
-  }
-
   /** @returns L'état de la participation (value object). */
   public get status(): SessionParticipantStatus {
     return this.props.status;
@@ -108,20 +96,21 @@ export class SessionParticipant {
   }
 
   /**
-   * Accepte l'invitation en choisissant une fiche de personnage : `INVITED → ACCEPTED`.
+   * Accepte l'invitation : `INVITED → ACCEPTED`.
    *
-   * @param params.characterSheetId - La fiche avec laquelle le joueur rejoint la session.
+   * La fiche du joueur n'est pas stockée ici : elle se déduit de la campagne de la session et
+   * du joueur (une seule fiche par campagne).
+   *
    * @param params.respondedAt - Horodatage de la réponse (injecté pour rester déterministe).
    * @returns Une nouvelle participation au statut `ACCEPTED`.
    * @throws {ParticipantAlreadyRespondedError} Si le joueur a déjà répondu (statut ≠ `INVITED`).
    */
-  public accept(params: { characterSheetId: string; respondedAt: Date }): SessionParticipant {
+  public accept(params: { respondedAt: Date }): SessionParticipant {
     if (!this.props.status.isInvited()) {
       throw new ParticipantAlreadyRespondedError(this.props.status.value);
     }
     return new SessionParticipant({
       ...this.props,
-      characterSheetId: params.characterSheetId,
       status: SessionParticipantStatus.ACCEPTED,
       respondedAt: params.respondedAt,
     });
