@@ -7,6 +7,7 @@ import {
   FakeLogger,
   FakeIdGenerator,
   FakeUnitOfWork,
+  FakeRealtimeNotifier,
   buildFakeTransactionalRepositories,
   buildTestCampaign,
 } from "./fakes";
@@ -22,6 +23,7 @@ describe("CreateSessionUseCaseImpl", () => {
       new FakeIdGenerator(),
       new FakeUnitOfWork(txRepos),
       new FakeLogger(),
+      new FakeRealtimeNotifier(),
     );
     // La campagne "camp-1" appartient au groupe "group-1" ; son MJ est "mj-1".
     txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1", "Ma campagne", "group-1"));

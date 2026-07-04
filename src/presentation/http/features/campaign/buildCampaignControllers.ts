@@ -46,6 +46,7 @@ export function buildCampaignController(deps: CampaignControllerDeps): CampaignC
     deps.groupAccessService,
     deps.unitOfWork,
     deps.logger,
+    deps.realtimeNotifier,
   );
   const listMyCampaigns = new ListMyCampaignsUseCaseImpl(
     deps.campaignRepository,
@@ -56,6 +57,7 @@ export function buildCampaignController(deps: CampaignControllerDeps): CampaignC
     deps.groupAccessService,
     deps.unitOfWork,
     deps.logger,
+    deps.realtimeNotifier,
   );
 
   return new CampaignController(createCampaign, listMyCampaigns, deleteCampaign);

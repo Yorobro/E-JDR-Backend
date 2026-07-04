@@ -14,6 +14,7 @@ import {
   CreateCampaignUseCase,
   CreateCampaignResult,
 } from "@application/features/campaign/abstractions/usecases/CreateCampaignUseCase";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 export class CreateCampaignUseCaseImpl implements CreateCampaignUseCase {
   constructor(
@@ -21,6 +22,7 @@ export class CreateCampaignUseCaseImpl implements CreateCampaignUseCase {
     private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(
@@ -59,6 +61,8 @@ export class CreateCampaignUseCaseImpl implements CreateCampaignUseCase {
       groupId: campaign.groupId,
       gameMasterId: campaign.gameMasterId,
     });
+
+    this.realtimeNotifier.notifyGroupChanged(campaign.groupId, "campaigns");
 
     return Result.success({
       id: campaign.id,

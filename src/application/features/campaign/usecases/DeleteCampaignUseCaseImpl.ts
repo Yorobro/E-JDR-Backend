@@ -8,6 +8,7 @@ import { DeleteCampaignCommand } from "@application/features/campaign/commands/D
 import { DeleteCampaignUseCase } from "@application/features/campaign/abstractions/usecases/DeleteCampaignUseCase";
 import { CampaignNotFoundError } from "@application/features/campaign/errors/CampaignNotFoundError";
 import { CampaignAccessDeniedError } from "@application/features/campaign/errors/CampaignAccessDeniedError";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 /**
  * Use case de suppression d'une campagne.
@@ -24,6 +25,7 @@ export class DeleteCampaignUseCaseImpl implements DeleteCampaignUseCase {
     private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(command: DeleteCampaignCommand): Promise<Result<void, AppError>> {
@@ -58,6 +60,8 @@ export class DeleteCampaignUseCaseImpl implements DeleteCampaignUseCase {
       campaignId: campaign.id,
       gameMasterId: campaign.gameMasterId,
     });
+
+    this.realtimeNotifier.notifyGroupChanged(campaign.groupId, "campaigns");
 
     return Result.success(undefined);
   }

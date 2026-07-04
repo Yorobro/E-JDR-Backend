@@ -11,12 +11,14 @@ import { InvitationNotFoundError } from "@application/features/friend-group/erro
 import { InvitationAlreadyResolvedError } from "@application/features/friend-group/errors/InvitationAlreadyResolvedError";
 import { NotGroupMemberError } from "@application/features/friend-group/errors/NotGroupMemberError";
 import { AcceptInvitationUseCase } from "@application/features/friend-group/abstractions/usecases/AcceptInvitationUseCase";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 export class AcceptInvitationUseCaseImpl implements AcceptInvitationUseCase {
   constructor(
     private readonly groupInvitationRepository: GroupInvitationRepository,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(params: {
@@ -51,6 +53,9 @@ export class AcceptInvitationUseCaseImpl implements AcceptInvitationUseCase {
       groupId: invitation.groupId,
       userId: params.userId,
     });
+
+    this.realtimeNotifier.notifyGroupChanged(invitation.groupId, "group-members");
+    this.realtimeNotifier.notifyUserChanged(params.userId, "my-groups");
 
     return Result.success(undefined);
   }

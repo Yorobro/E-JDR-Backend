@@ -10,6 +10,7 @@ import { GroupMemberRepository } from "@application/features/friend-group/abstra
 import { NotGroupMemberError } from "@application/features/friend-group/errors/NotGroupMemberError";
 import { CannotRemoveLastAdminError } from "@application/features/friend-group/errors/CannotRemoveLastAdminError";
 import { ChangeMemberRoleUseCase } from "@application/features/friend-group/abstractions/usecases/ChangeMemberRoleUseCase";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 export class ChangeMemberRoleUseCaseImpl implements ChangeMemberRoleUseCase {
   constructor(
@@ -17,6 +18,7 @@ export class ChangeMemberRoleUseCaseImpl implements ChangeMemberRoleUseCase {
     private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(params: {
@@ -54,6 +56,8 @@ export class ChangeMemberRoleUseCaseImpl implements ChangeMemberRoleUseCase {
       newRole: newRole.value,
       by: params.actorId,
     });
+
+    this.realtimeNotifier.notifyGroupChanged(params.groupId, "group-members");
 
     return Result.success(undefined);
   }

@@ -14,6 +14,7 @@ import { SessionNotFoundError } from "@application/features/session/errors/Sessi
 import { UpdateSessionCommand } from "@application/features/session/commands/UpdateSessionCommand";
 import { UpdateSessionUseCase } from "@application/features/session/abstractions/usecases/UpdateSessionUseCase";
 import { SessionView } from "@application/features/session/abstractions/usecases/GetSessionUseCase";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 /**
  * Use case de mise à jour d'une session.
@@ -28,6 +29,7 @@ export class UpdateSessionUseCaseImpl implements UpdateSessionUseCase {
     private readonly campaignRepository: CampaignRepository,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(command: UpdateSessionCommand): Promise<Result<SessionView, AppError>> {
@@ -67,6 +69,8 @@ export class UpdateSessionUseCaseImpl implements UpdateSessionUseCase {
       sessionId: updated.id,
       campaignId: updated.campaignId,
     });
+
+    this.realtimeNotifier.notifyGroupChanged(campaign.groupId, "sessions");
 
     return Result.success({
       id: updated.id,

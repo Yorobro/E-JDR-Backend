@@ -15,6 +15,7 @@ import { ReferenceRepository } from "@application/features/reference/abstraction
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
 import { ReferenceItemNotFoundError } from "@application/features/reference/errors/ReferenceItemNotFoundError";
 import { ReferenceNameAlreadyUsedError } from "@application/features/reference/errors/ReferenceNameAlreadyUsedError";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import {
   CreateReferenceItemCommand,
   CreateReferenceItemUseCase,
@@ -106,6 +107,8 @@ export interface CreateReferenceItemDeps {
   readonly unitOfWork: UnitOfWork;
   /** Journalisation applicative. */
   readonly logger: Logger;
+  /** Notification temps réel des membres du groupe après écriture réussie. */
+  readonly realtimeNotifier: RealtimeNotifier;
   /**
    * Dépendances spécifiques aux formations (compétences). Absentes pour les autres types : un
    * `competenceIds` fourni serait alors ignoré.
@@ -127,6 +130,7 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
   private readonly groupAccessService: GroupAccessService;
   private readonly unitOfWork: UnitOfWork;
   private readonly logger: Logger;
+  private readonly realtimeNotifier: RealtimeNotifier;
   private readonly formationDeps?: FormationCreateDeps;
 
   constructor(deps: CreateReferenceItemDeps) {
@@ -136,6 +140,7 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
     this.groupAccessService = deps.groupAccessService;
     this.unitOfWork = deps.unitOfWork;
     this.logger = deps.logger;
+    this.realtimeNotifier = deps.realtimeNotifier;
     this.formationDeps = deps.formationDeps;
   }
 
@@ -206,6 +211,8 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
 
     this.logger.info("Élément de référence créé", { itemId: item.id, groupId: item.groupId });
 
+    this.realtimeNotifier.notifyGroupChanged(item.groupId, "references");
+
     return Result.success(toView(item, competenceIds));
   }
 }
@@ -225,6 +232,8 @@ export interface UpdateReferenceItemDeps {
   readonly unitOfWork: UnitOfWork;
   /** Journalisation applicative. */
   readonly logger: Logger;
+  /** Notification temps réel des membres du groupe après écriture réussie. */
+  readonly realtimeNotifier: RealtimeNotifier;
   /**
    * Dépendances spécifiques aux formations (compétences). Absentes pour les autres types : un
    * `competenceIds` fourni serait alors ignoré.
@@ -246,6 +255,7 @@ export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCas
   private readonly groupAccessService: GroupAccessService;
   private readonly unitOfWork: UnitOfWork;
   private readonly logger: Logger;
+  private readonly realtimeNotifier: RealtimeNotifier;
   private readonly formationDeps?: FormationCreateDeps;
 
   constructor(deps: UpdateReferenceItemDeps) {
@@ -254,6 +264,7 @@ export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCas
     this.groupAccessService = deps.groupAccessService;
     this.unitOfWork = deps.unitOfWork;
     this.logger = deps.logger;
+    this.realtimeNotifier = deps.realtimeNotifier;
     this.formationDeps = deps.formationDeps;
   }
 
@@ -339,6 +350,8 @@ export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCas
       groupId: updated.groupId,
     });
 
+    this.realtimeNotifier.notifyGroupChanged(updated.groupId, "references");
+
     return Result.success(toView(updated, competenceIds));
   }
 }
@@ -391,6 +404,7 @@ export class DeleteReferenceItemUseCaseImpl implements DeleteReferenceItemUseCas
     private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(command: DeleteReferenceItemCommand): Promise<Result<void, AppError>> {
@@ -410,6 +424,8 @@ export class DeleteReferenceItemUseCaseImpl implements DeleteReferenceItemUseCas
       itemId: item.id,
       groupId: item.groupId,
     });
+
+    this.realtimeNotifier.notifyGroupChanged(item.groupId, "references");
 
     return Result.success(undefined);
   }

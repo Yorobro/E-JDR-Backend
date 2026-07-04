@@ -2,6 +2,7 @@ import { Logger } from "@application/shared/Logger";
 import { TransactionalRepositories, UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
@@ -47,6 +48,7 @@ export interface ReferenceControllerDeps {
   readonly groupAccessService: GroupAccessService;
   readonly unitOfWork: UnitOfWork;
   readonly logger: Logger;
+  readonly realtimeNotifier: RealtimeNotifier;
 }
 
 type CatalogueKey =
@@ -86,6 +88,7 @@ export function buildReferenceController(deps: ReferenceControllerDeps): Referen
         groupAccessService: deps.groupAccessService,
         unitOfWork: deps.unitOfWork,
         logger: deps.logger,
+        realtimeNotifier: deps.realtimeNotifier,
         formationDeps: isFormations ? formationCreateDeps : undefined,
       }),
       list: new ListReferenceItemsUseCaseImpl(
@@ -99,6 +102,7 @@ export function buildReferenceController(deps: ReferenceControllerDeps): Referen
         groupAccessService: deps.groupAccessService,
         unitOfWork: deps.unitOfWork,
         logger: deps.logger,
+        realtimeNotifier: deps.realtimeNotifier,
         formationDeps: isFormations ? formationCreateDeps : undefined,
       }),
       remove: new DeleteReferenceItemUseCaseImpl(
@@ -107,6 +111,7 @@ export function buildReferenceController(deps: ReferenceControllerDeps): Referen
         deps.groupAccessService,
         deps.unitOfWork,
         deps.logger,
+        deps.realtimeNotifier,
       ),
     };
   };

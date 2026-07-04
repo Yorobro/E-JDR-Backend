@@ -4,6 +4,7 @@ import { IdGeneratorService } from "@application/features/auth/abstractions/serv
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import { CreateSessionUseCaseImpl } from "@application/features/session/usecases/CreateSessionUseCaseImpl";
 import { ListCampaignSessionsUseCaseImpl } from "@application/features/session/usecases/ListCampaignSessionsUseCaseImpl";
 import { GetSessionUseCaseImpl } from "@application/features/session/usecases/GetSessionUseCaseImpl";
@@ -25,6 +26,7 @@ export interface SessionControllerDeps {
   readonly unitOfWork: UnitOfWork;
   readonly logger: Logger;
   readonly groupAccessService: GroupAccessService;
+  readonly realtimeNotifier: RealtimeNotifier;
 }
 
 /**
@@ -42,6 +44,7 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.idGenerator,
     deps.unitOfWork,
     deps.logger,
+    deps.realtimeNotifier,
   );
   const listCampaignSessions = new ListCampaignSessionsUseCaseImpl(
     deps.campaignRepository,
@@ -58,12 +61,14 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.campaignRepository,
     deps.unitOfWork,
     deps.logger,
+    deps.realtimeNotifier,
   );
   const deleteSession = new DeleteSessionUseCaseImpl(
     deps.sessionRepository,
     deps.campaignRepository,
     deps.unitOfWork,
     deps.logger,
+    deps.realtimeNotifier,
   );
 
   return new SessionController(
