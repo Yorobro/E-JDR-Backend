@@ -6,6 +6,7 @@ import {
   buildFakeTransactionalRepositories,
   FakeUnitOfWork,
   FakeLogger,
+  FakeRealtimeNotifier,
   buildTestMembership,
 } from "./fakes";
 
@@ -31,6 +32,7 @@ describe("RemoveMemberUseCase", () => {
       accessService,
       new FakeUnitOfWork(repos),
       new FakeLogger(),
+      new FakeRealtimeNotifier(),
     );
   });
 

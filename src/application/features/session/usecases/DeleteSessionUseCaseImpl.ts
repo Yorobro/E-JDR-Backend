@@ -8,6 +8,7 @@ import { SessionRepository } from "@application/features/session/abstractions/re
 import { SessionNotFoundError } from "@application/features/session/errors/SessionNotFoundError";
 import { DeleteSessionCommand } from "@application/features/session/commands/DeleteSessionCommand";
 import { DeleteSessionUseCase } from "@application/features/session/abstractions/usecases/DeleteSessionUseCase";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 /**
  * Use case de suppression d'une session.
@@ -22,6 +23,7 @@ export class DeleteSessionUseCaseImpl implements DeleteSessionUseCase {
     private readonly campaignRepository: CampaignRepository,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(command: DeleteSessionCommand): Promise<Result<void, AppError>> {
@@ -51,6 +53,8 @@ export class DeleteSessionUseCaseImpl implements DeleteSessionUseCase {
       sessionId: session.id,
       campaignId: session.campaignId,
     });
+
+    this.realtimeNotifier.notifyGroupChanged(campaign.groupId, "sessions");
 
     return Result.success(undefined);
   }
