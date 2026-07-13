@@ -49,7 +49,6 @@ function references(
     equipements: [],
     sorts: [],
     miracles: [],
-    statBonuses: [],
     ...overrides,
   };
 }
@@ -117,10 +116,6 @@ function fullReferences(): CharacterSheetPdfReferences {
       "Soin mineur (1d6 PV)",
       "Bénédiction (+1 au groupe)",
       "Purification de l'eau et de la nourriture",
-    ],
-    statBonuses: [
-      { stat: "vigueur", amount: 1 },
-      { stat: "perception", amount: 2 },
     ],
   });
 }

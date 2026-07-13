@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { StatBonus } from "@domain/features/reference/value-objects/StatBonus";
 import { ExportCharacterSheetPdfUseCaseImpl } from "@application/features/character-sheet/usecases/ExportCharacterSheetPdfUseCaseImpl";
 import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
@@ -34,9 +35,9 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
       peupleRepository: txRepos.peoples,
       competenceRepository: txRepos.competences,
       formationCompetenceLink: txRepos.formationCompetences,
+      peupleStatBonusLink: txRepos.peupleStatBonuses,
       sheetArmes: txRepos.sheetArmes,
       sheetArmures: txRepos.sheetArmures,
-      sheetCompetences: txRepos.sheetCompetences,
       sheetEquipements: txRepos.sheetEquipements,
       sheetSorts: txRepos.sheetSorts,
       sheetMiracles: txRepos.sheetMiracles,
@@ -126,8 +127,11 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
     txRepos.formations.seed(
       buildTestReferenceItem("form-1", "group-1", "Diplomate", { stat: "social", amount: 2 }),
     );
-    txRepos.peoples.seed(
-      buildTestReferenceItem("peuple-1", "group-1", "Halfelin", { stat: "social", amount: 1 }),
+    txRepos.peoples.seed(buildTestReferenceItem("peuple-1", "group-1", "Halfelin"));
+    await txRepos.peupleStatBonuses.link(
+      "peuple-1",
+      StatBonus.create({ stat: "social", amount: 1 }),
+      new Date(),
     );
     txRepos.characterSheets.seed(
       buildTestCharacterSheet("s-1", "owner-1", "Frodon", {
@@ -146,5 +150,31 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
     expect(pdfGenerator.lastDetail?.socialTotale).toBe(6);
     // Une stat sans bonus reste à sa base.
     expect(pdfGenerator.lastDetail?.dexterite).toBe(4);
+  });
+
+  it("imprime les compétences DÉRIVÉES DE LA FORMATION (la boîte COMPÉTENCES n'est plus vide)", async () => {
+    txRepos.competences.seed(buildTestReferenceItem("c-1", "group-1", "Escrime"));
+    txRepos.competences.seed(buildTestReferenceItem("c-2", "group-1", "Esquive"));
+    txRepos.formations.seed(buildTestReferenceItem("form-1", "group-1", "Guerrier"));
+    await txRepos.formationCompetences.link("form-1", "c-1", new Date());
+    await txRepos.formationCompetences.link("form-1", "c-2", new Date());
+    txRepos.characterSheets.seed(
+      buildTestCharacterSheet("s-1", "owner-1", "Aragorn", { formationId: "form-1" }),
+    );
+
+    const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "owner-1" });
+
+    expect(result.isSuccess).toBe(true);
+    expect(pdfGenerator.lastReferences?.competences).toEqual(["Escrime", "Esquive"]);
+  });
+
+  it("n'imprime aucune compétence si la fiche n'a pas de formation", async () => {
+    txRepos.competences.seed(buildTestReferenceItem("c-1", "group-1", "Escrime"));
+    txRepos.characterSheets.seed(buildTestCharacterSheet("s-1", "owner-1", "Aragorn"));
+
+    const result = await useCase.execute({ characterSheetId: "s-1", ownerId: "owner-1" });
+
+    expect(result.isSuccess).toBe(true);
+    expect(pdfGenerator.lastReferences?.competences).toEqual([]);
   });
 });

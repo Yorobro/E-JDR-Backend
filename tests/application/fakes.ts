@@ -9,6 +9,7 @@ import {
   FakeReferenceRepository,
   FakeSheetReferenceLinkRepository,
   FakeFormationCompetenceLinkRepository,
+  FakePeupleStatBonusRepository,
 } from "./referenceFakes";
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
@@ -335,6 +336,7 @@ export function buildFakeTransactionalRepositories(overrides?: {
   sheetSorts: FakeSheetReferenceLinkRepository;
   sheetMiracles: FakeSheetReferenceLinkRepository;
   formationCompetences: FakeFormationCompetenceLinkRepository;
+  peupleStatBonuses: FakePeupleStatBonusRepository;
   friendGroups: FakeFriendGroupRepository;
   groupMembers: FakeGroupMemberRepository;
   groupInvitations: FakeGroupInvitationRepository;
@@ -378,6 +380,7 @@ export function buildFakeTransactionalRepositories(overrides?: {
     sheetSorts: new FakeSheetReferenceLinkRepository(sorts),
     sheetMiracles: new FakeSheetReferenceLinkRepository(miracles),
     formationCompetences: new FakeFormationCompetenceLinkRepository(),
+    peupleStatBonuses: new FakePeupleStatBonusRepository(),
     friendGroups: new FakeFriendGroupRepository(),
     groupMembers: new FakeGroupMemberRepository(),
     groupInvitations: new FakeGroupInvitationRepository(),
@@ -412,6 +415,7 @@ export {
   FakeReferenceRepository,
   FakeSheetReferenceLinkRepository,
   FakeFormationCompetenceLinkRepository,
+  FakePeupleStatBonusRepository,
 } from "./referenceFakes";
 
 // Doublures de services (hash/token/id/pdf/logger) : définies dans `serviceFakes.ts`,

@@ -15,6 +15,7 @@ import { computeDerivedCharacterStats } from "@application/features/character-sh
 import { buildCharacterSheetPdfReferences } from "@application/features/character-sheet/usecases/buildCharacterSheetPdfReferences";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
+import { PeupleStatBonusRepository } from "@application/features/reference/abstractions/repositories/PeupleStatBonusRepository";
 import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 
 /**
@@ -32,18 +33,18 @@ export interface ExportCharacterSheetPdfDeps {
   readonly groupAccessService: GroupAccessService;
   /** Catalogue des formations (résolution du nom + bonus). */
   readonly formationRepository: ReferenceRepository;
-  /** Catalogue des peuples (résolution du nom + bonus). */
+  /** Catalogue des peuples (résolution du nom). */
   readonly peupleRepository: ReferenceRepository;
   /** Catalogue des compétences (résolution des compétences liées à la formation). */
   readonly competenceRepository: ReferenceRepository;
   /** Liaison formation ↔ compétences. */
   readonly formationCompetenceLink: FormationCompetenceLinkRepository;
+  /** Bonus de statistique du peuple (0..N). */
+  readonly peupleStatBonusLink: PeupleStatBonusRepository;
   /** Liaison fiche ↔ armes (noms des armes liées). */
   readonly sheetArmes: SheetReferenceLinkRepository;
   /** Liaison fiche ↔ armures (noms des armures liées). */
   readonly sheetArmures: SheetReferenceLinkRepository;
-  /** Liaison fiche ↔ compétences (noms des compétences liées à la fiche). */
-  readonly sheetCompetences: SheetReferenceLinkRepository;
   /** Liaison fiche ↔ équipements (noms des équipements liés). */
   readonly sheetEquipements: SheetReferenceLinkRepository;
   /** Liaison fiche ↔ sorts (noms des sorts liés). */
@@ -88,7 +89,6 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
   private readonly referenceResolver: CharacterSheetReferenceResolver;
   private readonly sheetArmes: SheetReferenceLinkRepository;
   private readonly sheetArmures: SheetReferenceLinkRepository;
-  private readonly sheetCompetences: SheetReferenceLinkRepository;
   private readonly sheetEquipements: SheetReferenceLinkRepository;
   private readonly sheetSorts: SheetReferenceLinkRepository;
   private readonly sheetMiracles: SheetReferenceLinkRepository;
@@ -103,10 +103,10 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
       peupleRepository: deps.peupleRepository,
       competenceRepository: deps.competenceRepository,
       formationCompetenceLink: deps.formationCompetenceLink,
+      peupleStatBonusLink: deps.peupleStatBonusLink,
     });
     this.sheetArmes = deps.sheetArmes;
     this.sheetArmures = deps.sheetArmures;
-    this.sheetCompetences = deps.sheetCompetences;
     this.sheetEquipements = deps.sheetEquipements;
     this.sheetSorts = deps.sheetSorts;
     this.sheetMiracles = deps.sheetMiracles;
@@ -139,10 +139,12 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
       detail.peupleId,
       sheet.groupId,
     );
+    // Pas de `competences` ici : elles sont dérivées de la formation (déjà chargées par le
+    // resolver ci-dessus), et non liées à la fiche. La liaison `sheet_competences` n'est plus
+    // alimentée depuis que les compétences viennent à 100 % de la formation.
     const lists = {
       armes: await this.sheetArmes.findItemsBySheet(query.characterSheetId),
       armures: await this.sheetArmures.findItemsBySheet(query.characterSheetId),
-      competences: await this.sheetCompetences.findItemsBySheet(query.characterSheetId),
       equipements: await this.sheetEquipements.findItemsBySheet(query.characterSheetId),
       sorts: await this.sheetSorts.findItemsBySheet(query.characterSheetId),
       miracles: await this.sheetMiracles.findItemsBySheet(query.characterSheetId),

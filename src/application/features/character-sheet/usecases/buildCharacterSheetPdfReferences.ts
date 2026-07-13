@@ -1,24 +1,25 @@
 import { CharacterSheetPdfReferences } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfReferences";
 import {
   ResolvedFormationView,
-  ResolvedReferenceView,
+  ResolvedPeupleView,
 } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
 import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem";
-
-/** Montant par défaut d'un bonus de stat lorsqu'aucun n'est renseigné sur l'élément résolu. */
-const DEFAULT_STAT_BONUS_AMOUNT = 1;
 
 /** Formation + peuple résolus (vues de lecture), tels que produits par le resolver. */
 interface ResolvedReferencesInput {
   readonly formation: ResolvedFormationView | null;
-  readonly peuple: ResolvedReferenceView | null;
+  readonly peuple: ResolvedPeupleView | null;
 }
 
-/** Listes d'éléments liés à la fiche (entités de référence brutes), une par catégorie liable. */
+/**
+ * Listes d'éléments **liés** à la fiche (entités de référence brutes), une par catégorie liable.
+ *
+ * Les compétences n'y figurent pas : elles ne sont pas liées à la fiche mais **dérivées de la
+ * formation** (cf. {@link buildCharacterSheetPdfReferences}).
+ */
 interface LinkedItemsInput {
   readonly armes: ReferenceItem[];
   readonly armures: ReferenceItem[];
-  readonly competences: ReferenceItem[];
   readonly equipements: ReferenceItem[];
   readonly sorts: ReferenceItem[];
   readonly miracles: ReferenceItem[];
@@ -30,8 +31,10 @@ interface LinkedItemsInput {
  *
  * - `formationName` / `peupleName` : nom de l'élément résolu, ou `null` s'il est absent.
  * - listes (`armes`, …) : noms des éléments liés (value object `name.value`), dans l'ordre fourni.
- * - `statBonuses` : un par élément résolu (formation puis peuple) qui porte une stat ; le montant
- *   vaut le bonus résolu, ou {@link DEFAULT_STAT_BONUS_AMOUNT} à défaut.
+ * - `competences` : noms des compétences **apportées par la formation**. Elles ne sont pas liées à
+ *   la fiche : la liaison N‑N `sheet_competences` n'est plus alimentée depuis que les compétences
+ *   sont 100 % dérivées de la formation. Les lire depuis cette liaison morte est ce qui vidait la
+ *   boîte « COMPÉTENCES » du PDF.
  *
  * @param resolved - La formation et le peuple résolus (ou `null`).
  * @param lists - Les listes d'éléments liés à la fiche.
@@ -46,20 +49,9 @@ export function buildCharacterSheetPdfReferences(
     peupleName: resolved.peuple?.name ?? null,
     armes: lists.armes.map((item) => item.name.value),
     armures: lists.armures.map((item) => item.name.value),
-    competences: lists.competences.map((item) => item.name.value),
+    competences: (resolved.formation?.competences ?? []).map((competence) => competence.name),
     equipements: lists.equipements.map((item) => item.name.value),
     sorts: lists.sorts.map((item) => item.name.value),
     miracles: lists.miracles.map((item) => item.name.value),
-    statBonuses: toStatBonuses(resolved),
   };
-}
-
-/** Agrège les bonus de stat portés par la formation et le peuple résolus (stat non nulle). */
-function toStatBonuses(resolved: ResolvedReferencesInput): { stat: string; amount: number }[] {
-  return [resolved.formation, resolved.peuple]
-    .filter((view): view is ResolvedReferenceView => view != null && view.stat !== null)
-    .map((view) => ({
-      stat: view.stat as string,
-      amount: view.bonus ?? DEFAULT_STAT_BONUS_AMOUNT,
-    }));
 }

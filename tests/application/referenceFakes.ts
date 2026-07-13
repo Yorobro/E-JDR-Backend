@@ -1,7 +1,9 @@
 import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem";
+import { StatBonus } from "@domain/features/reference/value-objects/StatBonus";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
+import { PeupleStatBonusRepository } from "@application/features/reference/abstractions/repositories/PeupleStatBonusRepository";
 
 /** Catalogue d'éléments de référence en mémoire (indexé par id), partagé par les 6 types. */
 export class FakeReferenceRepository implements ReferenceRepository {
@@ -113,5 +115,30 @@ export class FakeFormationCompetenceLinkRepository implements FormationCompetenc
         this.links.delete(k);
       }
     }
+  }
+}
+
+/**
+ * Bonus de statistique des peuples, en mémoire (0..N par peuple).
+ *
+ * L'unicité par stat — garantie en base par la PK composite `(peuple_id, stat)` — est reproduite
+ * ici par une `Map` indexée sur la stat : un second `link` sur la même stat écrase le premier au
+ * lieu de créer un doublon, comme le ferait la base.
+ */
+export class FakePeupleStatBonusRepository implements PeupleStatBonusRepository {
+  private readonly bonuses = new Map<string, Map<string, StatBonus>>();
+
+  public async link(peupleId: string, statBonus: StatBonus, _createdAt: Date): Promise<void> {
+    const forPeuple = this.bonuses.get(peupleId) ?? new Map<string, StatBonus>();
+    forPeuple.set(statBonus.stat, statBonus);
+    this.bonuses.set(peupleId, forPeuple);
+  }
+
+  public async findByPeuple(peupleId: string): Promise<StatBonus[]> {
+    return [...(this.bonuses.get(peupleId)?.values() ?? [])];
+  }
+
+  public async deleteByPeuple(peupleId: string): Promise<void> {
+    this.bonuses.delete(peupleId);
   }
 }

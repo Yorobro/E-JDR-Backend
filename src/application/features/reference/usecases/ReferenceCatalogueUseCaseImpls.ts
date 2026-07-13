@@ -12,7 +12,6 @@ import { IdGeneratorService } from "@application/features/auth/abstractions/serv
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
-import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
 import { ReferenceItemNotFoundError } from "@application/features/reference/errors/ReferenceItemNotFoundError";
 import { ReferenceNameAlreadyUsedError } from "@application/features/reference/errors/ReferenceNameAlreadyUsedError";
 import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
@@ -27,68 +26,25 @@ import {
   UpdateReferenceItemUseCase,
 } from "@application/features/reference/abstractions/usecases/ReferenceCatalogueUseCases";
 import { ReferenceItemView } from "@application/features/reference/abstractions/usecases/ReferenceItemView";
+import {
+  FormationCreateDeps,
+  FormationListDeps,
+  PeupleListDeps,
+  PeupleWriteDeps,
+  RepoSelector,
+  buildStatBonus,
+  buildStatBonuses,
+  toView,
+} from "@application/features/reference/usecases/referenceCatalogueSupport";
 
-/** Sélectionne dans `TransactionalRepositories` le repository de la catégorie gérée. */
-type RepoSelector = (
-  repos: import("@application/shared/UnitOfWork").TransactionalRepositories,
-) => ReferenceRepository;
-
-/**
- * Dépendances **spécifiques aux formations** pour la création : le catalogue de compétences (pour
- * vérifier que chaque compétence référencée appartient au même groupe) et la liaison N‑N
- * formation ↔ compétences (pour poser les liens). Absentes pour les autres types.
- */
-export interface FormationCreateDeps {
-  /** Catalogue de compétences du groupe (lecture : vérification de portée). */
-  readonly competences: ReferenceRepository;
-  /** Liaison transactionnelle formation ↔ compétences (sélection dans l'UoW). */
-  readonly formationCompetences: (
-    repos: import("@application/shared/UnitOfWork").TransactionalRepositories,
-  ) => FormationCompetenceLinkRepository;
-}
-
-/**
- * Dépendances **spécifiques aux formations** pour la lecture : la liaison formation ↔ compétences
- * (lecture pure) afin de renseigner `competenceIds` dans la vue. Absente pour les autres types.
- */
-export interface FormationListDeps {
-  /** Liaison formation ↔ compétences (lecture pure). */
-  readonly formationCompetences: FormationCompetenceLinkRepository;
-}
-
-/**
- * Construit le bonus de statistique à partir d'une stat/bonus bruts, ou `null` si aucune stat
- * fournie. Partagé par la création et la modification.
- *
- * @param stat - La statistique ciblée (`undefined`/`null` ⇒ aucun bonus).
- * @param bonus - Le montant du bonus (défaut 1 si `stat` fournie sans montant).
- * @returns Le `StatBonus` validé, ou `null` (pas de bonus).
- * @throws {DomainError} Si la stat ou le montant sont invalides (capté par l'appelant).
- */
-function buildStatBonus(
-  stat: string | null | undefined,
-  bonus: number | null | undefined,
-): StatBonus | null {
-  if (stat === undefined || stat === null) {
-    return null;
-  }
-  return StatBonus.create({ stat, amount: bonus });
-}
-
-/** Projette une entité vers sa vue publique (sans compétences ⇒ tableau vide par défaut). */
-function toView(item: ReferenceItem, competenceIds: string[] = []): ReferenceItemView {
-  const statBonus = item.statBonus;
-  return {
-    id: item.id,
-    name: item.name.value,
-    createdAt: item.createdAt,
-    stat: statBonus?.stat ?? null,
-    bonus: statBonus?.amount ?? null,
-    protectionPoints: item.protectionPoints,
-    description: item.description,
-    competenceIds,
-  };
-}
+// Réexportés : les builders de controllers et les tests importent ces types depuis ce module.
+export type {
+  FormationCreateDeps,
+  FormationListDeps,
+  PeupleListDeps,
+  PeupleWriteDeps,
+  RepoSelector,
+};
 
 /**
  * Dépendances du use case de création d'un élément de référence (regroupées dans un objet pour
@@ -114,14 +70,19 @@ export interface CreateReferenceItemDeps {
    * `competenceIds` fourni serait alors ignoré.
    */
   readonly formationDeps?: FormationCreateDeps;
+  /**
+   * Dépendances spécifiques aux peuples (bonus de statistique multiples). Absentes pour les autres
+   * types : un `statBonuses` fourni serait alors ignoré.
+   */
+  readonly peupleDeps?: PeupleWriteDeps;
 }
 
 /**
  * Use case **générique** de création d'un élément de référence.
  *
- * Seuls les admins du groupe peuvent créer des entrées de catalogue. Pour les formations, le bonus
- * de statistique (`stat`/`bonus`) et les compétences liées sont gérés ; les autres types ignorent
- * ces champs.
+ * Seuls les admins du groupe peuvent créer des entrées de catalogue. Le traitement des bonus de
+ * statistique est **asymétrique** : une formation porte au plus un bonus (colonnes `stat`/`bonus`),
+ * un peuple en porte 0..N (table `peuple_stat_bonuses`). Les autres types ignorent ces champs.
  */
 export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCase {
   private readonly repository: ReferenceRepository;
@@ -132,6 +93,7 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
   private readonly logger: Logger;
   private readonly realtimeNotifier: RealtimeNotifier;
   private readonly formationDeps?: FormationCreateDeps;
+  private readonly peupleDeps?: PeupleWriteDeps;
 
   constructor(deps: CreateReferenceItemDeps) {
     this.repository = deps.repository;
@@ -142,6 +104,7 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
     this.logger = deps.logger;
     this.realtimeNotifier = deps.realtimeNotifier;
     this.formationDeps = deps.formationDeps;
+    this.peupleDeps = deps.peupleDeps;
   }
 
   public async execute(
@@ -153,11 +116,19 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
     );
     if (accessResult.isFailure) return Result.failure(accessResult.error);
 
+    // Un peuple porte ses bonus dans la table de jointure ; sa colonne `stat` n'est plus écrite
+    // (elle serait comptée en double avec la ligne de jointure issue du backfill).
+    const peupleDeps = this.peupleDeps;
     let name: ReferenceName;
     let statBonus: StatBonus | null;
+    let statBonuses: StatBonus[];
     try {
       name = ReferenceName.create(command.name);
-      statBonus = buildStatBonus(command.stat, command.bonus);
+      statBonus = peupleDeps !== undefined ? null : buildStatBonus(command.stat, command.bonus);
+      statBonuses =
+        peupleDeps !== undefined
+          ? buildStatBonuses(command.statBonuses, command.stat, command.bonus)
+          : [];
     } catch (error) {
       if (error instanceof DomainError) {
         return Result.failure(new InvalidInputError(error.code, error.message));
@@ -207,13 +178,21 @@ export class CreateReferenceItemUseCaseImpl implements CreateReferenceItemUseCas
           await links.link(item.id, competenceId, item.createdAt);
         }
       }
+      if (peupleDeps !== undefined && statBonuses.length > 0) {
+        const bonuses = peupleDeps.peupleStatBonuses(repos);
+        for (const bonus of statBonuses) {
+          await bonuses.link(item.id, bonus, item.createdAt);
+        }
+      }
     });
 
     this.logger.info("Élément de référence créé", { itemId: item.id, groupId: item.groupId });
 
     this.realtimeNotifier.notifyGroupChanged(item.groupId, "references");
 
-    return Result.success(toView(item, competenceIds));
+    return Result.success(
+      toView(item, competenceIds, peupleDeps !== undefined ? statBonuses : undefined),
+    );
   }
 }
 
@@ -239,6 +218,11 @@ export interface UpdateReferenceItemDeps {
    * `competenceIds` fourni serait alors ignoré.
    */
   readonly formationDeps?: FormationCreateDeps;
+  /**
+   * Dépendances spécifiques aux peuples (bonus de statistique multiples). Absentes pour les autres
+   * types : un `statBonuses` fourni serait alors ignoré.
+   */
+  readonly peupleDeps?: PeupleWriteDeps;
 }
 
 /**
@@ -246,8 +230,9 @@ export interface UpdateReferenceItemDeps {
  *
  * Seuls les admins du groupe peuvent modifier des entrées de catalogue. Le client envoie l'état
  * complet souhaité ; le back le remplace intégralement. Pour une formation, les compétences liées
- * sont entièrement remplacées (suppression de tous les liens existants puis réinsertion de la
- * nouvelle liste), le tout **dans la transaction**. Le type ne change pas.
+ * sont entièrement remplacées ; pour un peuple, ce sont ses bonus de statistique. Dans les deux cas :
+ * suppression de tous les liens existants puis réinsertion de la nouvelle liste, **dans la
+ * transaction**. Le type ne change pas.
  */
 export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCase {
   private readonly repository: ReferenceRepository;
@@ -257,6 +242,7 @@ export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCas
   private readonly logger: Logger;
   private readonly realtimeNotifier: RealtimeNotifier;
   private readonly formationDeps?: FormationCreateDeps;
+  private readonly peupleDeps?: PeupleWriteDeps;
 
   constructor(deps: UpdateReferenceItemDeps) {
     this.repository = deps.repository;
@@ -266,6 +252,7 @@ export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCas
     this.logger = deps.logger;
     this.realtimeNotifier = deps.realtimeNotifier;
     this.formationDeps = deps.formationDeps;
+    this.peupleDeps = deps.peupleDeps;
   }
 
   public async execute(
@@ -283,11 +270,18 @@ export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCas
       return Result.failure(new ReferenceItemNotFoundError());
     }
 
+    // Voir la création : un peuple n'écrit plus sa colonne `stat` (double comptage sinon).
+    const peupleDeps = this.peupleDeps;
     let name: ReferenceName;
     let statBonus: StatBonus | null;
+    let statBonuses: StatBonus[];
     try {
       name = ReferenceName.create(command.name);
-      statBonus = buildStatBonus(command.stat, command.bonus);
+      statBonus = peupleDeps !== undefined ? null : buildStatBonus(command.stat, command.bonus);
+      statBonuses =
+        peupleDeps !== undefined
+          ? buildStatBonuses(command.statBonuses, command.stat, command.bonus)
+          : [];
     } catch (error) {
       if (error instanceof DomainError) {
         return Result.failure(new InvalidInputError(error.code, error.message));
@@ -333,17 +327,7 @@ export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCas
     if (updatedResult.isFailure) return Result.failure(updatedResult.error);
     const updated = updatedResult.value;
 
-    await this.unitOfWork.execute(async (repos) => {
-      await this.selectRepo(repos).update(updated);
-      if (formationDeps !== undefined) {
-        // Remplacement complet : on efface tous les liens existants puis on réinsère la liste.
-        const links = formationDeps.formationCompetences(repos);
-        await links.deleteByFormation(updated.id);
-        for (const competenceId of competenceIds) {
-          await links.link(updated.id, competenceId, new Date());
-        }
-      }
-    });
+    await this.persist(updated, competenceIds, statBonuses);
 
     this.logger.info("Élément de référence modifié", {
       itemId: updated.id,
@@ -352,7 +336,41 @@ export class UpdateReferenceItemUseCaseImpl implements UpdateReferenceItemUseCas
 
     this.realtimeNotifier.notifyGroupChanged(updated.groupId, "references");
 
-    return Result.success(toView(updated, competenceIds));
+    return Result.success(
+      toView(updated, competenceIds, peupleDeps !== undefined ? statBonuses : undefined),
+    );
+  }
+
+  /**
+   * Écrit l'élément et **remplace intégralement** ses liens, dans une seule transaction : les
+   * compétences pour une formation, les bonus de statistique pour un peuple. On efface tout puis on
+   * réinsère la liste reçue — c'est la sémantique de remplacement complet de l'endpoint.
+   */
+  private async persist(
+    updated: ReferenceItem,
+    competenceIds: string[],
+    statBonuses: StatBonus[],
+  ): Promise<void> {
+    const formationDeps = this.formationDeps;
+    const peupleDeps = this.peupleDeps;
+
+    await this.unitOfWork.execute(async (repos) => {
+      await this.selectRepo(repos).update(updated);
+      if (formationDeps !== undefined) {
+        const links = formationDeps.formationCompetences(repos);
+        await links.deleteByFormation(updated.id);
+        for (const competenceId of competenceIds) {
+          await links.link(updated.id, competenceId, new Date());
+        }
+      }
+      if (peupleDeps !== undefined) {
+        const bonuses = peupleDeps.peupleStatBonuses(repos);
+        await bonuses.deleteByPeuple(updated.id);
+        for (const bonus of statBonuses) {
+          await bonuses.link(updated.id, bonus, new Date());
+        }
+      }
+    });
   }
 }
 
@@ -363,11 +381,14 @@ export class ListReferenceItemsUseCaseImpl implements ListReferenceItemsUseCase 
    * @param groupAccessService - Vérifie que l'acteur est membre du groupe.
    * @param formationDeps - Dépendances spécifiques aux formations (liaison compétences). Absentes
    *                        pour les autres types : `competenceIds` est alors toujours vide.
+   * @param peupleDeps - Dépendances spécifiques aux peuples (bonus de stat). Absentes pour les
+   *                     autres types : `statBonuses` est alors toujours vide.
    */
   constructor(
     private readonly repository: ReferenceRepository,
     private readonly groupAccessService: GroupAccessService,
     private readonly formationDeps?: FormationListDeps,
+    private readonly peupleDeps?: PeupleListDeps,
   ) {}
 
   public async execute(
@@ -378,15 +399,24 @@ export class ListReferenceItemsUseCaseImpl implements ListReferenceItemsUseCase 
 
     const items = await this.repository.findByGroupId(query.groupId);
 
-    if (this.formationDeps === undefined) {
+    const formationDeps = this.formationDeps;
+    const peupleDeps = this.peupleDeps;
+
+    if (formationDeps === undefined && peupleDeps === undefined) {
       return Result.success(items.map((item) => toView(item)));
     }
 
-    const links = this.formationDeps.formationCompetences;
     const views: ReferenceItemView[] = [];
     for (const item of items) {
-      const competenceIds = await links.findCompetenceIdsByFormation(item.id);
-      views.push(toView(item, competenceIds));
+      const competenceIds =
+        formationDeps !== undefined
+          ? await formationDeps.formationCompetences.findCompetenceIdsByFormation(item.id)
+          : [];
+      const statBonuses =
+        peupleDeps !== undefined
+          ? await peupleDeps.peupleStatBonuses.findByPeuple(item.id)
+          : undefined;
+      views.push(toView(item, competenceIds, statBonuses));
     }
     return Result.success(views);
   }

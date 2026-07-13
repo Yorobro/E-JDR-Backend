@@ -85,6 +85,20 @@
       "when": 1782000000000,
       "tag": "0011_fiche_campagne_obligatoire",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1783958249382,
+      "tag": "0012_sharp_lightspeed",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1783958263239,
+      "tag": "0013_backfill_peuple_stat_bonuses",
+      "breakpoints": true
     }
   ]
 }
