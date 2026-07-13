@@ -10,6 +10,7 @@ import {
   FakeLogger,
   FakeIdGenerator,
   FakeUnitOfWork,
+  FakeRealtimeNotifier,
   buildFakeTransactionalRepositories,
   buildTestReferenceItem,
   buildTestMembership,
@@ -37,6 +38,7 @@ describe("Reference catalogue use cases — bonus de stat + compétences (format
       groupAccessService,
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
       formationDeps: {
         competences: txRepos.competences,
         formationCompetences: (repos) => repos.formationCompetences,
@@ -52,6 +54,7 @@ describe("Reference catalogue use cases — bonus de stat + compétences (format
       groupAccessService,
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
     });
   }
 
