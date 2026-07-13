@@ -1,10 +1,12 @@
 import {
   ResolvedCompetenceView,
   ResolvedFormationView,
+  ResolvedPeupleView,
   ResolvedReferenceView,
 } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
+import { PeupleStatBonusRepository } from "@application/features/reference/abstractions/repositories/PeupleStatBonusRepository";
 import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem";
 
 /**
@@ -14,18 +16,20 @@ import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem
 export interface CharacterSheetReferenceResolverDeps {
   /** Catalogue des formations (résolution du nom + bonus de la formation portée par la fiche). */
   readonly formationRepository: ReferenceRepository;
-  /** Catalogue des peuples (résolution du nom + bonus du peuple porté par la fiche). */
+  /** Catalogue des peuples (résolution du nom du peuple porté par la fiche). */
   readonly peupleRepository: ReferenceRepository;
   /** Catalogue des compétences (résolution des noms des compétences liées à la formation). */
   readonly competenceRepository: ReferenceRepository;
   /** Liaison formation ↔ compétences (ids des compétences rattachées à la formation). */
   readonly formationCompetenceLink: FormationCompetenceLinkRepository;
+  /** Bonus de statistique du peuple (0..N, au plus un par stat). */
+  readonly peupleStatBonusLink: PeupleStatBonusRepository;
 }
 
-/** Formation + peuple résolus (nom + bonus, compétences pour la formation), chacun nullable. */
+/** Formation + peuple résolus (chacun nullable). */
 export interface ResolvedSheetReferences {
   readonly formation: ResolvedFormationView | null;
-  readonly peuple: ResolvedReferenceView | null;
+  readonly peuple: ResolvedPeupleView | null;
 }
 
 /**
@@ -44,12 +48,14 @@ export class CharacterSheetReferenceResolver {
   private readonly peupleRepository: ReferenceRepository;
   private readonly competenceRepository: ReferenceRepository;
   private readonly formationCompetenceLink: FormationCompetenceLinkRepository;
+  private readonly peupleStatBonusLink: PeupleStatBonusRepository;
 
   constructor(deps: CharacterSheetReferenceResolverDeps) {
     this.formationRepository = deps.formationRepository;
     this.peupleRepository = deps.peupleRepository;
     this.competenceRepository = deps.competenceRepository;
     this.formationCompetenceLink = deps.formationCompetenceLink;
+    this.peupleStatBonusLink = deps.peupleStatBonusLink;
   }
 
   /**
@@ -91,19 +97,32 @@ export class CharacterSheetReferenceResolver {
   }
 
   /**
-   * Résout le peuple actif (nom + bonus), ou `null` si la fiche n'en porte pas, si l'id ne
+   * Résout le peuple actif (nom + bonus multiples), ou `null` si la fiche n'en porte pas, si l'id ne
    * correspond plus à un élément existant, ou si l'élément résolu appartient à un **autre groupe**
    * que la fiche.
+   *
+   * ⚠️ Les bonus proviennent **exclusivement** de la table `peuple_stat_bonuses`. La colonne
+   * historique `peoples.stat` (conservée par la migration 0012, et recopiée dans cette même table
+   * par le backfill 0013) est **délibérément ignorée** : la relire ici compterait chaque bonus deux
+   * fois dans les totaux de la fiche.
    */
   private async resolvePeuple(
     peupleId: string | null,
     sheetGroupId: string,
-  ): Promise<ResolvedReferenceView | null> {
+  ): Promise<ResolvedPeupleView | null> {
     if (peupleId === null) {
       return null;
     }
     const peuple = await this.peupleRepository.findById(peupleId);
-    return peuple === null || !peuple.isInGroup(sheetGroupId) ? null : toReferenceView(peuple);
+    if (peuple === null || !peuple.isInGroup(sheetGroupId)) {
+      return null;
+    }
+    const statBonuses = await this.peupleStatBonusLink.findByPeuple(peupleId);
+    return {
+      id: peuple.id,
+      name: peuple.name.value,
+      statBonuses: statBonuses.map((bonus) => ({ stat: bonus.stat, bonus: bonus.amount })),
+    };
   }
 
   /** Charge les compétences (id + nom) rattachées à la formation, en ignorant les ids orphelins. */
@@ -121,7 +140,10 @@ export class CharacterSheetReferenceResolver {
   }
 }
 
-/** Projette un élément de référence vers sa vue résolue (id + nom + bonus de stat). */
+/**
+ * Projette un élément de référence vers sa vue résolue (id + nom + bonus de stat unique).
+ * **Formations uniquement** : le peuple est projeté par `resolvePeuple` (bonus multiples).
+ */
 function toReferenceView(item: ReferenceItem): ResolvedReferenceView {
   const statBonus = item.statBonus;
   return {

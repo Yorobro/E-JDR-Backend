@@ -15,6 +15,7 @@ import { computeDerivedCharacterStats } from "@application/features/character-sh
 import { buildCharacterSheetPdfReferences } from "@application/features/character-sheet/usecases/buildCharacterSheetPdfReferences";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
+import { PeupleStatBonusRepository } from "@application/features/reference/abstractions/repositories/PeupleStatBonusRepository";
 import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 
 /**
@@ -32,12 +33,14 @@ export interface ExportCharacterSheetPdfDeps {
   readonly groupAccessService: GroupAccessService;
   /** Catalogue des formations (résolution du nom + bonus). */
   readonly formationRepository: ReferenceRepository;
-  /** Catalogue des peuples (résolution du nom + bonus). */
+  /** Catalogue des peuples (résolution du nom). */
   readonly peupleRepository: ReferenceRepository;
   /** Catalogue des compétences (résolution des compétences liées à la formation). */
   readonly competenceRepository: ReferenceRepository;
   /** Liaison formation ↔ compétences. */
   readonly formationCompetenceLink: FormationCompetenceLinkRepository;
+  /** Bonus de statistique du peuple (0..N). */
+  readonly peupleStatBonusLink: PeupleStatBonusRepository;
   /** Liaison fiche ↔ armes (noms des armes liées). */
   readonly sheetArmes: SheetReferenceLinkRepository;
   /** Liaison fiche ↔ armures (noms des armures liées). */
@@ -100,6 +103,7 @@ export class ExportCharacterSheetPdfUseCaseImpl implements ExportCharacterSheetP
       peupleRepository: deps.peupleRepository,
       competenceRepository: deps.competenceRepository,
       formationCompetenceLink: deps.formationCompetenceLink,
+      peupleStatBonusLink: deps.peupleStatBonusLink,
     });
     this.sheetArmes = deps.sheetArmes;
     this.sheetArmures = deps.sheetArmures;

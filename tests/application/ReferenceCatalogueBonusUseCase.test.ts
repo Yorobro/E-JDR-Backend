@@ -46,6 +46,10 @@ describe("Reference catalogue use cases — bonus de stat + compétences (format
     });
   }
 
+  /**
+   * Peuple : les `peupleDeps` sont branchées, comme le fait `buildReferenceController` pour le
+   * catalogue `peoples`. C'est leur présence qui fait basculer le use case en mode multi-bonus.
+   */
   function createPeupleUseCase(): CreateReferenceItemUseCaseImpl {
     return new CreateReferenceItemUseCaseImpl({
       repository: txRepos.peoples,
@@ -55,6 +59,7 @@ describe("Reference catalogue use cases — bonus de stat + compétences (format
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
       realtimeNotifier: new FakeRealtimeNotifier(),
+      peupleDeps: { peupleStatBonuses: (repos) => repos.peupleStatBonuses },
     });
   }
 
@@ -85,7 +90,74 @@ describe("Reference catalogue use cases — bonus de stat + compétences (format
     expect(result.value.bonus).toBe(1);
   });
 
-  it("crée un peuple avec stat + bonus", async () => {
+  it("crée un peuple avec PLUSIEURS bonus de statistique", async () => {
+    const result = await createPeupleUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Nain",
+      statBonuses: [
+        { stat: "vigueur", bonus: 2 },
+        { stat: "social", bonus: 1 },
+      ],
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.statBonuses).toEqual([
+      { stat: "vigueur", bonus: 2 },
+      { stat: "social", bonus: 1 },
+    ]);
+    // Le couple historique n'est plus exposé pour un peuple (il serait compté deux fois).
+    expect(result.value.stat).toBeNull();
+    expect(result.value.bonus).toBeNull();
+    // Les bonus sont bien persistés dans la table de jointure.
+    const persisted = await txRepos.peupleStatBonuses.findByPeuple(result.value.id);
+    expect(persisted.map((b) => [b.stat, b.amount])).toEqual([
+      ["vigueur", 2],
+      ["social", 1],
+    ]);
+  });
+
+  it("crée un peuple sans aucun bonus", async () => {
+    const result = await createPeupleUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Humain",
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.statBonuses).toEqual([]);
+  });
+
+  it("applique le bonus par défaut de 1 à une entrée de peuple sans montant", async () => {
+    const result = await createPeupleUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Elfe",
+      statBonuses: [{ stat: "dexterite" }],
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.statBonuses).toEqual([{ stat: "dexterite", bonus: 1 }]);
+  });
+
+  it("refuse (INVALID_STAT_BONUS) deux bonus sur la même statistique", async () => {
+    const result = await createPeupleUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Nain",
+      statBonuses: [
+        { stat: "vigueur", bonus: 2 },
+        { stat: "vigueur", bonus: 3 },
+      ],
+    });
+
+    expect(result.isFailure).toBe(true);
+    expect(result.error.code).toBe("INVALID_STAT_BONUS");
+  });
+
+  it("convertit le couple stat/bonus d'un ancien client en une entrée de statBonuses", async () => {
+    // Compatibilité : un client antérieur au multi-bonus n'envoie que `stat`/`bonus`. Sans ce
+    // repli, il créerait silencieusement des peuples sans aucun bonus.
     const result = await createPeupleUseCase().execute({
       groupId: "group-1",
       actorId: "u-1",
@@ -95,8 +167,8 @@ describe("Reference catalogue use cases — bonus de stat + compétences (format
     });
 
     expect(result.isSuccess).toBe(true);
-    expect(result.value.stat).toBe("vigueur");
-    expect(result.value.bonus).toBe(2);
+    expect(result.value.statBonuses).toEqual([{ stat: "vigueur", bonus: 2 }]);
+    expect(result.value.stat).toBeNull();
   });
 
   it("échoue (INVALID_STAT_BONUS) si la stat est hors liste", async () => {

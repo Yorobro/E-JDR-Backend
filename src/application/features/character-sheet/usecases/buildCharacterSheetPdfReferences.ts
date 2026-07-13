@@ -1,14 +1,14 @@
 import { CharacterSheetPdfReferences } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfReferences";
 import {
   ResolvedFormationView,
-  ResolvedReferenceView,
+  ResolvedPeupleView,
 } from "@application/features/character-sheet/abstractions/usecases/CharacterSheetDetail";
 import { ReferenceItem } from "@domain/features/reference/entities/ReferenceItem";
 
 /** Formation + peuple résolus (vues de lecture), tels que produits par le resolver. */
 interface ResolvedReferencesInput {
   readonly formation: ResolvedFormationView | null;
-  readonly peuple: ResolvedReferenceView | null;
+  readonly peuple: ResolvedPeupleView | null;
 }
 
 /**

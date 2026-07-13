@@ -51,7 +51,7 @@ export interface CharacterSheetDetail {
   // pas l'id correspondant. Le bonus n'est PAS appliqué côté back : la fiche conserve ses stats de
   // base inchangées ; le front affiche base + bonus + total.
   readonly formation: ResolvedFormationView | null;
-  readonly peuple: ResolvedReferenceView | null;
+  readonly peuple: ResolvedPeupleView | null;
 }
 
 /** Représentation publique de la bourse (pièces brutes, non normalisées). */
@@ -62,8 +62,8 @@ export interface PurseView {
 }
 
 /**
- * Élément de référence résolu (nom + bonus de stat) joint à une fiche. Utilisé pour le peuple et
- * comme base de la formation. `stat`/`bonus` sont `null` si l'élément ne porte pas de bonus.
+ * Élément de référence résolu (nom + bonus de stat) joint à une fiche. Base de la formation.
+ * `stat`/`bonus` sont `null` si l'élément ne porte pas de bonus.
  */
 export interface ResolvedReferenceView {
   readonly id: string;
@@ -76,6 +76,23 @@ export interface ResolvedReferenceView {
 export interface ResolvedFormationView extends ResolvedReferenceView {
   /** Compétences liées à la formation (id + nom), résolues depuis le catalogue du groupe. */
   readonly competences: ResolvedCompetenceView[];
+}
+
+/**
+ * Peuple résolu : contrairement à la formation (mono-bonus), un peuple porte **0..N** bonus de
+ * statistique, au plus un par stat. Il n'expose donc **pas** `stat`/`bonus`.
+ */
+export interface ResolvedPeupleView {
+  readonly id: string;
+  readonly name: string;
+  /** Bonus apportés par le peuple (vide s'il n'en porte aucun). */
+  readonly statBonuses: ResolvedStatBonusView[];
+}
+
+/** Un bonus de statistique apporté par le peuple. */
+export interface ResolvedStatBonusView {
+  readonly stat: string;
+  readonly bonus: number;
 }
 
 /** Compétence rattachée à une formation (id + nom). */

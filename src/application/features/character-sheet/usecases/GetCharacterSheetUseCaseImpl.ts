@@ -13,6 +13,7 @@ import { CharacterSheetReferenceResolver } from "@application/features/character
 import { computeDerivedCharacterStats } from "@application/features/character-sheet/usecases/computeDerivedCharacterStats";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
+import { PeupleStatBonusRepository } from "@application/features/reference/abstractions/repositories/PeupleStatBonusRepository";
 import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 
 /**
@@ -32,6 +33,8 @@ export interface GetCharacterSheetDeps {
   readonly competenceRepository: ReferenceRepository;
   /** Liaison formation ↔ compétences (ids des compétences rattachées à la formation). */
   readonly formationCompetenceLink: FormationCompetenceLinkRepository;
+  /** Bonus de statistique du peuple (0..N, au plus un par stat). */
+  readonly peupleStatBonusLink: PeupleStatBonusRepository;
   /** Liaison fiche ↔ armures (points de protection liés à la fiche, pour dériver la protection). */
   readonly sheetArmures: SheetReferenceLinkRepository;
   /** Vérifie l'appartenance au groupe de la fiche (visibilité « tout le groupe »). */
@@ -65,6 +68,7 @@ export class GetCharacterSheetUseCaseImpl implements GetCharacterSheetUseCase {
       peupleRepository: deps.peupleRepository,
       competenceRepository: deps.competenceRepository,
       formationCompetenceLink: deps.formationCompetenceLink,
+      peupleStatBonusLink: deps.peupleStatBonusLink,
     });
     this.sheetArmures = deps.sheetArmures;
     this.groupAccessService = deps.groupAccessService;

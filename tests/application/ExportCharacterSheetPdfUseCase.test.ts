@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { StatBonus } from "@domain/features/reference/value-objects/StatBonus";
 import { ExportCharacterSheetPdfUseCaseImpl } from "@application/features/character-sheet/usecases/ExportCharacterSheetPdfUseCaseImpl";
 import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
@@ -34,6 +35,7 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
       peupleRepository: txRepos.peoples,
       competenceRepository: txRepos.competences,
       formationCompetenceLink: txRepos.formationCompetences,
+      peupleStatBonusLink: txRepos.peupleStatBonuses,
       sheetArmes: txRepos.sheetArmes,
       sheetArmures: txRepos.sheetArmures,
       sheetEquipements: txRepos.sheetEquipements,
@@ -125,8 +127,11 @@ describe("ExportCharacterSheetPdfUseCaseImpl", () => {
     txRepos.formations.seed(
       buildTestReferenceItem("form-1", "group-1", "Diplomate", { stat: "social", amount: 2 }),
     );
-    txRepos.peoples.seed(
-      buildTestReferenceItem("peuple-1", "group-1", "Halfelin", { stat: "social", amount: 1 }),
+    txRepos.peoples.seed(buildTestReferenceItem("peuple-1", "group-1", "Halfelin"));
+    await txRepos.peupleStatBonuses.link(
+      "peuple-1",
+      StatBonus.create({ stat: "social", amount: 1 }),
+      new Date(),
     );
     txRepos.characterSheets.seed(
       buildTestCharacterSheet("s-1", "owner-1", "Frodon", {

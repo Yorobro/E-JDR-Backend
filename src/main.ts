@@ -383,6 +383,7 @@ function buildControllers(
     peupleRepository: services.referenceRepositories.peoples,
     competenceRepository: services.referenceRepositories.competences,
     formationCompetenceLinkRepository: services.referenceRepositories.formationCompetences,
+    peupleStatBonusLinkRepository: services.referenceRepositories.peupleStatBonuses,
     sheetArmesRepository: services.referenceRepositories.sheetArmes,
     sheetArmuresRepository: services.referenceRepositories.sheetArmures,
     sheetCompetencesRepository: services.referenceRepositories.sheetCompetences,

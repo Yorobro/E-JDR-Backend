@@ -52,6 +52,7 @@ export class ReferenceController {
         groupId?: unknown;
         stat?: unknown;
         bonus?: unknown;
+        statBonuses?: unknown;
         protectionPoints?: unknown;
         description?: unknown;
         competenceIds?: unknown;
@@ -67,6 +68,7 @@ export class ReferenceController {
         name: body.name as string,
         stat: (body.stat as string | null | undefined) ?? null,
         bonus: (body.bonus as number | null | undefined) ?? null,
+        statBonuses: ReferenceController.parseStatBonuses(body.statBonuses),
         protectionPoints,
         description: (body.description as string | null | undefined) ?? null,
         competenceIds: Array.isArray(body.competenceIds)
@@ -110,6 +112,7 @@ export class ReferenceController {
         groupId?: unknown;
         stat?: unknown;
         bonus?: unknown;
+        statBonuses?: unknown;
         protectionPoints?: unknown;
         description?: unknown;
         competenceIds?: unknown;
@@ -126,6 +129,7 @@ export class ReferenceController {
         name: body.name as string,
         stat: (body.stat as string | null | undefined) ?? null,
         bonus: (body.bonus as number | null | undefined) ?? null,
+        statBonuses: ReferenceController.parseStatBonuses(body.statBonuses),
         protectionPoints,
         description: (body.description as string | null | undefined) ?? null,
         competenceIds: Array.isArray(body.competenceIds)
@@ -273,12 +277,42 @@ export class ReferenceController {
     });
   }
 
+  /**
+   * Extrait les bonus de statistique bruts du corps de requête (peuples uniquement).
+   *
+   * Renvoie `undefined` si le champ est absent — ce qui **déclenche le repli de compatibilité** côté
+   * use case : un client antérieur au multi-bonus, qui envoie `stat`/`bonus`, verra son bonus unique
+   * converti en une entrée de la liste plutôt que perdu.
+   *
+   * Défensif par construction : une entrée qui n'est pas un objet est projetée sur une stat vide,
+   * que le value object `StatBonus` rejettera proprement en 400 (`INVALID_STAT_BONUS`). Sans ça, un
+   * `[null]` dans le tableau ferait planter l'accès `entry.stat` et remonterait en 500.
+   */
+  private static parseStatBonuses(
+    value: unknown,
+  ): { stat: string; bonus?: number | null }[] | undefined {
+    if (!Array.isArray(value)) {
+      return undefined;
+    }
+    return value.map((entry) => {
+      if (typeof entry !== "object" || entry === null) {
+        return { stat: "" };
+      }
+      const raw = entry as { stat?: unknown; bonus?: unknown };
+      return {
+        stat: raw.stat as string,
+        bonus: (raw.bonus as number | null | undefined) ?? null,
+      };
+    });
+  }
+
   private static serialize(view: ReferenceItemView): {
     id: string;
     name: string;
     createdAt: string;
     stat: string | null;
     bonus: number | null;
+    statBonuses: { stat: string; bonus: number }[];
     protectionPoints: number | null;
     description: string | null;
     competenceIds: string[];
@@ -287,8 +321,11 @@ export class ReferenceController {
       id: view.id,
       name: view.name,
       createdAt: view.createdAt.toISOString(),
+      // `stat`/`bonus` : formations (mono-bonus). `statBonuses` : peuples (0..N). Les deux ne sont
+      // jamais renseignés en même temps — voir `toView`.
       stat: view.stat,
       bonus: view.bonus,
+      statBonuses: view.statBonuses,
       protectionPoints: view.protectionPoints,
       description: view.description,
       competenceIds: view.competenceIds,
