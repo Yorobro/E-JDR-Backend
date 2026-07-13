@@ -1,3 +1,9 @@
+## 1.16.0 (2026-07-13)
+
+* test(reference): fournit le RealtimeNotifier manquant aux use cases de catalogue (#24) ([6266614](https://github.com/Yorobro/E-JDR-Backend/commit/6266614)), closes [#24](https://github.com/Yorobro/E-JDR-Backend/issues/24)
+* feat(friend-groups): groupes d'amis, invitations et temps réel complet ([6835879](https://github.com/Yorobro/E-JDR-Backend/commit/6835879))
+* feat(realtime): notifications WebSocket sur toutes les mutations ([29dc406](https://github.com/Yorobro/E-JDR-Backend/commit/29dc406))
+
 ## 1.15.0 (2026-06-28)
 
 * Merge pull request #21 from Yorobro/feat/droits-campagne-et-affichage-fiche ([e622a45](https://github.com/Yorobro/E-JDR-Backend/commit/e622a45)), closes [#21](https://github.com/Yorobro/E-JDR-Backend/issues/21)
