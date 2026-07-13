@@ -136,7 +136,7 @@ export function buildCharacterSheetExportController(
       formationCompetenceLink: deps.formationCompetenceLinkRepository,
       sheetArmes: deps.sheetArmesRepository,
       sheetArmures: deps.sheetArmuresRepository,
-      sheetCompetences: deps.sheetCompetencesRepository,
+      // Pas de `sheetCompetences` : les compétences du PDF sont dérivées de la formation.
       sheetEquipements: deps.sheetEquipementsRepository,
       sheetSorts: deps.sheetSortsRepository,
       sheetMiracles: deps.sheetMiraclesRepository,
