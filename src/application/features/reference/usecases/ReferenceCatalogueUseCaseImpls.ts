@@ -12,7 +12,6 @@ import { IdGeneratorService } from "@application/features/auth/abstractions/serv
 import { InvalidInputError } from "@application/features/auth/errors/InvalidInputError";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
-import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
 import { ReferenceItemNotFoundError } from "@application/features/reference/errors/ReferenceItemNotFoundError";
 import { ReferenceNameAlreadyUsedError } from "@application/features/reference/errors/ReferenceNameAlreadyUsedError";
 import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
@@ -27,68 +26,16 @@ import {
   UpdateReferenceItemUseCase,
 } from "@application/features/reference/abstractions/usecases/ReferenceCatalogueUseCases";
 import { ReferenceItemView } from "@application/features/reference/abstractions/usecases/ReferenceItemView";
+import {
+  FormationCreateDeps,
+  FormationListDeps,
+  RepoSelector,
+  buildStatBonus,
+  toView,
+} from "@application/features/reference/usecases/referenceCatalogueSupport";
 
-/** Sélectionne dans `TransactionalRepositories` le repository de la catégorie gérée. */
-type RepoSelector = (
-  repos: import("@application/shared/UnitOfWork").TransactionalRepositories,
-) => ReferenceRepository;
-
-/**
- * Dépendances **spécifiques aux formations** pour la création : le catalogue de compétences (pour
- * vérifier que chaque compétence référencée appartient au même groupe) et la liaison N‑N
- * formation ↔ compétences (pour poser les liens). Absentes pour les autres types.
- */
-export interface FormationCreateDeps {
-  /** Catalogue de compétences du groupe (lecture : vérification de portée). */
-  readonly competences: ReferenceRepository;
-  /** Liaison transactionnelle formation ↔ compétences (sélection dans l'UoW). */
-  readonly formationCompetences: (
-    repos: import("@application/shared/UnitOfWork").TransactionalRepositories,
-  ) => FormationCompetenceLinkRepository;
-}
-
-/**
- * Dépendances **spécifiques aux formations** pour la lecture : la liaison formation ↔ compétences
- * (lecture pure) afin de renseigner `competenceIds` dans la vue. Absente pour les autres types.
- */
-export interface FormationListDeps {
-  /** Liaison formation ↔ compétences (lecture pure). */
-  readonly formationCompetences: FormationCompetenceLinkRepository;
-}
-
-/**
- * Construit le bonus de statistique à partir d'une stat/bonus bruts, ou `null` si aucune stat
- * fournie. Partagé par la création et la modification.
- *
- * @param stat - La statistique ciblée (`undefined`/`null` ⇒ aucun bonus).
- * @param bonus - Le montant du bonus (défaut 1 si `stat` fournie sans montant).
- * @returns Le `StatBonus` validé, ou `null` (pas de bonus).
- * @throws {DomainError} Si la stat ou le montant sont invalides (capté par l'appelant).
- */
-function buildStatBonus(
-  stat: string | null | undefined,
-  bonus: number | null | undefined,
-): StatBonus | null {
-  if (stat === undefined || stat === null) {
-    return null;
-  }
-  return StatBonus.create({ stat, amount: bonus });
-}
-
-/** Projette une entité vers sa vue publique (sans compétences ⇒ tableau vide par défaut). */
-function toView(item: ReferenceItem, competenceIds: string[] = []): ReferenceItemView {
-  const statBonus = item.statBonus;
-  return {
-    id: item.id,
-    name: item.name.value,
-    createdAt: item.createdAt,
-    stat: statBonus?.stat ?? null,
-    bonus: statBonus?.amount ?? null,
-    protectionPoints: item.protectionPoints,
-    description: item.description,
-    competenceIds,
-  };
-}
+// Réexportés : les builders de controllers et les tests importent ces types depuis ce module.
+export type { FormationCreateDeps, FormationListDeps, RepoSelector };
 
 /**
  * Dépendances du use case de création d'un élément de référence (regroupées dans un objet pour
