@@ -39,6 +39,7 @@ export function buildSessionByIdRoutes(controller: SessionController): Router {
   router.delete("/:id", controller.remove);
   router.post("/:id/launch", controller.launch);
   router.post("/:id/respond", controller.respond);
+  router.post("/:id/start", controller.start);
 
   return router;
 }

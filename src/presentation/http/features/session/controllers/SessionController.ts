@@ -8,6 +8,7 @@ import { GetSessionUseCase } from "@application/features/session/abstractions/us
 import { UpdateSessionUseCase } from "@application/features/session/abstractions/usecases/UpdateSessionUseCase";
 import { DeleteSessionUseCase } from "@application/features/session/abstractions/usecases/DeleteSessionUseCase";
 import { RespondToInvitationUseCase } from "@application/features/session/abstractions/usecases/RespondToInvitationUseCase";
+import { StartSessionUseCase } from "@application/features/session/abstractions/usecases/StartSessionUseCase";
 import { ListMySessionInvitationsUseCase } from "@application/features/session/abstractions/usecases/ListMySessionInvitationsUseCase";
 import { GetSessionLobbyUseCase } from "@application/features/session/abstractions/usecases/GetSessionLobbyUseCase";
 import { SessionView } from "@application/features/session/abstractions/usecases/GetSessionUseCase";
@@ -27,6 +28,7 @@ export interface SessionControllerUseCases {
   readonly updateSession: UpdateSessionUseCase;
   readonly deleteSession: DeleteSessionUseCase;
   readonly respondToInvitation: RespondToInvitationUseCase;
+  readonly startSession: StartSessionUseCase;
   readonly listMyInvitations: ListMySessionInvitationsUseCase;
   readonly getSessionLobby: GetSessionLobbyUseCase;
 }
@@ -47,6 +49,7 @@ export class SessionController {
   private readonly updateSession: UpdateSessionUseCase;
   private readonly deleteSession: DeleteSessionUseCase;
   private readonly respondToInvitation: RespondToInvitationUseCase;
+  private readonly startSession: StartSessionUseCase;
   private readonly listMyInvitations: ListMySessionInvitationsUseCase;
   private readonly getSessionLobby: GetSessionLobbyUseCase;
 
@@ -58,6 +61,7 @@ export class SessionController {
     this.updateSession = useCases.updateSession;
     this.deleteSession = useCases.deleteSession;
     this.respondToInvitation = useCases.respondToInvitation;
+    this.startSession = useCases.startSession;
     this.listMyInvitations = useCases.listMyInvitations;
     this.getSessionLobby = useCases.getSessionLobby;
   }
@@ -124,6 +128,30 @@ export class SessionController {
         sessionId: req.params.id ?? "",
         actorUserId: req.user!.userId,
         accept: body.accept === true,
+      });
+
+      if (result.isFailure) {
+        this.fail(res, result.error);
+        return;
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * `POST /sessions/:id/start` — le MJ démarre réellement la session (transition `LOBBY → ACTIVE`).
+   *
+   * Réservé au MJ de la campagne parente (vérifié par le use case). L'identité du demandeur est
+   * prise de la session authentifiée. Renvoie `204 No Content` en cas de succès.
+   */
+  public start = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.startSession.execute({
+        sessionId: req.params.id ?? "",
+        actorUserId: req.user!.userId,
       });
 
       if (result.isFailure) {
