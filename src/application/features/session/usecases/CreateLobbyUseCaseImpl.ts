@@ -10,6 +10,7 @@ import { CampaignRepository } from "@application/features/campaign/abstractions/
 import { CampaignNotFoundError } from "@application/features/campaign/errors/CampaignNotFoundError";
 import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
 import { SessionNotFoundError } from "@application/features/session/errors/SessionNotFoundError";
 import { EmptyParticipantSelectionError } from "@application/features/session/errors/EmptyParticipantSelectionError";
@@ -21,6 +22,20 @@ import {
 } from "@application/features/session/abstractions/usecases/CreateLobbyUseCase";
 
 /**
+ * Dépendances du use case d'ouverture du lobby, passées en un seul objet pour rester sous la
+ * limite de paramètres (même pattern que `InviteMemberUseCaseImpl`).
+ */
+export interface CreateLobbyDeps {
+  readonly sessionRepository: SessionRepository;
+  readonly campaignRepository: CampaignRepository;
+  readonly groupMemberRepository: GroupMemberRepository;
+  readonly groupAccessService: GroupAccessService;
+  readonly unitOfWork: UnitOfWork;
+  readonly logger: Logger;
+  readonly realtimeNotifier: RealtimeNotifier;
+}
+
+/**
  * Use case d'ouverture du lobby d'une session.
  *
  * Orchestration pure : vérifie que la session et sa campagne existent, que le demandeur est
@@ -28,17 +43,26 @@ import {
  * aux membres du groupe, puis demande au domaine la transition `PLANNED → LOBBY`
  * ({@link Session.openLobby}) et persiste — dans une **seule transaction** — la session mise à
  * jour et les invitations (`SessionParticipant` au statut `INVITED`). La règle de transition
- * d'état vit dans le domaine, pas ici.
+ * d'état vit dans le domaine, pas ici. Notifie enfin chaque joueur convié en temps réel.
  */
 export class CreateLobbyUseCaseImpl implements CreateLobbyUseCase {
-  constructor(
-    private readonly sessionRepository: SessionRepository,
-    private readonly campaignRepository: CampaignRepository,
-    private readonly groupMemberRepository: GroupMemberRepository,
-    private readonly groupAccessService: GroupAccessService,
-    private readonly unitOfWork: UnitOfWork,
-    private readonly logger: Logger,
-  ) {}
+  private readonly sessionRepository: SessionRepository;
+  private readonly campaignRepository: CampaignRepository;
+  private readonly groupMemberRepository: GroupMemberRepository;
+  private readonly groupAccessService: GroupAccessService;
+  private readonly unitOfWork: UnitOfWork;
+  private readonly logger: Logger;
+  private readonly realtimeNotifier: RealtimeNotifier;
+
+  constructor(deps: CreateLobbyDeps) {
+    this.sessionRepository = deps.sessionRepository;
+    this.campaignRepository = deps.campaignRepository;
+    this.groupMemberRepository = deps.groupMemberRepository;
+    this.groupAccessService = deps.groupAccessService;
+    this.unitOfWork = deps.unitOfWork;
+    this.logger = deps.logger;
+    this.realtimeNotifier = deps.realtimeNotifier;
+  }
 
   public async execute(command: CreateLobbyCommand): Promise<Result<SessionLobbyView, AppError>> {
     const session = await this.sessionRepository.findById(command.sessionId);
@@ -98,6 +122,11 @@ export class CreateLobbyUseCaseImpl implements CreateLobbyUseCase {
       campaignId: campaign.id,
       participantCount: participants.length,
     });
+
+    // Fait apparaître l'invitation en temps réel chez chaque joueur convié — best-effort.
+    for (const participant of participants) {
+      this.realtimeNotifier.notifyUserChanged(participant.userId, "session-invitations");
+    }
 
     return Result.success({
       sessionId: inLobby.id,

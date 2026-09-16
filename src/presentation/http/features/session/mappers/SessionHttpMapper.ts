@@ -23,6 +23,7 @@ export class SessionHttpMapper {
         return 400;
       case "SESSION_NOT_FOUND":
       case "CAMPAIGN_NOT_FOUND":
+      case "PARTICIPANT_NOT_FOUND":
         return 404;
       case "CAMPAIGN_ACCESS_DENIED":
       case "NOT_GROUP_EDITOR":
@@ -30,6 +31,7 @@ export class SessionHttpMapper {
         return 403;
       case "SESSION_NOT_LAUNCHABLE":
       case "SESSION_NOT_STARTABLE":
+      case "SESSION_NOT_JOINABLE":
         // Conflit d'état : la session n'est pas dans le bon statut pour cette transition.
         return 409;
       default:

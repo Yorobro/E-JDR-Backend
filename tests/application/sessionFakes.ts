@@ -53,4 +53,33 @@ export class FakeSessionParticipantRepository implements SessionParticipantRepos
   public async findBySessionId(sessionId: string): Promise<SessionParticipant[]> {
     return this.participants.filter((participant) => participant.sessionId === sessionId);
   }
+
+  public async findBySessionIdAndUserId(
+    sessionId: string,
+    userId: string,
+  ): Promise<SessionParticipant | null> {
+    return (
+      this.participants.find(
+        (participant) => participant.sessionId === sessionId && participant.userId === userId,
+      ) ?? null
+    );
+  }
+
+  public async update(participant: SessionParticipant): Promise<void> {
+    const index = this.participants.findIndex(
+      (p) => p.sessionId === participant.sessionId && p.userId === participant.userId,
+    );
+    if (index >= 0) this.participants[index] = participant;
+  }
+
+  public async findInvitedByUserId(userId: string): Promise<SessionParticipant[]> {
+    return this.participants.filter(
+      (participant) => participant.userId === userId && participant.status.value === "INVITED",
+    );
+  }
+
+  /** Aide de test : pré-remplit le repository avec une participation. */
+  public seed(participant: SessionParticipant): void {
+    this.participants.push(participant);
+  }
 }

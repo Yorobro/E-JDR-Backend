@@ -3,6 +3,7 @@ import { UnitOfWork } from "@application/shared/UnitOfWork";
 import { IdGeneratorService } from "@application/features/auth/abstractions/services/IdGeneratorService";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
+import { SessionParticipantRepository } from "@application/features/session/abstractions/repositories/SessionParticipantRepository";
 import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
@@ -12,6 +13,9 @@ import { ListCampaignSessionsUseCaseImpl } from "@application/features/session/u
 import { GetSessionUseCaseImpl } from "@application/features/session/usecases/GetSessionUseCaseImpl";
 import { UpdateSessionUseCaseImpl } from "@application/features/session/usecases/UpdateSessionUseCaseImpl";
 import { DeleteSessionUseCaseImpl } from "@application/features/session/usecases/DeleteSessionUseCaseImpl";
+import { RespondToInvitationUseCaseImpl } from "@application/features/session/usecases/RespondToInvitationUseCaseImpl";
+import { ListMySessionInvitationsUseCaseImpl } from "@application/features/session/usecases/ListMySessionInvitationsUseCaseImpl";
+import { GetSessionLobbyUseCaseImpl } from "@application/features/session/usecases/GetSessionLobbyUseCaseImpl";
 import { SessionController } from "@presentation/http/features/session/controllers/SessionController";
 
 /**
@@ -24,6 +28,7 @@ import { SessionController } from "@presentation/http/features/session/controlle
 export interface SessionControllerDeps {
   readonly campaignRepository: CampaignRepository;
   readonly sessionRepository: SessionRepository;
+  readonly sessionParticipantRepository: SessionParticipantRepository;
   readonly groupMemberRepository: GroupMemberRepository;
   readonly idGenerator: IdGeneratorService;
   readonly unitOfWork: UnitOfWork;
@@ -49,14 +54,15 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.logger,
     deps.realtimeNotifier,
   );
-  const createLobby = new CreateLobbyUseCaseImpl(
-    deps.sessionRepository,
-    deps.campaignRepository,
-    deps.groupMemberRepository,
-    deps.groupAccessService,
-    deps.unitOfWork,
-    deps.logger,
-  );
+  const createLobby = new CreateLobbyUseCaseImpl({
+    sessionRepository: deps.sessionRepository,
+    campaignRepository: deps.campaignRepository,
+    groupMemberRepository: deps.groupMemberRepository,
+    groupAccessService: deps.groupAccessService,
+    unitOfWork: deps.unitOfWork,
+    logger: deps.logger,
+    realtimeNotifier: deps.realtimeNotifier,
+  });
   const listCampaignSessions = new ListCampaignSessionsUseCaseImpl(
     deps.campaignRepository,
     deps.sessionRepository,
@@ -81,13 +87,35 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.logger,
     deps.realtimeNotifier,
   );
+  const respondToInvitation = new RespondToInvitationUseCaseImpl(
+    deps.sessionRepository,
+    deps.campaignRepository,
+    deps.sessionParticipantRepository,
+    deps.unitOfWork,
+    deps.logger,
+    deps.realtimeNotifier,
+  );
+  const listMyInvitations = new ListMySessionInvitationsUseCaseImpl(
+    deps.sessionRepository,
+    deps.campaignRepository,
+    deps.sessionParticipantRepository,
+  );
+  const getSessionLobby = new GetSessionLobbyUseCaseImpl(
+    deps.sessionRepository,
+    deps.campaignRepository,
+    deps.sessionParticipantRepository,
+    deps.groupAccessService,
+  );
 
-  return new SessionController(
+  return new SessionController({
     createSession,
     createLobby,
     listCampaignSessions,
     getSession,
     updateSession,
     deleteSession,
-  );
+    respondToInvitation,
+    listMyInvitations,
+    getSessionLobby,
+  });
 }

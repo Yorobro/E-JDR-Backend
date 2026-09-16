@@ -106,7 +106,8 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
 
   const { campaigns: campaignRepository } = createCampaignRepositories(connection.getDb());
 
-  const { sessions: sessionRepository } = createSessionRepositories(connection.getDb());
+  const { sessions: sessionRepository, sessionParticipants: sessionParticipantRepository } =
+    createSessionRepositories(connection.getDb());
 
   const { characterSheets: characterSheetRepository } = createCharacterSheetRepositories(
     connection.getDb(),
@@ -141,6 +142,7 @@ function buildServices(connection: MysqlConnection, config: AppConfig): AuthServ
     refreshTokenRepository,
     campaignRepository,
     sessionRepository,
+    sessionParticipantRepository,
     characterSheetRepository,
     referenceRepositories,
     friendGroupRepositories,
@@ -370,6 +372,7 @@ function buildControllers(
   const sessionController = buildSessionController({
     campaignRepository: services.campaignRepository,
     sessionRepository: services.sessionRepository,
+    sessionParticipantRepository: services.sessionParticipantRepository,
     groupMemberRepository: services.friendGroupRepositories.groupMembers,
     idGenerator: services.idGenerator,
     unitOfWork: services.unitOfWork,
