@@ -9,6 +9,7 @@ import { ParticipantNotInGroupError } from "@application/features/session/errors
 import { GroupRole } from "@domain/features/friend-group/value-objects/GroupRole";
 import {
   FakeLogger,
+  FakeRealtimeNotifier,
   FakeUnitOfWork,
   buildFakeTransactionalRepositories,
   buildTestCampaign,
@@ -27,14 +28,15 @@ describe("CreateLobbyUseCaseImpl", () => {
       txRepos.campaigns,
       txRepos.campaignCharacters,
     );
-    useCase = new CreateLobbyUseCaseImpl(
-      txRepos.sessions,
-      txRepos.campaigns,
-      txRepos.groupMembers,
+    useCase = new CreateLobbyUseCaseImpl({
+      sessionRepository: txRepos.sessions,
+      campaignRepository: txRepos.campaigns,
+      groupMemberRepository: txRepos.groupMembers,
       groupAccessService,
-      new FakeUnitOfWork(txRepos),
-      new FakeLogger(),
-    );
+      unitOfWork: new FakeUnitOfWork(txRepos),
+      logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
+    });
 
     // Campagne "camp-1" (groupe "group-1") + une session PLANNED rattachée.
     txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1", "Ma campagne", "group-1"));

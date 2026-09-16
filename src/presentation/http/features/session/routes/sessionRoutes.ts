@@ -31,10 +31,14 @@ export function buildCampaignSessionRoutes(controller: SessionController): Route
 export function buildSessionByIdRoutes(controller: SessionController): Router {
   const router = Router();
 
+  // Route littérale AVANT la route paramétrée `/:id`, sinon « invitations » serait pris pour un id.
+  router.get("/invitations", controller.listInvitations);
   router.get("/:id", controller.get);
+  router.get("/:id/lobby", controller.getLobby);
   router.put("/:id", controller.update);
   router.delete("/:id", controller.remove);
   router.post("/:id/launch", controller.launch);
+  router.post("/:id/respond", controller.respond);
 
   return router;
 }

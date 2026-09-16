@@ -29,4 +29,35 @@ export class MysqlSessionParticipantRepository implements SessionParticipantRepo
     const rows = await this.dao.findBySessionId(sessionId);
     return rows.map((row) => SessionParticipantMapper.toDomain(row));
   }
+
+  /**
+   * @inheritdoc
+   */
+  public async findBySessionIdAndUserId(
+    sessionId: string,
+    userId: string,
+  ): Promise<SessionParticipant | null> {
+    const row = await this.dao.findBySessionIdAndUserId(sessionId, userId);
+    return row === null ? null : SessionParticipantMapper.toDomain(row);
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async update(participant: SessionParticipant): Promise<void> {
+    await this.dao.update({
+      session_id: participant.sessionId,
+      user_id: participant.userId,
+      status: participant.status.value,
+      responded_at: participant.respondedAt,
+    });
+  }
+
+  /**
+   * @inheritdoc
+   */
+  public async findInvitedByUserId(userId: string): Promise<SessionParticipant[]> {
+    const rows = await this.dao.findInvitedByUserId(userId);
+    return rows.map((row) => SessionParticipantMapper.toDomain(row));
+  }
 }
