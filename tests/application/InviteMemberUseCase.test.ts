@@ -7,6 +7,7 @@ import {
   FakeUnitOfWork,
   FakeLogger,
   FakeIdGenerator,
+  FakeRealtimeNotifier,
   buildTestMembership,
 } from "./fakes";
 
@@ -37,6 +38,7 @@ describe("InviteMemberUseCase", () => {
       idGenerator: new FakeIdGenerator(),
       unitOfWork: new FakeUnitOfWork(repos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
     });
   });
 

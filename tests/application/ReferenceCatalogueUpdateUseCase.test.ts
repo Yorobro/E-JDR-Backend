@@ -12,6 +12,7 @@ import {
   FakeLogger,
   FakeIdGenerator,
   FakeUnitOfWork,
+  FakeRealtimeNotifier,
   buildFakeTransactionalRepositories,
   buildTestReferenceItem,
   buildTestMembership,
@@ -39,6 +40,7 @@ describe("UpdateReferenceItemUseCase — types simples (testé sur `armes`)", ()
       groupAccessService,
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
     });
   }
 
@@ -181,6 +183,7 @@ describe("UpdateReferenceItemUseCase — formations (stat/bonus + compétences)"
       groupAccessService,
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
       formationDeps: {
         competences: txRepos.competences,
         formationCompetences: (repos) => repos.formationCompetences,
@@ -195,6 +198,7 @@ describe("UpdateReferenceItemUseCase — formations (stat/bonus + compétences)"
       groupAccessService,
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
       formationDeps: {
         competences: txRepos.competences,
         formationCompetences: (repos) => repos.formationCompetences,

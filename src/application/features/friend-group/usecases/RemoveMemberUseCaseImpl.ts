@@ -8,6 +8,7 @@ import { NotGroupMemberError } from "@application/features/friend-group/errors/N
 import { CannotRemoveLastAdminError } from "@application/features/friend-group/errors/CannotRemoveLastAdminError";
 import { CannotRemoveAdminError } from "@application/features/friend-group/errors/CannotRemoveAdminError";
 import { RemoveMemberUseCase } from "@application/features/friend-group/abstractions/usecases/RemoveMemberUseCase";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 export class RemoveMemberUseCaseImpl implements RemoveMemberUseCase {
   constructor(
@@ -15,6 +16,7 @@ export class RemoveMemberUseCaseImpl implements RemoveMemberUseCase {
     private readonly groupAccessService: GroupAccessService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(params: {
@@ -59,6 +61,9 @@ export class RemoveMemberUseCaseImpl implements RemoveMemberUseCase {
       targetUserId: params.targetUserId,
       by: params.actorId,
     });
+
+    this.realtimeNotifier.notifyGroupChanged(params.groupId, "group-members");
+    this.realtimeNotifier.notifyUserChanged(params.targetUserId, "my-groups");
 
     return Result.success(undefined);
   }

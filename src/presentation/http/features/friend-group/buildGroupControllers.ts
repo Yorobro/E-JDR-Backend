@@ -24,6 +24,7 @@ import { RemoveMemberUseCaseImpl } from "@application/features/friend-group/usec
 import { ChangeMemberRoleUseCaseImpl } from "@application/features/friend-group/usecases/ChangeMemberRoleUseCaseImpl";
 import { GroupController } from "@presentation/http/features/friend-group/controllers/GroupController";
 import { InvitationController } from "@presentation/http/features/friend-group/controllers/InvitationController";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 export interface GroupControllerDeps {
   friendGroupRepository: FriendGroupRepository;
@@ -35,6 +36,7 @@ export interface GroupControllerDeps {
   idGenerator: IdGeneratorService;
   unitOfWork: UnitOfWork;
   logger: Logger;
+  realtimeNotifier: RealtimeNotifier;
 }
 
 export function buildGroupControllers(deps: GroupControllerDeps): {
@@ -68,12 +70,14 @@ export function buildGroupControllers(deps: GroupControllerDeps): {
       groupAccessService,
       deps.unitOfWork,
       deps.logger,
+      deps.realtimeNotifier,
     ),
     new ChangeMemberRoleUseCaseImpl(
       deps.groupMemberRepository,
       groupAccessService,
       deps.unitOfWork,
       deps.logger,
+      deps.realtimeNotifier,
     ),
   );
 
@@ -86,9 +90,15 @@ export function buildGroupControllers(deps: GroupControllerDeps): {
       idGenerator: deps.idGenerator,
       unitOfWork: deps.unitOfWork,
       logger: deps.logger,
+      realtimeNotifier: deps.realtimeNotifier,
     } satisfies InviteMemberDeps),
     new ListMyInvitationsUseCaseImpl(deps.groupInvitationRepository),
-    new AcceptInvitationUseCaseImpl(deps.groupInvitationRepository, deps.unitOfWork, deps.logger),
+    new AcceptInvitationUseCaseImpl(
+      deps.groupInvitationRepository,
+      deps.unitOfWork,
+      deps.logger,
+      deps.realtimeNotifier,
+    ),
     new DeclineInvitationUseCaseImpl(deps.groupInvitationRepository, deps.unitOfWork, deps.logger),
   );
 
