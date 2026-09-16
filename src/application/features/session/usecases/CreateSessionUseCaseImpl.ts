@@ -15,6 +15,7 @@ import { CampaignAccessDeniedError } from "@application/features/campaign/errors
 import { CreateSessionCommand } from "@application/features/session/commands/CreateSessionCommand";
 import { CreateSessionUseCase } from "@application/features/session/abstractions/usecases/CreateSessionUseCase";
 import { SessionView } from "@application/features/session/abstractions/usecases/GetSessionUseCase";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 /**
  * Use case de création d'une session dans une campagne.
@@ -32,6 +33,7 @@ export class CreateSessionUseCaseImpl implements CreateSessionUseCase {
     private readonly idGenerator: IdGeneratorService,
     private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
+    private readonly realtimeNotifier: RealtimeNotifier,
   ) {}
 
   public async execute(command: CreateSessionCommand): Promise<Result<SessionView, AppError>> {
@@ -69,6 +71,8 @@ export class CreateSessionUseCaseImpl implements CreateSessionUseCase {
     });
 
     this.logger.info("Session créée", { sessionId: session.id, campaignId: campaign.id });
+
+    this.realtimeNotifier.notifyGroupChanged(campaign.groupId, "sessions");
 
     return Result.success({
       id: session.id,

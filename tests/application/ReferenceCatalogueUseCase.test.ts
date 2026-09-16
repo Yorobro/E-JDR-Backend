@@ -12,6 +12,7 @@ import {
   FakeLogger,
   FakeIdGenerator,
   FakeUnitOfWork,
+  FakeRealtimeNotifier,
   buildFakeTransactionalRepositories,
   buildTestReferenceItem,
   buildTestMembership,
@@ -41,6 +42,7 @@ describe("Reference catalogue use cases (génériques, testés sur le type `arme
       groupAccessService,
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
     });
   }
 
@@ -200,6 +202,7 @@ describe("Reference catalogue use cases (génériques, testés sur le type `arme
       groupAccessService,
       new FakeUnitOfWork(txRepos),
       new FakeLogger(),
+      new FakeRealtimeNotifier(),
     );
 
     const result = await useCase.execute({ itemId: "a-1", actorId: "u-1" });
@@ -217,6 +220,7 @@ describe("Reference catalogue use cases (génériques, testés sur le type `arme
       groupAccessService,
       new FakeUnitOfWork(txRepos),
       new FakeLogger(),
+      new FakeRealtimeNotifier(),
     );
 
     const ghost = await useCase.execute({ itemId: "ghost", actorId: "u-1" });
@@ -275,6 +279,7 @@ describe("Reference catalogue use cases — description (sorts/miracles)", () =>
       groupAccessService,
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
     });
   }
 
@@ -310,6 +315,7 @@ describe("Reference catalogue use cases — description (sorts/miracles)", () =>
       groupAccessService,
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
     });
     await createMiracle.execute({
       groupId: "group-1",

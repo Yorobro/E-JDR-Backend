@@ -5,6 +5,7 @@ import { CampaignRepository } from "@application/features/campaign/abstractions/
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
 import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import { CreateSessionUseCaseImpl } from "@application/features/session/usecases/CreateSessionUseCaseImpl";
 import { CreateLobbyUseCaseImpl } from "@application/features/session/usecases/CreateLobbyUseCaseImpl";
 import { ListCampaignSessionsUseCaseImpl } from "@application/features/session/usecases/ListCampaignSessionsUseCaseImpl";
@@ -28,6 +29,7 @@ export interface SessionControllerDeps {
   readonly unitOfWork: UnitOfWork;
   readonly logger: Logger;
   readonly groupAccessService: GroupAccessService;
+  readonly realtimeNotifier: RealtimeNotifier;
 }
 
 /**
@@ -45,6 +47,7 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.idGenerator,
     deps.unitOfWork,
     deps.logger,
+    deps.realtimeNotifier,
   );
   const createLobby = new CreateLobbyUseCaseImpl(
     deps.sessionRepository,
@@ -69,12 +72,14 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.campaignRepository,
     deps.unitOfWork,
     deps.logger,
+    deps.realtimeNotifier,
   );
   const deleteSession = new DeleteSessionUseCaseImpl(
     deps.sessionRepository,
     deps.campaignRepository,
     deps.unitOfWork,
     deps.logger,
+    deps.realtimeNotifier,
   );
 
   return new SessionController(

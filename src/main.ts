@@ -355,6 +355,7 @@ function buildControllers(
     idGenerator: services.idGenerator,
     unitOfWork: services.unitOfWork,
     logger,
+    realtimeNotifier,
   });
 
   const campaignDeps = {
@@ -374,6 +375,7 @@ function buildControllers(
     unitOfWork: services.unitOfWork,
     logger,
     groupAccessService,
+    realtimeNotifier,
   });
   const characterSheetDeps = {
     characterSheetRepository: services.characterSheetRepository,
@@ -411,6 +413,7 @@ function buildControllers(
       groupAccessService,
       unitOfWork: services.unitOfWork,
       logger,
+      realtimeNotifier,
     }),
     group: groupController,
     invitation: invitationController,

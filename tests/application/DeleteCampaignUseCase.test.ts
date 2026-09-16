@@ -7,6 +7,7 @@ import { GroupRole } from "@domain/features/friend-group/value-objects/GroupRole
 import {
   FakeLogger,
   FakeUnitOfWork,
+  FakeRealtimeNotifier,
   buildFakeTransactionalRepositories,
   buildTestCampaign,
   buildTestMembership,
@@ -29,6 +30,7 @@ describe("DeleteCampaignUseCaseImpl", () => {
       groupAccessService,
       unitOfWork,
       new FakeLogger(),
+      new FakeRealtimeNotifier(),
     );
     // mj-1 est le MJ ET membre du groupe group-1.
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "mj-1" }));
