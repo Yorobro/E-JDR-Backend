@@ -14,6 +14,7 @@ import { GetSessionUseCaseImpl } from "@application/features/session/usecases/Ge
 import { UpdateSessionUseCaseImpl } from "@application/features/session/usecases/UpdateSessionUseCaseImpl";
 import { DeleteSessionUseCaseImpl } from "@application/features/session/usecases/DeleteSessionUseCaseImpl";
 import { RespondToInvitationUseCaseImpl } from "@application/features/session/usecases/RespondToInvitationUseCaseImpl";
+import { StartSessionUseCaseImpl } from "@application/features/session/usecases/StartSessionUseCaseImpl";
 import { ListMySessionInvitationsUseCaseImpl } from "@application/features/session/usecases/ListMySessionInvitationsUseCaseImpl";
 import { GetSessionLobbyUseCaseImpl } from "@application/features/session/usecases/GetSessionLobbyUseCaseImpl";
 import { SessionController } from "@presentation/http/features/session/controllers/SessionController";
@@ -95,6 +96,14 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.logger,
     deps.realtimeNotifier,
   );
+  const startSession = new StartSessionUseCaseImpl(
+    deps.sessionRepository,
+    deps.campaignRepository,
+    deps.groupAccessService,
+    deps.unitOfWork,
+    deps.logger,
+    deps.realtimeNotifier,
+  );
   const listMyInvitations = new ListMySessionInvitationsUseCaseImpl(
     deps.sessionRepository,
     deps.campaignRepository,
@@ -115,6 +124,7 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     updateSession,
     deleteSession,
     respondToInvitation,
+    startSession,
     listMyInvitations,
     getSessionLobby,
   });
