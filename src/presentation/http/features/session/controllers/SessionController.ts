@@ -3,6 +3,7 @@ import { AppError } from "@application/errors/AppError";
 import { Result } from "@application/shared/Result";
 import { CreateSessionUseCase } from "@application/features/session/abstractions/usecases/CreateSessionUseCase";
 import { CreateLobbyUseCase } from "@application/features/session/abstractions/usecases/CreateLobbyUseCase";
+import { InviteToLobbyUseCase } from "@application/features/session/abstractions/usecases/InviteToLobbyUseCase";
 import { ListCampaignSessionsUseCase } from "@application/features/session/abstractions/usecases/ListCampaignSessionsUseCase";
 import { GetSessionUseCase } from "@application/features/session/abstractions/usecases/GetSessionUseCase";
 import { UpdateSessionUseCase } from "@application/features/session/abstractions/usecases/UpdateSessionUseCase";
@@ -23,6 +24,7 @@ import { SessionHttpMapper } from "@presentation/http/features/session/mappers/S
 export interface SessionControllerUseCases {
   readonly createSession: CreateSessionUseCase;
   readonly createLobby: CreateLobbyUseCase;
+  readonly inviteToLobby: InviteToLobbyUseCase;
   readonly listCampaignSessions: ListCampaignSessionsUseCase;
   readonly getSession: GetSessionUseCase;
   readonly updateSession: UpdateSessionUseCase;
@@ -44,6 +46,7 @@ export interface SessionControllerUseCases {
 export class SessionController {
   private readonly createSession: CreateSessionUseCase;
   private readonly createLobby: CreateLobbyUseCase;
+  private readonly inviteToLobby: InviteToLobbyUseCase;
   private readonly listCampaignSessions: ListCampaignSessionsUseCase;
   private readonly getSession: GetSessionUseCase;
   private readonly updateSession: UpdateSessionUseCase;
@@ -56,6 +59,7 @@ export class SessionController {
   constructor(useCases: SessionControllerUseCases) {
     this.createSession = useCases.createSession;
     this.createLobby = useCases.createLobby;
+    this.inviteToLobby = useCases.inviteToLobby;
     this.listCampaignSessions = useCases.listCampaignSessions;
     this.getSession = useCases.getSession;
     this.updateSession = useCases.updateSession;
@@ -96,6 +100,36 @@ export class SessionController {
     try {
       const body = req.body as { participantUserIds?: unknown };
       const result = await this.createLobby.execute({
+        sessionId: req.params.id ?? "",
+        actorUserId: req.user!.userId,
+        participantUserIds: Array.isArray(body.participantUserIds)
+          ? (body.participantUserIds as string[])
+          : [],
+      });
+
+      if (result.isFailure) {
+        this.fail(res, result.error);
+        return;
+      }
+
+      res.status(200).json(result.value);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * `POST /sessions/:id/invite` — convie des joueurs à un lobby **déjà ouvert** (réservé au MJ).
+   *
+   * Complète `launch` : ici le salon existe (statut `LOBBY`), on ne fait qu'ajouter des
+   * invitations — un joueur oublié, ou un joueur qui avait refusé par erreur. Le corps porte
+   * `participantUserIds` ; l'identité du MJ vient de la session authentifiée. Renvoie le lobby
+   * complet à jour.
+   */
+  public invite = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = req.body as { participantUserIds?: unknown };
+      const result = await this.inviteToLobby.execute({
         sessionId: req.params.id ?? "",
         actorUserId: req.user!.userId,
         participantUserIds: Array.isArray(body.participantUserIds)

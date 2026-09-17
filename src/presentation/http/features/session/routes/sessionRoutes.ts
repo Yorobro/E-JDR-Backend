@@ -38,6 +38,7 @@ export function buildSessionByIdRoutes(controller: SessionController): Router {
   router.put("/:id", controller.update);
   router.delete("/:id", controller.remove);
   router.post("/:id/launch", controller.launch);
+  router.post("/:id/invite", controller.invite);
   router.post("/:id/respond", controller.respond);
   router.post("/:id/start", controller.start);
 

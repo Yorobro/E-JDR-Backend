@@ -32,6 +32,7 @@ export class SessionHttpMapper {
       case "SESSION_NOT_LAUNCHABLE":
       case "SESSION_NOT_STARTABLE":
       case "SESSION_NOT_JOINABLE":
+      case "LOBBY_NOT_OPEN":
         // Conflit d'état : la session n'est pas dans le bon statut pour cette transition.
         return 409;
       default:

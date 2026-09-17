@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { SessionParticipant } from "@domain/features/session/entities/SessionParticipant";
 import { SessionParticipantStatus } from "@domain/features/session/value-objects/SessionParticipantStatus";
 import { ParticipantAlreadyRespondedError } from "@domain/features/session/errors/ParticipantAlreadyRespondedError";
+import { ParticipantAlreadyInLobbyError } from "@domain/features/session/errors/ParticipantAlreadyInLobbyError";
 
 describe("SessionParticipant (entité)", () => {
   const buildInvited = (): SessionParticipant =>
@@ -50,6 +51,30 @@ describe("SessionParticipant (entité)", () => {
     const refused = buildInvited().refuse({ respondedAt: new Date() });
     expect(() => refused.refuse({ respondedAt: new Date() })).toThrow(
       ParticipantAlreadyRespondedError,
+    );
+  });
+
+  it("reinvite passe REFUSED → INVITED et réarme l'invitation", () => {
+    const refused = buildInvited().refuse({ respondedAt: new Date("2026-06-24T11:30:00Z") });
+    const invitedAt = new Date("2026-06-24T12:00:00Z");
+
+    const reinvited = refused.reinvite({ invitedAt });
+
+    expect(reinvited.status).toBe(SessionParticipantStatus.INVITED);
+    expect(reinvited.respondedAt).toBeNull();
+    expect(reinvited.invitedAt.getTime()).toBe(invitedAt.getTime());
+  });
+
+  it("reinvite refuse un joueur encore en attente de réponse (INVITED)", () => {
+    expect(() => buildInvited().reinvite({ invitedAt: new Date() })).toThrow(
+      ParticipantAlreadyInLobbyError,
+    );
+  });
+
+  it("reinvite refuse un joueur déjà présent (ACCEPTED)", () => {
+    const accepted = buildInvited().accept({ respondedAt: new Date() });
+    expect(() => accepted.reinvite({ invitedAt: new Date() })).toThrow(
+      ParticipantAlreadyInLobbyError,
     );
   });
 
