@@ -196,6 +196,85 @@ describe("Session routes (intégration HTTP)", () => {
     expect(again.body.code).toBe("SESSION_NOT_LAUNCHABLE");
   });
 
+  it("POST /sessions/:id/invite convie un joueur oublié puis réinvite un refus", async () => {
+    const mj = await authenticate("mj@test.com");
+    const grp = await mj.post("/groups").send({ name: "Table" });
+    const groupId = grp.body.id as string;
+
+    // Deux joueurs rejoignent le groupe via le flux d'invitation réel.
+    const joinGroup = async (
+      email: string,
+      pseudo: string,
+    ): Promise<{ agent: ReturnType<typeof request.agent>; userId: string }> => {
+      const agent = request.agent(app);
+      const reg = await agent
+        .post("/auth/register")
+        .send({ email, pseudo, password: "password123" });
+      const inv = await mj.post(`/groups/${groupId}/invitations`).send({ email });
+      await agent.post(`/invitations/${inv.body.invitationId}/accept`);
+      return { agent, userId: reg.body.userId as string };
+    };
+    const frodo = await joinGroup("frodo@test.com", "Frodo");
+    const sam = await joinGroup("sam@test.com", "Sam");
+
+    // Campagne + session, lobby ouvert avec le seul Frodo (Sam a été oublié).
+    const camp = await mj.post("/campaigns").send({ name: "Camp", groupId });
+    const sess = await mj
+      .post(`/campaigns/${camp.body.id}/sessions`)
+      .send({ title: "Séance", date: "2026-06-20" });
+    const sessionId = sess.body.id as string;
+    await mj.post(`/sessions/${sessionId}/launch`).send({ participantUserIds: [frodo.userId] });
+
+    // Frodo refuse (par erreur), puis le MJ convie Sam et reconvie Frodo.
+    await frodo.agent.post(`/sessions/${sessionId}/respond`).send({ accept: false });
+
+    const res = await mj
+      .post(`/sessions/${sessionId}/invite`)
+      .send({ participantUserIds: [sam.userId, frodo.userId] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("LOBBY");
+    const statuses = (res.body.participants as { userId: string; status: string }[])
+      .map((p) => `${p.userId === frodo.userId ? "frodo" : "sam"}:${p.status}`)
+      .sort();
+    expect(statuses).toEqual(["frodo:INVITED", "sam:INVITED"]);
+
+    // Les deux joueurs voient bien une invitation en attente.
+    const invits = await sam.agent.get("/sessions/invitations");
+    expect(invits.body.invitations).toHaveLength(1);
+  });
+
+  it("POST /sessions/:id/invite sur une session sans lobby ouvert renvoie 409 (LOBBY_NOT_OPEN)", async () => {
+    const mj = await authenticate();
+    const campaignId = await createCampaign(mj);
+    const sess = await mj
+      .post(`/campaigns/${campaignId}/sessions`)
+      .send({ title: "Séance", date: "2026-06-20" });
+
+    const res = await mj
+      .post(`/sessions/${sess.body.id}/invite`)
+      .send({ participantUserIds: ["peu-importe"] });
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe("LOBBY_NOT_OPEN");
+  });
+
+  it("POST /sessions/:id/invite par un non-membre renvoie 403 (NOT_GROUP_MEMBER)", async () => {
+    const mj = await authenticate("mj@test.com");
+    const campaignId = await createCampaign(mj);
+    const sess = await mj
+      .post(`/campaigns/${campaignId}/sessions`)
+      .send({ title: "Séance", date: "2026-06-20" });
+
+    const autre = await authenticate("autre@test.com");
+    const res = await autre
+      .post(`/sessions/${sess.body.id}/invite`)
+      .send({ participantUserIds: ["peu-importe"] });
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("NOT_GROUP_MEMBER");
+  });
+
   it("POST /sessions/:id/launch sans joueur sélectionné renvoie 400 (EMPTY_PARTICIPANT_SELECTION)", async () => {
     const mj = await authenticate();
     const campaignId = await createCampaign(mj);

@@ -4,16 +4,19 @@ import { InvalidSessionParticipantStatusError } from "@domain/features/session/e
  * Value Object représentant l'**état de la participation d'un joueur** à une session.
  *
  * ```
- * INVITED ──accept──► ACCEPTED
- *         └─refuse──► REFUSED
+ * INVITED ──accept────► ACCEPTED
+ *         └─refuse────► REFUSED ──reinvite──► INVITED
  * ```
  *
  * - `INVITED`  : le MJ a invité le joueur ; on attend sa réponse.
  * - `ACCEPTED` : le joueur a rejoint le lobby et choisi sa fiche de personnage.
  * - `REFUSED`  : le joueur a décliné l'invitation.
  *
+ * Le retour `REFUSED → INVITED` couvre le refus accidentel : le MJ reconvie le joueur depuis
+ * le salon d'attente.
+ *
  * Les transitions sont portées par l'entité {@link SessionParticipant}
- * (`accept`, `refuse`) ; ce VO n'expose que la valeur et des prédicats de lecture.
+ * (`accept`, `refuse`, `reinvite`) ; ce VO n'expose que la valeur et des prédicats de lecture.
  */
 export class SessionParticipantStatus {
   /** Invitation envoyée, en attente de réponse. */

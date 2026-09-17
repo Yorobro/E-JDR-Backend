@@ -1,5 +1,6 @@
 import { SessionParticipantStatus } from "@domain/features/session/value-objects/SessionParticipantStatus";
 import { ParticipantAlreadyRespondedError } from "@domain/features/session/errors/ParticipantAlreadyRespondedError";
+import { ParticipantAlreadyInLobbyError } from "@domain/features/session/errors/ParticipantAlreadyInLobbyError";
 
 /**
  * Données nécessaires pour reconstruire un `SessionParticipant` existant (ex : depuis la base).
@@ -24,8 +25,9 @@ export interface SessionParticipantSnapshot {
  *
  * Identité composite `(sessionId, userId)` : un utilisateur figure au plus une fois par session
  * (aligné sur la clé primaire de `session_participants`). Comme les autres entités du domaine,
- * elle est immuable : les transitions (`accept`, `refuse`) renvoient une copie dans le nouvel
- * état plutôt que de muter l'instance, et valident l'invariant « on ne répond qu'une fois ».
+ * elle est immuable : les transitions (`accept`, `refuse`, `reinvite`) renvoient une copie dans
+ * le nouvel état plutôt que de muter l'instance, et valident l'invariant « on ne répond qu'une
+ * fois » (seul un refus peut être réarmé par le MJ).
  */
 export class SessionParticipant {
   /**
@@ -113,6 +115,30 @@ export class SessionParticipant {
       ...this.props,
       status: SessionParticipantStatus.ACCEPTED,
       respondedAt: params.respondedAt,
+    });
+  }
+
+  /**
+   * Réinvite un joueur qui avait **refusé** : `REFUSED → INVITED`, en réarmant l'invitation.
+   *
+   * Sert au refus accidentel : le MJ le reconvie depuis le salon d'attente et le joueur repart
+   * en attente de réponse (`respondedAt` remis à `null`, nouvelle date d'invitation). La règle
+   * « on ne réinvite qu'un refus » vit ici : un joueur encore `INVITED` ou déjà `ACCEPTED` est
+   * déjà dans le lobby, il n'y a rien à réinviter.
+   *
+   * @param params.invitedAt - Horodatage de la nouvelle invitation (injecté pour rester déterministe).
+   * @returns Une nouvelle participation au statut `INVITED`.
+   * @throws {ParticipantAlreadyInLobbyError} Si la participation n'est pas au statut `REFUSED`.
+   */
+  public reinvite(params: { invitedAt: Date }): SessionParticipant {
+    if (!this.props.status.isRefused()) {
+      throw new ParticipantAlreadyInLobbyError(this.props.status.value);
+    }
+    return new SessionParticipant({
+      ...this.props,
+      status: SessionParticipantStatus.INVITED,
+      invitedAt: params.invitedAt,
+      respondedAt: null,
     });
   }
 

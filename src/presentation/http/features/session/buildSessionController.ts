@@ -9,6 +9,7 @@ import { GroupAccessService } from "@application/features/friend-group/abstracti
 import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 import { CreateSessionUseCaseImpl } from "@application/features/session/usecases/CreateSessionUseCaseImpl";
 import { CreateLobbyUseCaseImpl } from "@application/features/session/usecases/CreateLobbyUseCaseImpl";
+import { InviteToLobbyUseCaseImpl } from "@application/features/session/usecases/InviteToLobbyUseCaseImpl";
 import { ListCampaignSessionsUseCaseImpl } from "@application/features/session/usecases/ListCampaignSessionsUseCaseImpl";
 import { GetSessionUseCaseImpl } from "@application/features/session/usecases/GetSessionUseCaseImpl";
 import { UpdateSessionUseCaseImpl } from "@application/features/session/usecases/UpdateSessionUseCaseImpl";
@@ -58,6 +59,16 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
   const createLobby = new CreateLobbyUseCaseImpl({
     sessionRepository: deps.sessionRepository,
     campaignRepository: deps.campaignRepository,
+    groupMemberRepository: deps.groupMemberRepository,
+    groupAccessService: deps.groupAccessService,
+    unitOfWork: deps.unitOfWork,
+    logger: deps.logger,
+    realtimeNotifier: deps.realtimeNotifier,
+  });
+  const inviteToLobby = new InviteToLobbyUseCaseImpl({
+    sessionRepository: deps.sessionRepository,
+    campaignRepository: deps.campaignRepository,
+    sessionParticipantRepository: deps.sessionParticipantRepository,
     groupMemberRepository: deps.groupMemberRepository,
     groupAccessService: deps.groupAccessService,
     unitOfWork: deps.unitOfWork,
@@ -119,6 +130,7 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
   return new SessionController({
     createSession,
     createLobby,
+    inviteToLobby,
     listCampaignSessions,
     getSession,
     updateSession,
