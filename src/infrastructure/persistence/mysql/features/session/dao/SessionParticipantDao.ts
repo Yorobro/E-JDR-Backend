@@ -71,4 +71,18 @@ export class SessionParticipantDao {
         ),
       );
   }
+
+  /**
+   * Supprime une participation par son identifiant composé.
+   *
+   * @param sessionId - Identifiant de la session.
+   * @param userId - Identifiant du joueur.
+   */
+  public async deleteById(sessionId: string, userId: string): Promise<void> {
+    await this.executor
+      .delete(sessionParticipants)
+      .where(
+        and(eq(sessionParticipants.session_id, sessionId), eq(sessionParticipants.user_id, userId)),
+      );
+  }
 }

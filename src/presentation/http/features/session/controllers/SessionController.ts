@@ -14,6 +14,7 @@ import { ListMySessionInvitationsUseCase } from "@application/features/session/a
 import { GetSessionLobbyUseCase } from "@application/features/session/abstractions/usecases/GetSessionLobbyUseCase";
 import { SessionView } from "@application/features/session/abstractions/usecases/GetSessionUseCase";
 import { SessionHttpMapper } from "@presentation/http/features/session/mappers/SessionHttpMapper";
+import { RemoveParticipantUseCase } from "@application/features/session/abstractions/usecases/RemoveParticipantUseCase";
 
 /**
  * Regroupe les use cases injectés dans le {@link SessionController}.
@@ -33,6 +34,7 @@ export interface SessionControllerUseCases {
   readonly startSession: StartSessionUseCase;
   readonly listMyInvitations: ListMySessionInvitationsUseCase;
   readonly getSessionLobby: GetSessionLobbyUseCase;
+  readonly removeParticipant: RemoveParticipantUseCase;
 }
 
 /**
@@ -55,6 +57,7 @@ export class SessionController {
   private readonly startSession: StartSessionUseCase;
   private readonly listMyInvitations: ListMySessionInvitationsUseCase;
   private readonly getSessionLobby: GetSessionLobbyUseCase;
+  private readonly removeParticipant: RemoveParticipantUseCase;
 
   constructor(useCases: SessionControllerUseCases) {
     this.createSession = useCases.createSession;
@@ -68,6 +71,7 @@ export class SessionController {
     this.startSession = useCases.startSession;
     this.listMyInvitations = useCases.listMyInvitations;
     this.getSessionLobby = useCases.getSessionLobby;
+    this.removeParticipant = useCases.removeParticipant;
   }
 
   /**
@@ -319,6 +323,40 @@ export class SessionController {
       }
 
       res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * `DELETE /sessions/:id/participants/:userId` — retire un joueur du lobby (réservé au MJ).
+   *
+   * Opération miroir d'`invite` : les deux identifiants viennent de l'URL (la session et le
+   * joueur visé sont des ressources, pas des données de formulaire) ; il n'y a donc **pas de
+   * corps** à lire. L'identité du demandeur est prise de la session authentifiée. Renvoie le
+   * lobby complet à jour, pour que le client remplace son état d'un bloc.
+   *
+   * Suffixe `Handler` car `removeParticipant` désigne déjà le use case injecté (même convention
+   * que `GroupController.removeMemberHandler`).
+   */
+  public removeParticipantHandler = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const result = await this.removeParticipant.execute({
+        sessionId: req.params.id ?? "",
+        actorUserId: req.user!.userId,
+        participantUserId: req.params.userId ?? "",
+      });
+
+      if (result.isFailure) {
+        this.fail(res, result.error);
+        return;
+      }
+
+      res.status(200).json(result.value);
     } catch (error) {
       next(error);
     }
