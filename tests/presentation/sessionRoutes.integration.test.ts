@@ -37,6 +37,28 @@ describe("Session routes (intégration HTTP)", () => {
     return res.body.id as string;
   }
 
+  /**
+   * Fait rejoindre le groupe à un nouvel utilisateur via le flux d'invitation réel.
+   *
+   * @param mj - L'agent du MJ, propriétaire du groupe (seul habilité à inviter).
+   * @param groupId - Le groupe à rejoindre.
+   * @param email - L'adresse du nouvel arrivant.
+   * @param pseudo - Son pseudo.
+   * @returns Son agent supertest (session ouverte) et son identifiant.
+   */
+  async function joinGroup(
+    mj: ReturnType<typeof request.agent>,
+    groupId: string,
+    email: string,
+    pseudo: string,
+  ): Promise<{ agent: ReturnType<typeof request.agent>; userId: string }> {
+    const agent = request.agent(app);
+    const reg = await agent.post("/auth/register").send({ email, pseudo, password: "password123" });
+    const inv = await mj.post(`/groups/${groupId}/invitations`).send({ email });
+    await agent.post(`/invitations/${inv.body.invitationId}/accept`);
+    return { agent, userId: reg.body.userId as string };
+  }
+
   it("POST /campaigns/:id/sessions crée une session (201) pour le MJ", async () => {
     const mj = await authenticate();
     const campaignId = await createCampaign(mj);
@@ -202,20 +224,8 @@ describe("Session routes (intégration HTTP)", () => {
     const groupId = grp.body.id as string;
 
     // Deux joueurs rejoignent le groupe via le flux d'invitation réel.
-    const joinGroup = async (
-      email: string,
-      pseudo: string,
-    ): Promise<{ agent: ReturnType<typeof request.agent>; userId: string }> => {
-      const agent = request.agent(app);
-      const reg = await agent
-        .post("/auth/register")
-        .send({ email, pseudo, password: "password123" });
-      const inv = await mj.post(`/groups/${groupId}/invitations`).send({ email });
-      await agent.post(`/invitations/${inv.body.invitationId}/accept`);
-      return { agent, userId: reg.body.userId as string };
-    };
-    const frodo = await joinGroup("frodo@test.com", "Frodo");
-    const sam = await joinGroup("sam@test.com", "Sam");
+    const frodo = await joinGroup(mj, groupId, "frodo@test.com", "Frodo");
+    const sam = await joinGroup(mj, groupId, "sam@test.com", "Sam");
 
     // Campagne + session, lobby ouvert avec le seul Frodo (Sam a été oublié).
     const camp = await mj.post("/campaigns").send({ name: "Camp", groupId });
@@ -302,6 +312,84 @@ describe("Session routes (intégration HTTP)", () => {
 
     expect(res.status).toBe(403);
     expect(res.body.code).toBe("NOT_GROUP_MEMBER");
+  });
+
+  it("DELETE /sessions/:id/participants/:userId retire le joueur du lobby (200)", async () => {
+    const mj = await authenticate("mj@test.com");
+    const grp = await mj.post("/groups").send({ name: "Table" });
+    const groupId = grp.body.id as string;
+    const frodo = await joinGroup(mj, groupId, "frodo@test.com", "Frodo");
+    const sam = await joinGroup(mj, groupId, "sam@test.com", "Sam");
+
+    // Lobby ouvert avec les deux joueurs ; Frodo accepte, Sam n'a pas encore répondu.
+    const camp = await mj.post("/campaigns").send({ name: "Camp", groupId });
+    const sess = await mj
+      .post(`/campaigns/${camp.body.id}/sessions`)
+      .send({ title: "Séance", date: "2026-06-20" });
+    const sessionId = sess.body.id as string;
+    await mj
+      .post(`/sessions/${sessionId}/launch`)
+      .send({ participantUserIds: [frodo.userId, sam.userId] });
+    await frodo.agent.post(`/sessions/${sessionId}/respond`).send({ accept: true });
+
+    const res = await mj.delete(`/sessions/${sessionId}/participants/${sam.userId}`);
+
+    // La réponse porte le lobby complet à jour (pas un 204) : le client remplace son état d'un bloc.
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("LOBBY");
+    expect(res.body.participants).toEqual([{ userId: frodo.userId, status: "ACCEPTED" }]);
+
+    // Relu à froid, le lobby ne liste plus Sam.
+    const lobby = await mj.get(`/sessions/${sessionId}/lobby`);
+    expect((lobby.body.participants as { userId: string }[]).map((p) => p.userId)).toEqual([
+      frodo.userId,
+    ]);
+
+    // Et son invitation en attente a bien disparu de son côté.
+    const invits = await sam.agent.get("/sessions/invitations");
+    expect(invits.body.invitations).toHaveLength(0);
+  });
+
+  it("DELETE d'un joueur jamais convié renvoie 404 (PARTICIPANT_NOT_FOUND)", async () => {
+    const mj = await authenticate("mj@test.com");
+    const grp = await mj.post("/groups").send({ name: "Table" });
+    const groupId = grp.body.id as string;
+    const frodo = await joinGroup(mj, groupId, "frodo@test.com", "Frodo");
+    const sam = await joinGroup(mj, groupId, "sam@test.com", "Sam");
+
+    const camp = await mj.post("/campaigns").send({ name: "Camp", groupId });
+    const sess = await mj
+      .post(`/campaigns/${camp.body.id}/sessions`)
+      .send({ title: "Séance", date: "2026-06-20" });
+    await mj.post(`/sessions/${sess.body.id}/launch`).send({ participantUserIds: [frodo.userId] });
+
+    const res = await mj.delete(`/sessions/${sess.body.id}/participants/${sam.userId}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("PARTICIPANT_NOT_FOUND");
+  });
+
+  it("DELETE /sessions/:id/participants/:userId par un non-membre renvoie 403 (NOT_GROUP_MEMBER)", async () => {
+    const mj = await authenticate("mj@test.com");
+    const grp = await mj.post("/groups").send({ name: "Table" });
+    const groupId = grp.body.id as string;
+    const frodo = await joinGroup(mj, groupId, "frodo@test.com", "Frodo");
+
+    const camp = await mj.post("/campaigns").send({ name: "Camp", groupId });
+    const sess = await mj
+      .post(`/campaigns/${camp.body.id}/sessions`)
+      .send({ title: "Séance", date: "2026-06-20" });
+    const sessionId = sess.body.id as string;
+    await mj.post(`/sessions/${sessionId}/launch`).send({ participantUserIds: [frodo.userId] });
+
+    const autre = await authenticate("autre@test.com");
+    const res = await autre.delete(`/sessions/${sessionId}/participants/${frodo.userId}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("NOT_GROUP_MEMBER");
+    // L'échec d'autorisation n'a rien supprimé : Frodo est toujours au lobby.
+    const lobby = await mj.get(`/sessions/${sessionId}/lobby`);
+    expect(lobby.body.participants).toHaveLength(1);
   });
 
   it("POST session sans cookie renvoie 401 (UNAUTHENTICATED)", async () => {

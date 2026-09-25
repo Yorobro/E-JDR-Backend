@@ -47,4 +47,12 @@ export interface SessionParticipantRepository {
    * @returns Ses participations au statut `INVITED` (vide si aucune).
    */
   findInvitedByUserId(userId: string): Promise<SessionParticipant[]>;
+
+  /**
+   * Retire la participation d'un joueur à une session (identité composite `(sessionId, userId)`).
+   *
+   * @param sessionId - Identifiant de la session.
+   * @param userId - Identifiant du joueur.
+   */
+  deleteBySessionIdAndUserId(sessionId: string, userId: string): Promise<void>;
 }

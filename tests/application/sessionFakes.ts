@@ -82,4 +82,11 @@ export class FakeSessionParticipantRepository implements SessionParticipantRepos
   public seed(participant: SessionParticipant): void {
     this.participants.push(participant);
   }
+
+  public async deleteBySessionIdAndUserId(sessionId: string, userId: string): Promise<void> {
+    const index = this.participants.findIndex(
+      (participant) => participant.sessionId === sessionId && participant.userId === userId,
+    );
+    if (index >= 0) this.participants.splice(index, 1);
+  }
 }

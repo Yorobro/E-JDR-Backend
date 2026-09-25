@@ -18,6 +18,7 @@ import { RespondToInvitationUseCaseImpl } from "@application/features/session/us
 import { StartSessionUseCaseImpl } from "@application/features/session/usecases/StartSessionUseCaseImpl";
 import { ListMySessionInvitationsUseCaseImpl } from "@application/features/session/usecases/ListMySessionInvitationsUseCaseImpl";
 import { GetSessionLobbyUseCaseImpl } from "@application/features/session/usecases/GetSessionLobbyUseCaseImpl";
+import { RemoveParticipantUseCaseImpl } from "@application/features/session/usecases/RemoveParticipantUseCaseImpl";
 import { SessionController } from "@presentation/http/features/session/controllers/SessionController";
 
 /**
@@ -40,22 +41,19 @@ export interface SessionControllerDeps {
 }
 
 /**
- * Assemble le controller session (CRUD des sessions d'une campagne).
+ * Câble les use cases du **salon d'attente** (ouverture, invitation, retrait d'un joueur).
  *
- * Extrait du composition root (`main.ts`) pour garder ce dernier sous la limite de taille :
- * câble les cinq use cases sur leurs dépendances et les passe au controller.
+ * Extrait de {@link buildSessionController} pour garder celui-ci sous la limite de taille : ces
+ * trois-là partagent les mêmes dépendances lourdes et forment un groupe cohérent.
  *
  * @param deps - Les services partagés requis par les use cases session.
- * @returns Le controller session câblé.
+ * @returns Les trois use cases du lobby, prêts à être passés au controller.
  */
-export function buildSessionController(deps: SessionControllerDeps): SessionController {
-  const createSession = new CreateSessionUseCaseImpl(
-    deps.campaignRepository,
-    deps.idGenerator,
-    deps.unitOfWork,
-    deps.logger,
-    deps.realtimeNotifier,
-  );
+function buildLobbyUseCases(deps: SessionControllerDeps): {
+  createLobby: CreateLobbyUseCaseImpl;
+  inviteToLobby: InviteToLobbyUseCaseImpl;
+  removeParticipant: RemoveParticipantUseCaseImpl;
+} {
   const createLobby = new CreateLobbyUseCaseImpl({
     sessionRepository: deps.sessionRepository,
     campaignRepository: deps.campaignRepository,
@@ -75,6 +73,37 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     logger: deps.logger,
     realtimeNotifier: deps.realtimeNotifier,
   });
+  const removeParticipant = new RemoveParticipantUseCaseImpl({
+    sessionRepository: deps.sessionRepository,
+    campaignRepository: deps.campaignRepository,
+    sessionParticipantRepository: deps.sessionParticipantRepository,
+    groupAccessService: deps.groupAccessService,
+    unitOfWork: deps.unitOfWork,
+    logger: deps.logger,
+    realtimeNotifier: deps.realtimeNotifier,
+  });
+
+  return { createLobby, inviteToLobby, removeParticipant };
+}
+
+/**
+ * Assemble le controller session (CRUD des sessions d'une campagne).
+ *
+ * Extrait du composition root (`main.ts`) pour garder ce dernier sous la limite de taille :
+ * câble les cinq use cases sur leurs dépendances et les passe au controller.
+ *
+ * @param deps - Les services partagés requis par les use cases session.
+ * @returns Le controller session câblé.
+ */
+export function buildSessionController(deps: SessionControllerDeps): SessionController {
+  const { createLobby, inviteToLobby, removeParticipant } = buildLobbyUseCases(deps);
+  const createSession = new CreateSessionUseCaseImpl(
+    deps.campaignRepository,
+    deps.idGenerator,
+    deps.unitOfWork,
+    deps.logger,
+    deps.realtimeNotifier,
+  );
   const listCampaignSessions = new ListCampaignSessionsUseCaseImpl(
     deps.campaignRepository,
     deps.sessionRepository,
@@ -139,5 +168,6 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     startSession,
     listMyInvitations,
     getSessionLobby,
+    removeParticipant,
   });
 }

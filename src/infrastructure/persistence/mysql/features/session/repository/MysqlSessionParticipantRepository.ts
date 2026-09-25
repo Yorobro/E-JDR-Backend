@@ -60,4 +60,14 @@ export class MysqlSessionParticipantRepository implements SessionParticipantRepo
     const rows = await this.dao.findInvitedByUserId(userId);
     return rows.map((row) => SessionParticipantMapper.toDomain(row));
   }
+
+  /**
+   * Supprime la participation d'un joueur à une session (identité composite `(sessionId, userId)`).
+   *
+   * @param sessionId L'identifiant de la session.
+   * @param userId L'identifiant du joueur.
+   */
+  public async deleteBySessionIdAndUserId(sessionId: string, userId: string): Promise<void> {
+    await this.dao.deleteById(sessionId, userId);
+  }
 }
