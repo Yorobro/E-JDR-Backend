@@ -124,13 +124,19 @@ export class RemoveParticipantUseCaseImpl implements RemoveParticipantUseCase {
   }
 
   /**
-   * Fait disparaître l'invitation en attente chez le joueur retiré et rafraîchit le lobby de
-   * tout le groupe (sa ligne s'efface chez le MJ comme chez les autres). Best-effort.
+   * Prévient le joueur retiré, fait disparaître son invitation en attente et rafraîchit le lobby
+   * de tout le groupe (sa ligne s'efface chez le MJ comme chez les autres). Best-effort.
+   *
+   * `session-removed` part sur le canal personnel du joueur (`user:{id}`), auquel il est abonné
+   * dès le handshake WebSocket : il le reçoit donc où qu'il soit dans l'application, et sans
+   * ambiguïté sur le destinataire (le canal ne sert que lui). C'est ce qui permet au client de
+   * l'avertir partout, et de le sortir du salon d'attente s'il y est encore.
    *
    * @param groupId - Groupe de la campagne parente.
    * @param participantUserId - Joueur qui vient d'être retiré.
    */
   private notify(groupId: string, participantUserId: string): void {
+    this.realtimeNotifier.notifyUserChanged(participantUserId, "session-removed");
     this.realtimeNotifier.notifyUserChanged(participantUserId, "session-invitations");
     this.realtimeNotifier.notifyGroupChanged(groupId, "session-participants");
   }

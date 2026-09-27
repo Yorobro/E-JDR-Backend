@@ -134,7 +134,14 @@ describe("RemoveParticipantUseCaseImpl", () => {
       participantUserId: "player-2",
     });
 
-    // L'invitation en attente disparaît de l'écran du joueur retiré...
+    // Le joueur retiré est averti personnellement (le client l'en informe et le sort du
+    // salon d'attente s'il y est)...
+    expect(notifier.notifications).toContainEqual({
+      kind: "user",
+      id: "player-2",
+      resource: "session-removed",
+    });
+    // ...son invitation en attente disparaît de son écran...
     expect(notifier.notifications).toContainEqual({
       kind: "user",
       id: "player-2",
