@@ -136,14 +136,15 @@ export function buildSessionController(deps: SessionControllerDeps): SessionCont
     deps.logger,
     deps.realtimeNotifier,
   );
-  const startSession = new StartSessionUseCaseImpl(
-    deps.sessionRepository,
-    deps.campaignRepository,
-    deps.groupAccessService,
-    deps.unitOfWork,
-    deps.logger,
-    deps.realtimeNotifier,
-  );
+  const startSession = new StartSessionUseCaseImpl({
+    sessionRepository: deps.sessionRepository,
+    campaignRepository: deps.campaignRepository,
+    sessionParticipantRepository: deps.sessionParticipantRepository,
+    groupAccessService: deps.groupAccessService,
+    unitOfWork: deps.unitOfWork,
+    logger: deps.logger,
+    realtimeNotifier: deps.realtimeNotifier,
+  });
   const listMyInvitations = new ListMySessionInvitationsUseCaseImpl(
     deps.sessionRepository,
     deps.campaignRepository,
