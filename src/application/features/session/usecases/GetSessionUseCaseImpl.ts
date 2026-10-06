@@ -44,6 +44,7 @@ export class GetSessionUseCaseImpl implements GetSessionUseCase {
       campaignId: session.campaignId,
       title: session.title.value,
       date: SessionDate.fromDate(session.date).toIsoDate(),
+      status: session.status.value,
       createdAt: session.createdAt,
     });
   }

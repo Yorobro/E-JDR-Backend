@@ -7,6 +7,7 @@ import {
   FakeLogger,
   FakeIdGenerator,
   FakeUnitOfWork,
+  FakeRealtimeNotifier,
   buildFakeTransactionalRepositories,
   buildTestMembership,
 } from "./fakes";
@@ -28,6 +29,7 @@ describe("CreateCampaignUseCaseImpl", () => {
       groupAccessService,
       unitOfWork,
       new FakeLogger(),
+      new FakeRealtimeNotifier(),
     );
     // mj-1 est membre du groupe group-1
     txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "mj-1" }));

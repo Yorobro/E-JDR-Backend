@@ -2,12 +2,40 @@ import { NextFunction, Request, Response } from "express";
 import { AppError } from "@application/errors/AppError";
 import { Result } from "@application/shared/Result";
 import { CreateSessionUseCase } from "@application/features/session/abstractions/usecases/CreateSessionUseCase";
+import { CreateLobbyUseCase } from "@application/features/session/abstractions/usecases/CreateLobbyUseCase";
+import { InviteToLobbyUseCase } from "@application/features/session/abstractions/usecases/InviteToLobbyUseCase";
 import { ListCampaignSessionsUseCase } from "@application/features/session/abstractions/usecases/ListCampaignSessionsUseCase";
 import { GetSessionUseCase } from "@application/features/session/abstractions/usecases/GetSessionUseCase";
 import { UpdateSessionUseCase } from "@application/features/session/abstractions/usecases/UpdateSessionUseCase";
 import { DeleteSessionUseCase } from "@application/features/session/abstractions/usecases/DeleteSessionUseCase";
+import { RespondToInvitationUseCase } from "@application/features/session/abstractions/usecases/RespondToInvitationUseCase";
+import { StartSessionUseCase } from "@application/features/session/abstractions/usecases/StartSessionUseCase";
+import { ListMySessionInvitationsUseCase } from "@application/features/session/abstractions/usecases/ListMySessionInvitationsUseCase";
+import { GetSessionLobbyUseCase } from "@application/features/session/abstractions/usecases/GetSessionLobbyUseCase";
 import { SessionView } from "@application/features/session/abstractions/usecases/GetSessionUseCase";
 import { SessionHttpMapper } from "@presentation/http/features/session/mappers/SessionHttpMapper";
+import { RemoveParticipantUseCase } from "@application/features/session/abstractions/usecases/RemoveParticipantUseCase";
+
+/**
+ * Regroupe les use cases injectés dans le {@link SessionController}.
+ *
+ * Passés en un seul objet (plutôt qu'en paramètres positionnels) pour rester sous la limite de
+ * paramètres du controller et garder l'assemblage lisible à mesure que la feature grandit.
+ */
+export interface SessionControllerUseCases {
+  readonly createSession: CreateSessionUseCase;
+  readonly createLobby: CreateLobbyUseCase;
+  readonly inviteToLobby: InviteToLobbyUseCase;
+  readonly listCampaignSessions: ListCampaignSessionsUseCase;
+  readonly getSession: GetSessionUseCase;
+  readonly updateSession: UpdateSessionUseCase;
+  readonly deleteSession: DeleteSessionUseCase;
+  readonly respondToInvitation: RespondToInvitationUseCase;
+  readonly startSession: StartSessionUseCase;
+  readonly listMyInvitations: ListMySessionInvitationsUseCase;
+  readonly getSessionLobby: GetSessionLobbyUseCase;
+  readonly removeParticipant: RemoveParticipantUseCase;
+}
 
 /**
  * Controller HTTP de la feature session.
@@ -18,13 +46,33 @@ import { SessionHttpMapper } from "@presentation/http/features/session/mappers/S
  * le controller délègue la traduction des erreurs au `SessionHttpMapper`.
  */
 export class SessionController {
-  constructor(
-    private readonly createSession: CreateSessionUseCase,
-    private readonly listCampaignSessions: ListCampaignSessionsUseCase,
-    private readonly getSession: GetSessionUseCase,
-    private readonly updateSession: UpdateSessionUseCase,
-    private readonly deleteSession: DeleteSessionUseCase,
-  ) {}
+  private readonly createSession: CreateSessionUseCase;
+  private readonly createLobby: CreateLobbyUseCase;
+  private readonly inviteToLobby: InviteToLobbyUseCase;
+  private readonly listCampaignSessions: ListCampaignSessionsUseCase;
+  private readonly getSession: GetSessionUseCase;
+  private readonly updateSession: UpdateSessionUseCase;
+  private readonly deleteSession: DeleteSessionUseCase;
+  private readonly respondToInvitation: RespondToInvitationUseCase;
+  private readonly startSession: StartSessionUseCase;
+  private readonly listMyInvitations: ListMySessionInvitationsUseCase;
+  private readonly getSessionLobby: GetSessionLobbyUseCase;
+  private readonly removeParticipant: RemoveParticipantUseCase;
+
+  constructor(useCases: SessionControllerUseCases) {
+    this.createSession = useCases.createSession;
+    this.createLobby = useCases.createLobby;
+    this.inviteToLobby = useCases.inviteToLobby;
+    this.listCampaignSessions = useCases.listCampaignSessions;
+    this.getSession = useCases.getSession;
+    this.updateSession = useCases.updateSession;
+    this.deleteSession = useCases.deleteSession;
+    this.respondToInvitation = useCases.respondToInvitation;
+    this.startSession = useCases.startSession;
+    this.listMyInvitations = useCases.listMyInvitations;
+    this.getSessionLobby = useCases.getSessionLobby;
+    this.removeParticipant = useCases.removeParticipant;
+  }
 
   /**
    * `POST /campaigns/:campaignId/sessions` — crée une session dans la campagne (réservé au MJ).
@@ -39,7 +87,165 @@ export class SessionController {
         date: body.date as string,
       });
 
-      this.respond(res, result, 201);
+      this.respondWith(res, result, 201);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * `POST /sessions/:id/launch` — ouvre le lobby (réservé au MJ) et invite les joueurs cochés.
+   *
+   * Le corps porte `participantUserIds` (identifiants des joueurs sélectionnés). L'identité du
+   * MJ est prise de la session authentifiée, jamais du corps. Renvoie le lobby (statut `LOBBY`
+   * + liste des invitations).
+   */
+  public launch = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = req.body as { participantUserIds?: unknown };
+      const result = await this.createLobby.execute({
+        sessionId: req.params.id ?? "",
+        actorUserId: req.user!.userId,
+        participantUserIds: Array.isArray(body.participantUserIds)
+          ? (body.participantUserIds as string[])
+          : [],
+      });
+
+      if (result.isFailure) {
+        this.fail(res, result.error);
+        return;
+      }
+
+      res.status(200).json(result.value);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * `POST /sessions/:id/invite` — convie des joueurs à un lobby **déjà ouvert** (réservé au MJ).
+   *
+   * Complète `launch` : ici le salon existe (statut `LOBBY`), on ne fait qu'ajouter des
+   * invitations — un joueur oublié, ou un joueur qui avait refusé par erreur. Le corps porte
+   * `participantUserIds` ; l'identité du MJ vient de la session authentifiée. Renvoie le lobby
+   * complet à jour.
+   */
+  public invite = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = req.body as { participantUserIds?: unknown };
+      const result = await this.inviteToLobby.execute({
+        sessionId: req.params.id ?? "",
+        actorUserId: req.user!.userId,
+        participantUserIds: Array.isArray(body.participantUserIds)
+          ? (body.participantUserIds as string[])
+          : [],
+      });
+
+      if (result.isFailure) {
+        this.fail(res, result.error);
+        return;
+      }
+
+      res.status(200).json(result.value);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * `POST /sessions/:id/respond` — un joueur convié accepte ou refuse son invitation.
+   *
+   * Le corps porte `accept` (booléen) : `true` rejoint le lobby (ACCEPTED), toute autre valeur
+   * refuse (REFUSED). L'identité du joueur est prise de la session authentifiée, jamais du corps.
+   * Renvoie `204 No Content` en cas de succès.
+   */
+  public respond = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = req.body as { accept?: unknown };
+      const result = await this.respondToInvitation.execute({
+        sessionId: req.params.id ?? "",
+        actorUserId: req.user!.userId,
+        accept: body.accept === true,
+      });
+
+      if (result.isFailure) {
+        this.fail(res, result.error);
+        return;
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * `POST /sessions/:id/start` — le MJ démarre réellement la session (transition `LOBBY → ACTIVE`).
+   *
+   * Réservé au MJ de la campagne parente (vérifié par le use case). L'identité du demandeur est
+   * prise de la session authentifiée. Renvoie `204 No Content` en cas de succès.
+   */
+  public start = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.startSession.execute({
+        sessionId: req.params.id ?? "",
+        actorUserId: req.user!.userId,
+      });
+
+      if (result.isFailure) {
+        this.fail(res, result.error);
+        return;
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * `GET /sessions/invitations` — liste les invitations de session en attente du joueur courant.
+   *
+   * Le demandeur est pris de la session authentifiée. Renvoie `200` avec `{ invitations: [...] }`.
+   */
+  public listInvitations = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const result = await this.listMyInvitations.execute({ actorUserId: req.user!.userId });
+
+      if (result.isFailure) {
+        this.fail(res, result.error);
+        return;
+      }
+
+      res.status(200).json({ invitations: result.value });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * `GET /sessions/:id/lobby` — retourne le lobby (statut + participants) d'une session.
+   *
+   * Accessible à tout membre du groupe de la campagne (MJ comme joueur convié). Sert au joueur
+   * qui rejoint le salon d'attente et au MJ en reprise à froid.
+   */
+  public getLobby = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.getSessionLobby.execute({
+        sessionId: req.params.id ?? "",
+        actorUserId: req.user!.userId,
+      });
+
+      if (result.isFailure) {
+        this.fail(res, result.error);
+        return;
+      }
+
+      res.status(200).json(result.value);
     } catch (error) {
       next(error);
     }
@@ -76,7 +282,7 @@ export class SessionController {
         actorUserId: req.user!.userId,
       });
 
-      this.respond(res, result, 200);
+      this.respondWith(res, result, 200);
     } catch (error) {
       next(error);
     }
@@ -95,7 +301,7 @@ export class SessionController {
         date: body.date as string,
       });
 
-      this.respond(res, result, 200);
+      this.respondWith(res, result, 200);
     } catch (error) {
       next(error);
     }
@@ -122,8 +328,46 @@ export class SessionController {
     }
   };
 
+  /**
+   * `DELETE /sessions/:id/participants/:userId` — retire un joueur du lobby (réservé au MJ).
+   *
+   * Opération miroir d'`invite` : les deux identifiants viennent de l'URL (la session et le
+   * joueur visé sont des ressources, pas des données de formulaire) ; il n'y a donc **pas de
+   * corps** à lire. L'identité du demandeur est prise de la session authentifiée. Renvoie le
+   * lobby complet à jour, pour que le client remplace son état d'un bloc.
+   *
+   * Suffixe `Handler` car `removeParticipant` désigne déjà le use case injecté (même convention
+   * que `GroupController.removeMemberHandler`).
+   */
+  public removeParticipantHandler = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const result = await this.removeParticipant.execute({
+        sessionId: req.params.id ?? "",
+        actorUserId: req.user!.userId,
+        participantUserId: req.params.userId ?? "",
+      });
+
+      if (result.isFailure) {
+        this.fail(res, result.error);
+        return;
+      }
+
+      res.status(200).json(result.value);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   /** Répond avec la session sérialisée et le statut de succès donné, ou délègue l'échec. */
-  private respond(res: Response, result: Result<SessionView, AppError>, okStatus: number): void {
+  private respondWith(
+    res: Response,
+    result: Result<SessionView, AppError>,
+    okStatus: number,
+  ): void {
     if (result.isFailure) {
       this.fail(res, result.error);
       return;
@@ -144,6 +388,7 @@ export class SessionController {
     campaignId: string;
     title: string;
     date: string;
+    status: string;
     createdAt: string;
   } {
     return {
@@ -151,6 +396,7 @@ export class SessionController {
       campaignId: view.campaignId,
       title: view.title,
       date: view.date,
+      status: view.status,
       createdAt: view.createdAt.toISOString(),
     };
   }

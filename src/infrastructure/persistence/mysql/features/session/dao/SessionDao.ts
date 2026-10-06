@@ -5,24 +5,32 @@ import { sessions } from "@infrastructure/persistence/drizzle/schema";
 /** Représentation brute d'une ligne `sessions` (type inféré du schema Drizzle). */
 export type SessionRow = typeof sessions.$inferSelect;
 
+/** Valeurs de colonnes prêtes à insérer dans `sessions` (type inféré du schema Drizzle). */
+export type SessionInsert = typeof sessions.$inferInsert;
+
 /** DAO de la table `sessions` : query builder Drizzle. */
 export class SessionDao {
   constructor(private readonly executor: DrizzleExecutor) {}
 
-  public async insert(row: {
-    id: string;
-    campaign_id: string;
-    title: string;
-    date: Date;
-    created_at: Date;
-  }): Promise<void> {
+  public async insert(row: SessionInsert): Promise<void> {
     await this.executor.insert(sessions).values(row);
   }
 
-  public async update(row: { id: string; title: string; date: Date }): Promise<void> {
+  /**
+   * Met à jour les champs mutables d'une session : titre, date, **statut** et **date de
+   * démarrage**. Le statut et `started_at` évoluent au fil des transitions du cycle de vie
+   * (ouverture du lobby, démarrage de la partie).
+   */
+  public async update(row: {
+    id: string;
+    title: string;
+    date: Date;
+    status: string;
+    started_at: Date | null;
+  }): Promise<void> {
     await this.executor
       .update(sessions)
-      .set({ title: row.title, date: row.date })
+      .set({ title: row.title, date: row.date, status: row.status, started_at: row.started_at })
       .where(eq(sessions.id, row.id));
   }
 

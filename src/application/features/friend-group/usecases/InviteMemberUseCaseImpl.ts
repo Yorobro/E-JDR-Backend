@@ -20,6 +20,7 @@ import {
   InviteMemberCommand,
   InviteMemberResult,
 } from "@application/features/friend-group/abstractions/usecases/InviteMemberUseCase";
+import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
 
 export interface InviteMemberDeps {
   credentialRepository: CredentialRepository;
@@ -29,6 +30,7 @@ export interface InviteMemberDeps {
   idGenerator: IdGeneratorService;
   unitOfWork: UnitOfWork;
   logger: Logger;
+  realtimeNotifier: RealtimeNotifier;
 }
 
 export class InviteMemberUseCaseImpl implements InviteMemberUseCase {
@@ -39,6 +41,7 @@ export class InviteMemberUseCaseImpl implements InviteMemberUseCase {
   private readonly idGenerator: IdGeneratorService;
   private readonly unitOfWork: UnitOfWork;
   private readonly logger: Logger;
+  private readonly realtimeNotifier: RealtimeNotifier;
 
   constructor(deps: InviteMemberDeps) {
     this.credentialRepository = deps.credentialRepository;
@@ -48,6 +51,7 @@ export class InviteMemberUseCaseImpl implements InviteMemberUseCase {
     this.idGenerator = deps.idGenerator;
     this.unitOfWork = deps.unitOfWork;
     this.logger = deps.logger;
+    this.realtimeNotifier = deps.realtimeNotifier;
   }
 
   public async execute(
@@ -106,6 +110,8 @@ export class InviteMemberUseCaseImpl implements InviteMemberUseCase {
       groupId: invitation.groupId,
       invitedUserId,
     });
+
+    this.realtimeNotifier.notifyUserChanged(invitedUserId, "invitations");
 
     return Result.success({ invitationId: invitation.id });
   }

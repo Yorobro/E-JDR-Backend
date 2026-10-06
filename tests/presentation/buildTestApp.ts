@@ -108,6 +108,7 @@ export function buildTestApp(): {
     idGenerator,
     unitOfWork,
     logger,
+    realtimeNotifier,
   });
 
   // Dépendances campagne (créer / lister / supprimer + personnages de campagne).
@@ -150,10 +151,13 @@ export function buildTestApp(): {
   const sessionController = buildSessionController({
     campaignRepository: repos.campaigns,
     sessionRepository: repos.sessions,
+    sessionParticipantRepository: repos.sessionParticipants,
+    groupMemberRepository: repos.groupMembers,
     idGenerator,
     unitOfWork,
     logger,
     groupAccessService,
+    realtimeNotifier,
   });
 
   const referenceController = buildReferenceController({
@@ -163,6 +167,7 @@ export function buildTestApp(): {
     groupAccessService,
     unitOfWork,
     logger,
+    realtimeNotifier,
   });
 
   const authMiddleware = buildAuthMiddleware(tokenProvider);

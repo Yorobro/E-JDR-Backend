@@ -11,6 +11,7 @@ import { GroupRole } from "@domain/features/friend-group/value-objects/GroupRole
 import {
   FakeLogger,
   FakeUnitOfWork,
+  FakeRealtimeNotifier,
   buildFakeTransactionalRepositories,
   buildTestCampaign,
   buildTestSession,
@@ -68,6 +69,7 @@ describe("UpdateSessionUseCaseImpl", () => {
       txRepos.campaigns,
       new FakeUnitOfWork(txRepos),
       new FakeLogger(),
+      new FakeRealtimeNotifier(),
     );
     // Campagne dans group-1, MJ = "mj-1"
     txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1", "Ma campagne", "group-1"));
@@ -133,6 +135,7 @@ describe("DeleteSessionUseCaseImpl", () => {
       txRepos.campaigns,
       new FakeUnitOfWork(txRepos),
       new FakeLogger(),
+      new FakeRealtimeNotifier(),
     );
     // Campagne dans group-1, MJ = "mj-1"
     txRepos.campaigns.seed(buildTestCampaign("camp-1", "mj-1", "Ma campagne", "group-1"));
