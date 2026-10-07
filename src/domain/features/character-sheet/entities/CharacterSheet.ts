@@ -59,6 +59,10 @@ const EMPTY_DETAILS: CharacterSheetDetails = {
 /**
  * Valeurs par défaut appliquées **uniquement à la création** d'une fiche (factory `create()`).
  * Elles priment sur {@link EMPTY_DETAILS} mais sont surchargées par les params fournis.
+ *
+ * Les points de magie démarrent à 10 (règle du jeu, cf. l'aide « 10 au départ » imprimée sur la
+ * fiche PDF). Contrairement aux PV et à la protection, ils sont **stockés et éditables** : le
+ * joueur les dépense en cours de partie, ils ne sont donc pas dérivés d'une statistique.
  */
 const CREATION_DEFAULTS: Partial<CharacterSheetDetails> = {
   niveau: 1,
@@ -67,7 +71,7 @@ const CREATION_DEFAULTS: Partial<CharacterSheetDetails> = {
   perception: 0,
   social: 0,
   vigueur: 0,
-  pointsDeMagie: 0,
+  pointsDeMagie: 10,
   purse: Purse.create({}),
 };
 

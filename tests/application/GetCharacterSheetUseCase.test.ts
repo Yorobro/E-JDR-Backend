@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { StatBonus } from "@domain/features/reference/value-objects/StatBonus";
 import { GetCharacterSheetUseCaseImpl } from "@application/features/character-sheet/usecases/GetCharacterSheetUseCaseImpl";
 import { GroupAccessServiceImpl } from "@application/features/friend-group/services/GroupAccessServiceImpl";
 import { CharacterSheetNotFoundError } from "@application/features/character-sheet/errors/CharacterSheetNotFoundError";
@@ -30,11 +31,32 @@ describe("GetCharacterSheetUseCaseImpl", () => {
       peupleRepository: txRepos.peoples,
       competenceRepository: txRepos.competences,
       formationCompetenceLink: txRepos.formationCompetences,
+      peupleStatBonusLink: txRepos.peupleStatBonuses,
       sheetArmures: txRepos.sheetArmures,
       groupAccessService,
       logger: new FakeLogger(),
     });
   });
+
+  /**
+   * Seede un peuple et ses bonus **dans la table de jointure** (et non dans la colonne historique
+   * `stat`/`bonus`, que le resolver ignore désormais).
+   */
+  async function seedPeuple(
+    id: string,
+    name: string,
+    bonuses: { stat: string; bonus: number }[],
+    groupId = "group-1",
+  ): Promise<void> {
+    txRepos.peoples.seed(buildTestReferenceItem(id, groupId, name));
+    for (const bonus of bonuses) {
+      await txRepos.peupleStatBonuses.link(
+        id,
+        StatBonus.create({ stat: bonus.stat, amount: bonus.bonus }),
+        new Date(),
+      );
+    }
+  }
 
   it("renvoie la fiche complète si le demandeur est membre du groupe de la fiche", async () => {
     txRepos.characterSheets.seed(
@@ -115,10 +137,11 @@ describe("GetCharacterSheetUseCaseImpl", () => {
       });
     });
 
-    it("résout le peuple (nom + bonus), sans compétences", async () => {
-      txRepos.peoples.seed(
-        buildTestReferenceItem("peuple-1", "group-1", "Elfe", { stat: "dexterite", amount: 1 }),
-      );
+    it("résout le peuple avec ses bonus multiples, sans compétences", async () => {
+      await seedPeuple("peuple-1", "Elfe", [
+        { stat: "dexterite", bonus: 1 },
+        { stat: "perception", bonus: 2 },
+      ]);
       txRepos.characterSheets.seed(
         buildTestCharacterSheet("s-1", "owner-1", "Legolas", { peupleId: "peuple-1" }),
       );
@@ -129,8 +152,10 @@ describe("GetCharacterSheetUseCaseImpl", () => {
       expect(result.value.peuple).toEqual({
         id: "peuple-1",
         name: "Elfe",
-        stat: "dexterite",
-        bonus: 1,
+        statBonuses: [
+          { stat: "dexterite", bonus: 1 },
+          { stat: "perception", bonus: 2 },
+        ],
       });
     });
 
@@ -231,9 +256,7 @@ describe("GetCharacterSheetUseCaseImpl", () => {
       txRepos.formations.seed(
         buildTestReferenceItem("form-1", "group-1", "Guerrier", { stat: "vigueur", amount: 2 }),
       );
-      txRepos.peoples.seed(
-        buildTestReferenceItem("peuple-1", "group-1", "Nain", { stat: "vigueur", amount: 1 }),
-      );
+      await seedPeuple("peuple-1", "Nain", [{ stat: "vigueur", bonus: 1 }]);
       txRepos.characterSheets.seed(
         buildTestCharacterSheet("s-1", "owner-1", "Gimli", {
           vigueur: 3,
@@ -253,9 +276,7 @@ describe("GetCharacterSheetUseCaseImpl", () => {
       txRepos.formations.seed(
         buildTestReferenceItem("form-1", "group-1", "Diplomate", { stat: "social", amount: 2 }),
       );
-      txRepos.peoples.seed(
-        buildTestReferenceItem("peuple-1", "group-1", "Halfelin", { stat: "social", amount: 1 }),
-      );
+      await seedPeuple("peuple-1", "Halfelin", [{ stat: "social", bonus: 1 }]);
       txRepos.characterSheets.seed(
         buildTestCharacterSheet("s-1", "owner-1", "Frodon", {
           social: 3,
@@ -271,10 +292,31 @@ describe("GetCharacterSheetUseCaseImpl", () => {
       expect(result.value.socialTotale).toBe(6);
     });
 
-    it("renvoie une stat totale = base quand aucun bonus ne cible cette stat", async () => {
-      txRepos.peoples.seed(
-        buildTestReferenceItem("peuple-1", "group-1", "Elfe", { stat: "dexterite", amount: 1 }),
+    it("applique les PLUSIEURS bonus d'un peuple, chacun sur la stat qu'il cible", async () => {
+      await seedPeuple("peuple-1", "Nain", [
+        { stat: "vigueur", bonus: 2 },
+        { stat: "social", bonus: 1 },
+      ]);
+      txRepos.characterSheets.seed(
+        buildTestCharacterSheet("s-1", "owner-1", "Gimli", {
+          vigueur: 4,
+          social: 1,
+          dexterite: 3,
+          peupleId: "peuple-1",
+        }),
       );
+
+      const result = await useCase.execute({ characterSheetId: "s-1", userId: "owner-1" });
+
+      expect(result.value.vigueurTotale).toBe(6); // 4 + 2
+      expect(result.value.socialTotale).toBe(2); // 1 + 1
+      expect(result.value.dexteriteTotale).toBe(3); // aucun bonus
+      // Le bonus de vigueur du peuple se répercute sur les PV : 10 + 6.
+      expect(result.value.pointsDeVie).toBe(16);
+    });
+
+    it("renvoie une stat totale = base quand aucun bonus ne cible cette stat", async () => {
+      await seedPeuple("peuple-1", "Elfe", [{ stat: "dexterite", bonus: 1 }]);
       txRepos.characterSheets.seed(
         buildTestCharacterSheet("s-1", "owner-1", "Legolas", {
           dexterite: 5,
