@@ -195,6 +195,8 @@ describe("Character sheet routes (intégration HTTP)", () => {
         bonus: 2,
         competenceIds: [epee.body.id],
       });
+      // Peuple créé avec l'ANCIEN format (`stat`/`bonus`) : c'est le chemin de compatibilité pour
+      // les clients pas encore mis à jour. Le back doit le convertir en une entrée de `statBonuses`.
       const peuple = await agent
         .post("/reference/peoples")
         .send({ name: "Nain", groupId, stat: "vigueur", bonus: 1 });
@@ -215,11 +217,69 @@ describe("Character sheet routes (intégration HTTP)", () => {
       expect(res.body.peuple).toEqual({
         id: peuple.body.id,
         name: "Nain",
-        stat: "vigueur",
-        bonus: 1,
+        statBonuses: [{ stat: "vigueur", bonus: 1 }],
       });
       // Les stats de base de la fiche ne sont PAS modifiées par le bonus (affichage côté front).
       expect(res.body.vigueur).toBeNull();
+    });
+
+    it("GET /character-sheets/:id applique PLUSIEURS bonus de peuple aux totaux de la fiche", async () => {
+      const agent = await authenticate(app, "multi@test.com");
+      const groupId = await createGroup(agent);
+      const { sheet } = await createPendingSheet(app, agent, groupId, "Gimli");
+
+      const peuple = await agent.post("/reference/peoples").send({
+        name: "Nain",
+        groupId,
+        statBonuses: [
+          { stat: "vigueur", bonus: 2 },
+          { stat: "social", bonus: 1 },
+        ],
+      });
+      expect(peuple.status).toBe(201);
+      expect(peuple.body.statBonuses).toEqual([
+        { stat: "vigueur", bonus: 2 },
+        { stat: "social", bonus: 1 },
+      ]);
+      // Un peuple n'expose plus le couple historique.
+      expect(peuple.body.stat).toBeNull();
+      expect(peuple.body.bonus).toBeNull();
+
+      await agent.put(`/character-sheets/${sheet.id}`).send({
+        name: "Gimli",
+        peupleId: peuple.body.id,
+        vigueur: 4,
+        social: 1,
+        dexterite: 3,
+      });
+
+      const res = await agent.get(`/character-sheets/${sheet.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.peuple.statBonuses).toEqual([
+        { stat: "vigueur", bonus: 2 },
+        { stat: "social", bonus: 1 },
+      ]);
+      expect(res.body.vigueurTotale).toBe(6); // 4 + 2
+      expect(res.body.socialTotale).toBe(2); // 1 + 1
+      expect(res.body.dexteriteTotale).toBe(3); // aucun bonus
+      expect(res.body.pointsDeVie).toBe(16); // 10 + vigueur totale
+    });
+
+    it("POST /reference/peoples refuse (400) deux bonus sur la même statistique", async () => {
+      const agent = await authenticate(app, "dup@test.com");
+      const groupId = await createGroup(agent);
+
+      const res = await agent.post("/reference/peoples").send({
+        name: "Nain",
+        groupId,
+        statBonuses: [
+          { stat: "vigueur", bonus: 2 },
+          { stat: "vigueur", bonus: 3 },
+        ],
+      });
+
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("INVALID_STAT_BONUS");
     });
 
     it("GET la fiche d'un autre membre du même groupe réussit (200, visibilité groupe)", async () => {

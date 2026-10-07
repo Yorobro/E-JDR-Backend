@@ -3,7 +3,11 @@ import { AppError } from "@application/errors/AppError";
 export class ReferenceHttpMapper {
   public static statusFor(error: AppError): number {
     switch (error.code) {
+      // Saisie invalide. Explicites plutôt qu'avalés par le `default` : le statut est le même,
+      // mais l'intention est lisible et un futur changement du défaut ne les emportera pas.
       case "INVALID_REFERENCE_NAME":
+      case "INVALID_STAT_BONUS":
+      case "INVALID_PROTECTION_POINTS":
         return 400;
       case "REFERENCE_NAME_ALREADY_USED":
         return 409;

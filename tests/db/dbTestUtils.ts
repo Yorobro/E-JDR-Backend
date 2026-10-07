@@ -34,6 +34,9 @@ export async function clearAllTables(pool: Pool): Promise<void> {
   await pool.execute("DELETE FROM sheet_armures");
   await pool.execute("DELETE FROM sheet_competences");
   await pool.execute("DELETE FROM sheet_equipements");
+  // peuple_stat_bonuses cascade depuis peoples (lui-même cascadé par friend_groups), mais on le
+  // supprime explicitement : un test qui seede des bonus sans groupe resterait sinon sale.
+  await pool.execute("DELETE FROM peuple_stat_bonuses");
   // character_sheets référence campaigns (FK campaign_id) : à supprimer AVANT campaigns.
   await pool.execute("DELETE FROM character_sheets");
   await pool.execute("DELETE FROM refresh_tokens");

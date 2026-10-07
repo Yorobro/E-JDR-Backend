@@ -132,6 +132,7 @@ export function buildTestApp(): {
     peupleRepository: repos.peoples,
     competenceRepository: repos.competences,
     formationCompetenceLinkRepository: repos.formationCompetences,
+    peupleStatBonusLinkRepository: repos.peupleStatBonuses,
     sheetArmesRepository: repos.sheetArmes,
     sheetArmuresRepository: repos.sheetArmures,
     sheetCompetencesRepository: repos.sheetCompetences,

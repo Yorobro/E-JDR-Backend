@@ -265,3 +265,29 @@ export const formationCompetences = mysqlTable(
     index("idx_formation_competences_competence").on(t.competence_id),
   ],
 );
+
+/**
+ * Bonus de statistique portés par un **peuple** : 0..N par peuple, **au plus un par statistique**.
+ *
+ * La PK composite `(peuple_id, stat)` *est* la règle « un seul bonus par stat » : elle la garantit
+ * en base, pas seulement dans le code. Une formation, elle, reste **mono-bonus** et conserve ses
+ * colonnes `formations.stat` / `formations.bonus`.
+ *
+ * Les colonnes historiques `peoples.stat` / `peoples.bonus` sont **conservées** (recopiées ici par
+ * la migration de backfill) mais ne sont plus jamais relues : les lire en plus de cette table
+ * compterait le bonus deux fois. Leur suppression fera l'objet d'un lot ultérieur.
+ *
+ * Pas d'index secondaire : on ne cherche jamais « les peuples ayant un bonus en social ».
+ */
+export const peupleStatBonuses = mysqlTable(
+  "peuple_stat_bonuses",
+  {
+    peuple_id: char("peuple_id", { length: 36 })
+      .notNull()
+      .references(() => peoples.id, { onDelete: "cascade" }),
+    stat: varchar("stat", { length: 20 }).notNull(),
+    bonus: int("bonus").notNull(),
+    created_at: datetime("created_at", { mode: "date" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.peuple_id, t.stat] })],
+);

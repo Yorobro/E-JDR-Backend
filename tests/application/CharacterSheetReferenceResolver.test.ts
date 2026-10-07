@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { StatBonus } from "@domain/features/reference/value-objects/StatBonus";
 import { CharacterSheetReferenceResolver } from "@application/features/character-sheet/usecases/CharacterSheetReferenceResolver";
 import { buildFakeTransactionalRepositories, buildTestReferenceItem } from "./fakes";
 
@@ -13,6 +14,7 @@ describe("CharacterSheetReferenceResolver", () => {
       peupleRepository: txRepos.peoples,
       competenceRepository: txRepos.competences,
       formationCompetenceLink: txRepos.formationCompetences,
+      peupleStatBonusLink: txRepos.peupleStatBonuses,
     });
   });
 
@@ -47,9 +49,17 @@ describe("CharacterSheetReferenceResolver", () => {
     expect(resolved.peuple).toBeNull();
   });
 
-  it("résout le peuple (nom + bonus) sans compétences", async () => {
-    txRepos.peoples.seed(
-      buildTestReferenceItem("peuple-1", "group-1", "Elfe", { stat: "dexterite", amount: 1 }),
+  it("résout le peuple avec PLUSIEURS bonus de statistique", async () => {
+    txRepos.peoples.seed(buildTestReferenceItem("peuple-1", "group-1", "Elfe"));
+    await txRepos.peupleStatBonuses.link(
+      "peuple-1",
+      StatBonus.create({ stat: "dexterite", amount: 1 }),
+      new Date(),
+    );
+    await txRepos.peupleStatBonuses.link(
+      "peuple-1",
+      StatBonus.create({ stat: "perception", amount: 2 }),
+      new Date(),
     );
 
     const resolved = await resolver.resolve(null, "peuple-1", "group-1");
@@ -57,9 +67,33 @@ describe("CharacterSheetReferenceResolver", () => {
     expect(resolved.peuple).toEqual({
       id: "peuple-1",
       name: "Elfe",
-      stat: "dexterite",
-      bonus: 1,
+      statBonuses: [
+        { stat: "dexterite", bonus: 1 },
+        { stat: "perception", bonus: 2 },
+      ],
     });
+  });
+
+  it("résout un peuple sans aucun bonus", async () => {
+    txRepos.peoples.seed(buildTestReferenceItem("peuple-1", "group-1", "Humain"));
+
+    const resolved = await resolver.resolve(null, "peuple-1", "group-1");
+
+    expect(resolved.peuple).toEqual({ id: "peuple-1", name: "Humain", statBonuses: [] });
+  });
+
+  it("IGNORE la colonne historique stat/bonus du peuple (garde anti double comptage)", async () => {
+    // Un peuple d'avant la migration : sa colonne `stat` est renseignée, mais la table de jointure
+    // est vide (cas d'un backfill non joué, ou d'une ligne supprimée). Le bonus ne doit PAS
+    // ressusciter depuis la colonne : elle a été recopiée dans la jointure, la relire compterait
+    // chaque bonus deux fois dans les totaux de la fiche.
+    txRepos.peoples.seed(
+      buildTestReferenceItem("peuple-1", "group-1", "Nain", { stat: "vigueur", amount: 3 }),
+    );
+
+    const resolved = await resolver.resolve(null, "peuple-1", "group-1");
+
+    expect(resolved.peuple).toEqual({ id: "peuple-1", name: "Nain", statBonuses: [] });
   });
 
   it("renvoie null si l'élément porté appartient à un autre groupe (défense en profondeur)", async () => {

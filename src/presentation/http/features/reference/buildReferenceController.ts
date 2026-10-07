@@ -43,6 +43,7 @@ export interface ReferenceControllerDeps {
     | "sheetSorts"
     | "sheetMiracles"
     | "formationCompetences"
+    | "peupleStatBonuses"
   >;
   readonly idGenerator: IdGeneratorService;
   readonly groupAccessService: GroupAccessService;
@@ -68,53 +69,77 @@ type LinkKey =
   | "sheetSorts"
   | "sheetMiracles";
 
-export function buildReferenceController(deps: ReferenceControllerDeps): ReferenceController {
-  // Dépendances spécifiques aux formations : catalogue de compétences (vérification de portée) +
-  // liaison transactionnelle formation↔compétences. Branchées uniquement sur le catalogue
-  // `formations` ; les autres types passent `undefined`.
+/**
+ * Assemble les 4 use cases d'un catalogue.
+ *
+ * Les dépendances propres à un type ne sont branchées que sur ce type — et leur **présence** est ce
+ * qui fait basculer le use case dans le mode correspondant :
+ * - `formations` → compétences liées (N‑N) ;
+ * - `peoples` → bonus de statistique multiples (0..N, au plus un par stat), et les colonnes
+ *   historiques `stat`/`bonus` cessent alors d'être écrites (elles seraient comptées deux fois).
+ *
+ * Les six autres types passent `undefined` sur les deux et ignorent ces champs.
+ */
+function buildCatalogueUseCases(
+  deps: ReferenceControllerDeps,
+  repo: ReferenceRepository,
+  key: CatalogueKey,
+): CatalogueUseCases {
   const formationCreateDeps = {
     competences: deps.references.competences,
     formationCompetences: (repos: TransactionalRepositories) => repos.formationCompetences,
   };
-  const formationListDeps = { formationCompetences: deps.references.formationCompetences };
-
-  const catalogue = (repo: ReferenceRepository, key: CatalogueKey): CatalogueUseCases => {
-    const isFormations = key === "formations";
-    return {
-      create: new CreateReferenceItemUseCaseImpl({
-        repository: repo,
-        selectRepo: (repos) => repos[key],
-        idGenerator: deps.idGenerator,
-        groupAccessService: deps.groupAccessService,
-        unitOfWork: deps.unitOfWork,
-        logger: deps.logger,
-        realtimeNotifier: deps.realtimeNotifier,
-        formationDeps: isFormations ? formationCreateDeps : undefined,
-      }),
-      list: new ListReferenceItemsUseCaseImpl(
-        repo,
-        deps.groupAccessService,
-        isFormations ? formationListDeps : undefined,
-      ),
-      update: new UpdateReferenceItemUseCaseImpl({
-        repository: repo,
-        selectRepo: (repos) => repos[key],
-        groupAccessService: deps.groupAccessService,
-        unitOfWork: deps.unitOfWork,
-        logger: deps.logger,
-        realtimeNotifier: deps.realtimeNotifier,
-        formationDeps: isFormations ? formationCreateDeps : undefined,
-      }),
-      remove: new DeleteReferenceItemUseCaseImpl(
-        repo,
-        (repos) => repos[key],
-        deps.groupAccessService,
-        deps.unitOfWork,
-        deps.logger,
-        deps.realtimeNotifier,
-      ),
-    };
+  const peupleWriteDeps = {
+    peupleStatBonuses: (repos: TransactionalRepositories) => repos.peupleStatBonuses,
   };
+
+  const isFormations = key === "formations";
+  const isPeoples = key === "peoples";
+  const formationDeps = isFormations ? formationCreateDeps : undefined;
+  const peupleDeps = isPeoples ? peupleWriteDeps : undefined;
+
+  return {
+    create: new CreateReferenceItemUseCaseImpl({
+      repository: repo,
+      selectRepo: (repos) => repos[key],
+      idGenerator: deps.idGenerator,
+      groupAccessService: deps.groupAccessService,
+      unitOfWork: deps.unitOfWork,
+      logger: deps.logger,
+      realtimeNotifier: deps.realtimeNotifier,
+      formationDeps,
+      peupleDeps,
+    }),
+    list: new ListReferenceItemsUseCaseImpl(
+      repo,
+      deps.groupAccessService,
+      isFormations ? { formationCompetences: deps.references.formationCompetences } : undefined,
+      isPeoples ? { peupleStatBonuses: deps.references.peupleStatBonuses } : undefined,
+    ),
+    update: new UpdateReferenceItemUseCaseImpl({
+      repository: repo,
+      selectRepo: (repos) => repos[key],
+      groupAccessService: deps.groupAccessService,
+      unitOfWork: deps.unitOfWork,
+      logger: deps.logger,
+      realtimeNotifier: deps.realtimeNotifier,
+      formationDeps,
+      peupleDeps,
+    }),
+    remove: new DeleteReferenceItemUseCaseImpl(
+      repo,
+      (repos) => repos[key],
+      deps.groupAccessService,
+      deps.unitOfWork,
+      deps.logger,
+      deps.realtimeNotifier,
+    ),
+  };
+}
+
+export function buildReferenceController(deps: ReferenceControllerDeps): ReferenceController {
+  const catalogue = (repo: ReferenceRepository, key: CatalogueKey): CatalogueUseCases =>
+    buildCatalogueUseCases(deps, repo, key);
 
   const link = (
     itemRepo: ReferenceRepository,

@@ -32,6 +32,9 @@ function toView(item: ReferenceItem): ReferenceItemView {
     createdAt: item.createdAt,
     stat: statBonus?.stat ?? null,
     bonus: statBonus?.amount ?? null,
+    // Bonus multiples : peuples uniquement, et un peuple n'est jamais liable à une fiche (il est
+    // porté en N‑1 par `character_sheets.peuple_id`). Toujours vide ici.
+    statBonuses: [],
     // Points de protection : peuplé pour les armures liées, `null` pour les autres types.
     protectionPoints: item.protectionPoints,
     // Description : peuplée pour les sorts/miracles liés, `null` pour les autres types.

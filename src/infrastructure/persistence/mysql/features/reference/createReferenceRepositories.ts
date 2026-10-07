@@ -19,9 +19,11 @@ import {
 import { ReferenceDao } from "@infrastructure/persistence/mysql/features/reference/dao/ReferenceDao";
 import { SheetReferenceLinkDao } from "@infrastructure/persistence/mysql/features/reference/dao/SheetReferenceLinkDao";
 import { FormationCompetenceLinkDao } from "@infrastructure/persistence/mysql/features/reference/dao/FormationCompetenceLinkDao";
+import { PeupleStatBonusDao } from "@infrastructure/persistence/mysql/features/reference/dao/PeupleStatBonusDao";
 import { MysqlReferenceRepository } from "@infrastructure/persistence/mysql/features/reference/repository/MysqlReferenceRepository";
 import { MysqlSheetReferenceLinkRepository } from "@infrastructure/persistence/mysql/features/reference/repository/MysqlSheetReferenceLinkRepository";
 import { MysqlFormationCompetenceLinkRepository } from "@infrastructure/persistence/mysql/features/reference/repository/MysqlFormationCompetenceLinkRepository";
+import { MysqlPeupleStatBonusRepository } from "@infrastructure/persistence/mysql/features/reference/repository/MysqlPeupleStatBonusRepository";
 
 /** Sous-ensemble de `TransactionalRepositories` produit par ce module (catalogues + liaisons). */
 type ReferenceRepositories = Pick<
@@ -41,13 +43,15 @@ type ReferenceRepositories = Pick<
   | "sheetSorts"
   | "sheetMiracles"
   | "formationCompetences"
+  | "peupleStatBonuses"
 >;
 
 /**
- * Construit les 15 repositories de la feature référence (8 catalogues + 6 liaisons fiche↔élément
- * + 1 liaison formation↔compétences) sur un `DrizzleExecutor` donné. Chaque repository est une
- * instance du repository générique paramétrée par la table Drizzle correspondante. Utilisé par le
- * composition root (pool) et le `UnitOfWork` (transaction), comme les autres factories.
+ * Construit les 16 repositories de la feature référence (8 catalogues + 6 liaisons fiche↔élément
+ * + 1 liaison formation↔compétences + 1 liaison peuple↔bonus de stat) sur un `DrizzleExecutor`
+ * donné. Chaque repository est une instance du repository générique paramétrée par la table Drizzle
+ * correspondante. Utilisé par le composition root (pool) et le `UnitOfWork` (transaction), comme les
+ * autres factories.
  */
 export function createReferenceRepositories(executor: DrizzleExecutor): ReferenceRepositories {
   return {
@@ -104,5 +108,6 @@ export function createReferenceRepositories(executor: DrizzleExecutor): Referenc
     formationCompetences: new MysqlFormationCompetenceLinkRepository(
       new FormationCompetenceLinkDao(executor),
     ),
+    peupleStatBonuses: new MysqlPeupleStatBonusRepository(new PeupleStatBonusDao(executor)),
   };
 }

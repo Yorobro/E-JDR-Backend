@@ -17,8 +17,11 @@ export interface CreateReferenceItemCommand {
   /** Nom saisi (brut, revalidé via `ReferenceName`). */
   readonly name: string;
   /**
-   * Statistique ciblée par le bonus (formations/peuples). `undefined`/`null` ⇒ aucun bonus.
+   * Statistique ciblée par le bonus (**formations uniquement**). `undefined`/`null` ⇒ aucun bonus.
    * Revalidée via le value object `StatBonus`.
+   *
+   * Pour un **peuple**, ce champ n'est plus le contrat courant (voir {@link statBonuses}) ; il est
+   * seulement accepté en repli de compatibilité pour les clients antérieurs au multi-bonus.
    */
   readonly stat?: string | null;
   /**
@@ -26,6 +29,11 @@ export interface CreateReferenceItemCommand {
    * est absente.
    */
   readonly bonus?: number | null;
+  /**
+   * Bonus de statistique du **peuple** (0..N, au plus un par stat). Absent/vide ⇒ aucun bonus.
+   * Ignoré pour tous les autres types, formations comprises.
+   */
+  readonly statBonuses?: { stat: string; bonus?: number | null }[];
   /**
    * Identifiants des compétences à rattacher à la formation (formations uniquement). Chaque
    * compétence doit exister dans le **même groupe**. Absent/vide ⇒ aucune compétence.
@@ -71,10 +79,18 @@ export interface UpdateReferenceItemCommand {
   readonly groupId: string;
   /** Nouveau nom (brut, revalidé via `ReferenceName`). */
   readonly name: string;
-  /** Nouvelle statistique ciblée par le bonus (formations/peuples). `undefined`/`null` ⇒ plus de bonus. */
+  /**
+   * Nouvelle statistique ciblée par le bonus (**formations uniquement**). `undefined`/`null` ⇒ plus
+   * de bonus. Accepté en repli de compatibilité pour un peuple envoyé par un client antérieur.
+   */
   readonly stat?: string | null;
   /** Nouveau montant du bonus (entier ≥ 1, défaut 1 si `stat` fournie). Ignoré si `stat` absente. */
   readonly bonus?: number | null;
+  /**
+   * Nouvelle liste **complète** des bonus du **peuple** (0..N, au plus un par stat). Remplace
+   * entièrement les bonus existants. Absent/vide ⇒ plus aucun bonus.
+   */
+  readonly statBonuses?: { stat: string; bonus?: number | null }[];
   /**
    * Nouvelle liste **complète** des compétences rattachées (formations uniquement). Remplace
    * entièrement les liens existants. Absent/vide ⇒ aucune compétence.
