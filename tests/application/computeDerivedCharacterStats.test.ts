@@ -28,7 +28,7 @@ describe("computeDerivedCharacterStats", () => {
       ...NULL_BASES,
       vigueur: 3,
       formation: { stat: "vigueur", bonus: 2 },
-      peuple: { stat: "vigueur", bonus: 1 },
+      peuple: { statBonuses: [{ stat: "vigueur", bonus: 1 }] },
       armures: [],
     });
 
@@ -42,7 +42,7 @@ describe("computeDerivedCharacterStats", () => {
       ...NULL_BASES,
       vigueur: 3,
       formation: { stat: "social", bonus: 5 },
-      peuple: { stat: "vigueur", bonus: 1 },
+      peuple: { statBonuses: [{ stat: "vigueur", bonus: 1 }] },
       armures: [],
     });
 
@@ -102,7 +102,7 @@ describe("computeDerivedCharacterStats", () => {
         ...NULL_BASES,
         social: 3,
         formation: { stat: "social", bonus: 2 },
-        peuple: { stat: "social", bonus: 1 },
+        peuple: { statBonuses: [{ stat: "social", bonus: 1 }] },
         armures: [],
       });
 
@@ -115,7 +115,7 @@ describe("computeDerivedCharacterStats", () => {
         dexterite: 4,
         social: 3,
         formation: { stat: "social", bonus: 2 },
-        peuple: { stat: "vigueur", bonus: 5 },
+        peuple: { statBonuses: [{ stat: "vigueur", bonus: 5 }] },
         armures: [],
       });
 
@@ -149,6 +149,78 @@ describe("computeDerivedCharacterStats", () => {
 
       expect(result.statTotals.vigueur).toBe(8);
       expect(result.pointsDeVie).toBe(10 + result.statTotals.vigueur);
+    });
+  });
+
+  describe("peuple à bonus MULTIPLES", () => {
+    it("applique chaque bonus du peuple à la stat qu'il cible (et à elle seule)", () => {
+      const result = computeDerivedCharacterStats({
+        ...NULL_BASES,
+        social: 2,
+        vigueur: 1,
+        dexterite: 4,
+        formation: null,
+        peuple: {
+          statBonuses: [
+            { stat: "social", bonus: 3 },
+            { stat: "vigueur", bonus: 2 },
+          ],
+        },
+        armures: [],
+      });
+
+      expect(result.statTotals.social).toBe(5); // 2 + 3
+      expect(result.statTotals.vigueur).toBe(3); // 1 + 2
+      expect(result.statTotals.dexterite).toBe(4); // aucun bonus ne la cible
+    });
+
+    it("cumule le bonus de la formation et celui du peuple sur une même stat", () => {
+      const result = computeDerivedCharacterStats({
+        ...NULL_BASES,
+        social: 2,
+        formation: { stat: "social", bonus: 1 },
+        peuple: {
+          statBonuses: [
+            { stat: "social", bonus: 2 },
+            { stat: "perception", bonus: 4 },
+          ],
+        },
+        armures: [],
+      });
+
+      // « Social 2 +1 +2 = 5 »
+      expect(result.statTotals.social).toBe(5);
+      expect(result.statTotals.perception).toBe(4);
+    });
+
+    it("répercute sur les PV un bonus de peuple ciblant la vigueur", () => {
+      const result = computeDerivedCharacterStats({
+        ...NULL_BASES,
+        vigueur: 3,
+        formation: null,
+        peuple: {
+          statBonuses: [
+            { stat: "vigueur", bonus: 2 },
+            { stat: "social", bonus: 1 },
+          ],
+        },
+        armures: [],
+      });
+
+      expect(result.statTotals.vigueur).toBe(5);
+      expect(result.pointsDeVie).toBe(15); // 10 + 5
+    });
+
+    it("n'ajoute rien quand le peuple ne porte aucun bonus", () => {
+      const result = computeDerivedCharacterStats({
+        ...NULL_BASES,
+        social: 3,
+        formation: null,
+        peuple: { statBonuses: [] },
+        armures: [],
+      });
+
+      expect(result.statTotals.social).toBe(3);
     });
   });
 });

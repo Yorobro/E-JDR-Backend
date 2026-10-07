@@ -2,8 +2,8 @@
  * Données de référence **résolues** d'une fiche, prêtes à imprimer dans le PDF.
  *
  * La fiche ne porte que des **identifiants** (formation/peuple) et des **liaisons** (armes,
- * armures, compétences, équipement) : ce contrat plat fournit les **noms** déjà résolus (et la
- * liste des bonus de stat agrégés) pour que le générateur PDF n'ait aucune résolution à faire.
+ * armures, équipement) : ce contrat plat fournit les **noms** déjà résolus pour que le générateur
+ * PDF n'ait aucune résolution à faire.
  *
  * Source **unique** du contrat de références PDF : le générateur (`PdfKitCharacterSheetPdfGenerator`)
  * consomme ce type tel quel pour son rendu, sans variante dupliquée.
@@ -17,7 +17,11 @@ export interface CharacterSheetPdfReferences {
   readonly armes: string[];
   /** Noms des armures liées à la fiche (vide si aucune). */
   readonly armures: string[];
-  /** Noms des compétences liées à la fiche (vide si aucune). */
+  /**
+   * Noms des compétences **apportées par la formation** (vide si la fiche n'a pas de formation, ou
+   * si celle-ci n'apporte aucune compétence). Les compétences ne sont pas liées à la fiche : elles
+   * sont intégralement dérivées de la formation.
+   */
   readonly competences: string[];
   /** Noms des équipements liés à la fiche (vide si aucun). */
   readonly equipements: string[];
@@ -25,10 +29,4 @@ export interface CharacterSheetPdfReferences {
   readonly sorts: string[];
   /** Noms des miracles liés à la fiche (vide si aucun). */
   readonly miracles: string[];
-  /**
-   * Bonus de statistique apportés par la formation et le peuple résolus (un par élément qui porte
-   * une stat), pour affichage « +N sur <stat> ». Vide si ni la formation ni le peuple ne portent
-   * de bonus.
-   */
-  readonly statBonuses: { stat: string; amount: number }[];
 }

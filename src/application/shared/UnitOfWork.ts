@@ -24,6 +24,7 @@ import {
   SheetSortLinkRepository,
 } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
+import { PeupleStatBonusRepository } from "@application/features/reference/abstractions/repositories/PeupleStatBonusRepository";
 import { FriendGroupRepository } from "@application/features/friend-group/abstractions/repositories/FriendGroupRepository";
 import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { GroupInvitationRepository } from "@application/features/friend-group/abstractions/repositories/GroupInvitationRepository";
@@ -60,6 +61,8 @@ export interface TransactionalRepositories {
   readonly sheetMiracles: SheetMiracleLinkRepository;
   // Liaison N‑N formation ↔ compétences.
   readonly formationCompetences: FormationCompetenceLinkRepository;
+  // Bonus de statistique d'un peuple (0..N, au plus un par stat).
+  readonly peupleStatBonuses: PeupleStatBonusRepository;
   // Groupes d'amis.
   readonly friendGroups: FriendGroupRepository;
   readonly groupMembers: GroupMemberRepository;

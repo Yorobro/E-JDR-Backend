@@ -73,6 +73,37 @@ export class StatBonus {
     return new StatBonus(stat as Stat, amount);
   }
 
+  /**
+   * Crée une **liste** de bonus après validation, en refusant qu'une même statistique apparaisse
+   * deux fois. Utilisé par les **peuples**, qui portent 0..N bonus (au plus un par stat) ; les
+   * formations restent mono-bonus et passent par {@link StatBonus.create}.
+   *
+   * L'unicité par stat est aussi garantie en base par la PK composite de `peuple_stat_bonuses` :
+   * la valider ici permet de renvoyer une erreur métier propre (400) plutôt qu'un `ER_DUP_ENTRY`
+   * remonté en 500.
+   *
+   * @param entries - Les bonus bruts (une stat + un montant optionnel chacun).
+   * @returns Les `StatBonus` validés, dans l'ordre fourni.
+   * @throws {InvalidStatBonusError} Si un bonus est invalide, ou si une stat est répétée.
+   */
+  public static createMany(
+    entries: readonly { stat: string; amount?: number | null }[],
+  ): StatBonus[] {
+    const bonuses = entries.map((entry) => StatBonus.create(entry));
+
+    const seen = new Set<Stat>();
+    for (const bonus of bonuses) {
+      if (seen.has(bonus.stat)) {
+        throw new InvalidStatBonusError(
+          `la statistique « ${bonus.stat} » ne peut porter qu'un seul bonus`,
+        );
+      }
+      seen.add(bonus.stat);
+    }
+
+    return bonuses;
+  }
+
   /** @returns La statistique ciblée par le bonus. */
   public get stat(): Stat {
     return this._stat;

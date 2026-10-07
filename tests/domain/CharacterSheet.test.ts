@@ -54,7 +54,7 @@ describe("CharacterSheet (entité)", () => {
     expect(sheet.details.protection).toBeNull();
   });
 
-  it("create applique les défauts (niveau=1, stats=0, PM=0)", () => {
+  it("create applique les défauts (niveau=1, stats=0, PM=10)", () => {
     const sheet = CharacterSheet.create({
       id: "sheet-1",
       ownerId: "user-1",
@@ -69,7 +69,7 @@ describe("CharacterSheet (entité)", () => {
     expect(sheet.details.perception).toBe(0);
     expect(sheet.details.social).toBe(0);
     expect(sheet.details.vigueur).toBe(0);
-    expect(sheet.details.pointsDeMagie).toBe(0);
+    expect(sheet.details.pointsDeMagie).toBe(10);
     // bourse à 0 par défaut (or/argent/cuivre)
     expect(sheet.details.purse?.gold).toBe(0);
     expect(sheet.details.purse?.silver).toBe(0);
@@ -95,7 +95,7 @@ describe("CharacterSheet (entité)", () => {
     expect(sheet.details.vigueur).toBe(3);
     // les défauts des autres champs sont toujours appliqués
     expect(sheet.details.dexterite).toBe(0);
-    expect(sheet.details.pointsDeMagie).toBe(0);
+    expect(sheet.details.pointsDeMagie).toBe(10);
   });
 
   it("restore ne force aucun défaut (null reste null)", () => {

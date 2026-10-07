@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "32958227-47be-4a5f-b649-cd04e3bfc4c1",
+  "id": "61af93a1-fa11-41f1-88ee-5e09e02dff44",
   "prevId": "0a1b2c3d-4e5f-4a1b-9c2d-0011fiche0011",
   "tables": {
     "credentials": {
@@ -318,95 +318,6 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
-    "session_participants": {
-      "name": "session_participants",
-      "columns": {
-        "session_id": {
-          "name": "session_id",
-          "type": "char(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "char(36)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'INVITED'"
-        },
-        "invited_at": {
-          "name": "invited_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "responded_at": {
-          "name": "responded_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "idx_session_participants_user_id": {
-          "name": "idx_session_participants_user_id",
-          "columns": [
-            "user_id"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "session_participants_session_id_sessions_id_fk": {
-          "name": "session_participants_session_id_sessions_id_fk",
-          "tableFrom": "session_participants",
-          "tableTo": "sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "session_participants_user_id_users_id_fk": {
-          "name": "session_participants_user_id_users_id_fk",
-          "tableFrom": "session_participants",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "session_participants_session_id_user_id_pk": {
-          "name": "session_participants_session_id_user_id_pk",
-          "columns": [
-            "session_id",
-            "user_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
     "sessions": {
       "name": "sessions",
       "columns": {
@@ -443,21 +354,6 @@
           "type": "datetime",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'PLANNED'"
-        },
-        "started_at": {
-          "name": "started_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
           "autoincrement": false
         }
       },
@@ -1422,6 +1318,66 @@
           ]
         }
       },
+      "checkConstraint": {}
+    },
+    "peuple_stat_bonuses": {
+      "name": "peuple_stat_bonuses",
+      "columns": {
+        "peuple_id": {
+          "name": "peuple_id",
+          "type": "char(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stat": {
+          "name": "stat",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bonus": {
+          "name": "bonus",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "peuple_stat_bonuses_peuple_id_peoples_id_fk": {
+          "name": "peuple_stat_bonuses_peuple_id_peoples_id_fk",
+          "tableFrom": "peuple_stat_bonuses",
+          "tableTo": "peoples",
+          "columnsFrom": [
+            "peuple_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "peuple_stat_bonuses_peuple_id_stat_pk": {
+          "name": "peuple_stat_bonuses_peuple_id_stat_pk",
+          "columns": [
+            "peuple_id",
+            "stat"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
       "checkConstraint": {}
     },
     "sheet_armes": {
