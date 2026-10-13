@@ -18,6 +18,7 @@ import type { CredentialRepository } from "@application/features/auth/abstractio
 import type { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 import type { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import type { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
+import type { SessionParticipantRepository } from "@application/features/session/abstractions/repositories/SessionParticipantRepository";
 import type { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 
 // Application — ports services
@@ -50,6 +51,7 @@ export interface AuthServices {
   refreshTokenRepository: RefreshTokenRepository;
   campaignRepository: CampaignRepository;
   sessionRepository: SessionRepository;
+  sessionParticipantRepository: SessionParticipantRepository;
   characterSheetRepository: CharacterSheetRepository;
   referenceRepositories: ReturnType<typeof createReferenceRepositories>;
   friendGroupRepositories: ReturnType<typeof createFriendGroupRepositories>;
