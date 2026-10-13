@@ -11,6 +11,7 @@ import {
   FakeUnitOfWork,
   FakeLogger,
   FakeIdGenerator,
+  FakeRealtimeNotifier,
   buildTestFriendGroup,
   buildTestMembership,
   buildTestInvitation,
@@ -27,6 +28,7 @@ describe("AcceptInvitationUseCase", () => {
       repos.groupInvitations,
       new FakeUnitOfWork(repos),
       new FakeLogger(),
+      new FakeRealtimeNotifier(),
     );
   });
 
@@ -103,6 +105,7 @@ describe("RemoveMemberUseCase", () => {
       accessService,
       new FakeUnitOfWork(repos),
       new FakeLogger(),
+      new FakeRealtimeNotifier(),
     );
   });
 
@@ -169,6 +172,7 @@ describe("InviteMemberUseCase — réinvitation après résolution", () => {
       idGenerator: new FakeIdGenerator(),
       unitOfWork: new FakeUnitOfWork(repos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
     });
   });
 

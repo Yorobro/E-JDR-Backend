@@ -12,6 +12,7 @@ import {
   FakeLogger,
   FakeIdGenerator,
   FakeUnitOfWork,
+  FakeRealtimeNotifier,
   buildFakeTransactionalRepositories,
   buildTestReferenceItem,
   buildTestMembership,
@@ -39,6 +40,7 @@ describe("UpdateReferenceItemUseCase — types simples (testé sur `armes`)", ()
       groupAccessService,
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
     });
   }
 
@@ -181,6 +183,7 @@ describe("UpdateReferenceItemUseCase — formations (stat/bonus + compétences)"
       groupAccessService,
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
       formationDeps: {
         competences: txRepos.competences,
         formationCompetences: (repos) => repos.formationCompetences,
@@ -195,6 +198,7 @@ describe("UpdateReferenceItemUseCase — formations (stat/bonus + compétences)"
       groupAccessService,
       unitOfWork: new FakeUnitOfWork(txRepos),
       logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
       formationDeps: {
         competences: txRepos.competences,
         formationCompetences: (repos) => repos.formationCompetences,
@@ -302,5 +306,113 @@ describe("UpdateReferenceItemUseCase — formations (stat/bonus + compétences)"
 
     expect(result.isFailure).toBe(true);
     expect(result.error).toBeInstanceOf(ReferenceItemNotFoundError);
+  });
+});
+
+describe("UpdateReferenceItemUseCase — bonus multiples d'un peuple", () => {
+  let txRepos: ReturnType<typeof buildFakeTransactionalRepositories>;
+  let groupAccessService: GroupAccessServiceImpl;
+
+  beforeEach(() => {
+    txRepos = buildFakeTransactionalRepositories();
+    groupAccessService = new GroupAccessServiceImpl(
+      txRepos.groupMembers,
+      txRepos.campaigns,
+      txRepos.characterSheets,
+    );
+    txRepos.groupMembers.seed(buildTestMembership({ groupId: "group-1", userId: "u-1" }));
+  });
+
+  const peupleDeps = { peupleStatBonuses: (repos: typeof txRepos) => repos.peupleStatBonuses };
+
+  function createPeupleUseCase(): CreateReferenceItemUseCaseImpl {
+    return new CreateReferenceItemUseCaseImpl({
+      repository: txRepos.peoples,
+      selectRepo: (repos) => repos.peoples,
+      idGenerator: new FakeIdGenerator(),
+      groupAccessService,
+      unitOfWork: new FakeUnitOfWork(txRepos),
+      logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
+      peupleDeps,
+    });
+  }
+
+  function updatePeupleUseCase(): UpdateReferenceItemUseCaseImpl {
+    return new UpdateReferenceItemUseCaseImpl({
+      repository: txRepos.peoples,
+      selectRepo: (repos) => repos.peoples,
+      groupAccessService,
+      unitOfWork: new FakeUnitOfWork(txRepos),
+      logger: new FakeLogger(),
+      realtimeNotifier: new FakeRealtimeNotifier(),
+      peupleDeps,
+    });
+  }
+
+  async function seedNain(): Promise<string> {
+    const created = await createPeupleUseCase().execute({
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Nain",
+      statBonuses: [
+        { stat: "vigueur", bonus: 2 },
+        { stat: "social", bonus: 1 },
+      ],
+    });
+    return created.value.id;
+  }
+
+  it("REMPLACE intégralement les bonus (les anciens disparaissent)", async () => {
+    const id = await seedNain();
+
+    const result = await updatePeupleUseCase().execute({
+      itemId: id,
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Nain",
+      statBonuses: [{ stat: "perception", bonus: 3 }],
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.statBonuses).toEqual([{ stat: "perception", bonus: 3 }]);
+    const persisted = await txRepos.peupleStatBonuses.findByPeuple(id);
+    expect(persisted.map((b) => b.stat)).toEqual(["perception"]);
+  });
+
+  it("supprime tous les bonus si statBonuses est absent (remplacement complet)", async () => {
+    const id = await seedNain();
+
+    const result = await updatePeupleUseCase().execute({
+      itemId: id,
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Nain",
+    });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value.statBonuses).toEqual([]);
+    expect(await txRepos.peupleStatBonuses.findByPeuple(id)).toEqual([]);
+  });
+
+  it("refuse (INVALID_STAT_BONUS) une stat en double, sans toucher aux bonus existants", async () => {
+    const id = await seedNain();
+
+    const result = await updatePeupleUseCase().execute({
+      itemId: id,
+      groupId: "group-1",
+      actorId: "u-1",
+      name: "Nain",
+      statBonuses: [
+        { stat: "social", bonus: 1 },
+        { stat: "social", bonus: 4 },
+      ],
+    });
+
+    expect(result.isFailure).toBe(true);
+    expect(result.error.code).toBe("INVALID_STAT_BONUS");
+    // La validation échoue AVANT l'écriture : les bonus d'origine sont intacts.
+    const persisted = await txRepos.peupleStatBonuses.findByPeuple(id);
+    expect(persisted.map((b) => b.stat)).toEqual(["vigueur", "social"]);
   });
 });

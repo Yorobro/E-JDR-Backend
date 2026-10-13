@@ -318,7 +318,18 @@ Précisions de types :
 - `niveau`, `age` : entiers (`number`) ou `null`.
 - `sexe` : `"M"` | `"F"` | `"NB"` | `null`.
 - `purse` : `{ "gold", "silver", "copper" }` (entiers bruts) ou `null` si aucune bourse.
+- `pointsDeMagie` : **10 à la création**, puis stocké et éditable (contrairement à `pointsDeVie` et
+  `protection`, qui sont dérivés et en lecture seule).
 - les autres champs détaillés : texte ou `null`.
+
+La réponse porte aussi la **formation** et le **peuple résolus** (nom + bonus), pour que le client
+affiche « base + bonus + total » sans second appel :
+- `formation` : `{ "id", "name", "stat", "bonus", "competences": [{ "id", "name" }] }` ou `null`.
+  Au plus **un** bonus. Les compétences de la fiche sont **intégralement dérivées** de la formation.
+- `peuple` : `{ "id", "name", "statBonuses": [{ "stat", "bonus" }] }` ou `null`. **0..N** bonus, au
+  plus un par stat. ⚠️ Le peuple n'expose **pas** `stat`/`bonus` (contrairement à la formation).
+- les totaux dérivés `dexteriteTotale`…`vigueurTotale` intègrent déjà **tous** ces bonus ; les stats
+  de base, elles, restent inchangées.
 
 Les **armes, armures, compétences, équipements, sorts et miracles** ne figurent **plus** ici : ce
 sont des relations N‑N gérées via `/character-sheets/:id/{type}` (cf. « Endpoints éléments de référence »).
@@ -407,9 +418,28 @@ Chaque utilisateur gère son **catalogue** d'éléments réutilisables sur ses f
 Le segment `:type` ∈ `formations|peoples|armes|armures|competences|equipements|sorts|miracles`. Un
 `:type` inconnu renvoie `REFERENCE_ITEM_NOT_FOUND` (404).
 
-Champs spécifiques par type (optionnels, renvoyés `null` ailleurs) : `stat`/`bonus`
-(formations/peuples), `competenceIds` (formations), `protectionPoints` (armures),
-`description` (sorts/miracles).
+Champs spécifiques par type (optionnels, renvoyés `null`/`[]` ailleurs) : `stat`/`bonus`
+(**formations**), `statBonuses` (**peuples**), `competenceIds` (formations), `protectionPoints`
+(armures), `description` (sorts/miracles).
+
+#### Bonus de statistique : formations vs peuples
+
+Le contrat est **asymétrique**, et c'est assumé :
+
+| | Bonus | Champs |
+|---|---|---|
+| **Formation** | au plus **un** | `"stat": "vigueur", "bonus": 2` |
+| **Peuple** | **0..N**, au plus un par stat | `"statBonuses": [{ "stat": "vigueur", "bonus": 2 }, { "stat": "social", "bonus": 1 }]` |
+
+Un peuple renvoie donc toujours `"stat": null` et `"bonus": null` ; une formation renvoie toujours
+`"statBonuses": []`. Les stats autorisées sont `dexterite`, `intelligence`, `perception`, `social`,
+`vigueur` ; le montant est un entier ≥ 1 (défaut 1 si omis).
+
+Deux bonus sur la **même** statistique pour un même peuple sont refusés en **400
+`INVALID_STAT_BONUS`** (garanti aussi en base par la PK composite de `peuple_stat_bonuses`).
+
+**Compatibilité** : un client qui envoie encore `stat`/`bonus` sur un peuple (format antérieur) voit
+son bonus unique converti en une entrée de `statBonuses`. Il n'est donc pas perdu.
 
 ### POST /reference/:type
 

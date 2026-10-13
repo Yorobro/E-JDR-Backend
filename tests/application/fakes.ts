@@ -3,12 +3,12 @@ import { Credential } from "@domain/features/auth/entities/Credential";
 import { Email } from "@domain/features/auth/value-objects/Email";
 import { Campaign } from "@domain/features/campaign/entities/Campaign";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
-import { Session } from "@domain/features/session/entities/Session";
-import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
+import { FakeSessionRepository, FakeSessionParticipantRepository } from "./sessionFakes";
 import {
   FakeReferenceRepository,
   FakeSheetReferenceLinkRepository,
   FakeFormationCompetenceLinkRepository,
+  FakePeupleStatBonusRepository,
 } from "./referenceFakes";
 import { CharacterSheet } from "@domain/features/character-sheet/entities/CharacterSheet";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
@@ -167,38 +167,6 @@ export class FakeCampaignRepository implements CampaignRepository {
   }
 }
 
-/** Repository de sessions en mémoire (indexé par id). */
-export class FakeSessionRepository implements SessionRepository {
-  private readonly sessions = new Map<string, Session>();
-
-  public async save(session: Session): Promise<void> {
-    this.sessions.set(session.id, session);
-  }
-
-  public async update(session: Session): Promise<void> {
-    this.sessions.set(session.id, session);
-  }
-
-  public async findByCampaignId(campaignId: string): Promise<Session[]> {
-    return [...this.sessions.values()]
-      .filter((session) => session.campaignId === campaignId)
-      .sort((a, b) => b.date.getTime() - a.date.getTime());
-  }
-
-  public async findById(id: string): Promise<Session | null> {
-    return this.sessions.get(id) ?? null;
-  }
-
-  public async deleteById(id: string): Promise<void> {
-    this.sessions.delete(id);
-  }
-
-  /** Aide de test : pré-remplit le repository avec une session. */
-  public seed(session: Session): void {
-    this.sessions.set(session.id, session);
-  }
-}
-
 /**
  * Repository de fiches de personnage en mémoire (indexé par id).
  *
@@ -319,6 +287,7 @@ export function buildFakeTransactionalRepositories(overrides?: {
   refreshTokens: FakeRefreshTokenRepository;
   campaigns: FakeCampaignRepository;
   sessions: FakeSessionRepository;
+  sessionParticipants: FakeSessionParticipantRepository;
   characterSheets: FakeCharacterSheetRepository;
   formations: FakeReferenceRepository;
   peoples: FakeReferenceRepository;
@@ -335,6 +304,7 @@ export function buildFakeTransactionalRepositories(overrides?: {
   sheetSorts: FakeSheetReferenceLinkRepository;
   sheetMiracles: FakeSheetReferenceLinkRepository;
   formationCompetences: FakeFormationCompetenceLinkRepository;
+  peupleStatBonuses: FakePeupleStatBonusRepository;
   friendGroups: FakeFriendGroupRepository;
   groupMembers: FakeGroupMemberRepository;
   groupInvitations: FakeGroupInvitationRepository;
@@ -362,6 +332,7 @@ export function buildFakeTransactionalRepositories(overrides?: {
     refreshTokens: overrides?.refreshTokens ?? new FakeRefreshTokenRepository(),
     campaigns,
     sessions: overrides?.sessions ?? new FakeSessionRepository(),
+    sessionParticipants: new FakeSessionParticipantRepository(),
     characterSheets,
     formations,
     peoples,
@@ -378,11 +349,16 @@ export function buildFakeTransactionalRepositories(overrides?: {
     sheetSorts: new FakeSheetReferenceLinkRepository(sorts),
     sheetMiracles: new FakeSheetReferenceLinkRepository(miracles),
     formationCompetences: new FakeFormationCompetenceLinkRepository(),
+    peupleStatBonuses: new FakePeupleStatBonusRepository(),
     friendGroups: new FakeFriendGroupRepository(),
     groupMembers: new FakeGroupMemberRepository(),
     groupInvitations: new FakeGroupInvitationRepository(),
   };
 }
+
+// Doublures de la feature session : définies dans `sessionFakes.ts` (taille de fichier),
+// re-exportées ici pour que les tests les importent depuis `./fakes` comme les autres.
+export { FakeSessionRepository, FakeSessionParticipantRepository } from "./sessionFakes";
 
 // Doublures de la feature friend-group : définies dans `friendGroupFakes.ts`,
 // re-exportées ici pour que les tests les importent depuis `./fakes` comme les autres.
@@ -412,6 +388,7 @@ export {
   FakeReferenceRepository,
   FakeSheetReferenceLinkRepository,
   FakeFormationCompetenceLinkRepository,
+  FakePeupleStatBonusRepository,
 } from "./referenceFakes";
 
 // Doublures de services (hash/token/id/pdf/logger) : définies dans `serviceFakes.ts`,

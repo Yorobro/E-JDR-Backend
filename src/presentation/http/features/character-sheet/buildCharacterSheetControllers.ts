@@ -6,6 +6,7 @@ import { CharacterSheetRepository } from "@application/features/character-sheet/
 import { CharacterSheetPdfGenerator } from "@application/features/character-sheet/abstractions/services/CharacterSheetPdfGenerator";
 import { ReferenceRepository } from "@application/features/reference/abstractions/repositories/ReferenceRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
+import { PeupleStatBonusRepository } from "@application/features/reference/abstractions/repositories/PeupleStatBonusRepository";
 import { SheetReferenceLinkRepository } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 import { GroupAccessService } from "@application/features/friend-group/abstractions/services/GroupAccessService";
 import { RealtimeNotifier } from "@application/features/realtime/abstractions/RealtimeNotifier";
@@ -28,6 +29,7 @@ export interface CharacterSheetControllerDeps {
   readonly peupleRepository: ReferenceRepository;
   readonly competenceRepository: ReferenceRepository;
   readonly formationCompetenceLinkRepository: FormationCompetenceLinkRepository;
+  readonly peupleStatBonusLinkRepository: PeupleStatBonusRepository;
   /** Liaisons fiche ↔ éléments (noms des armes/armures/compétences/équipements/sorts/miracles liés, pour le PDF). */
   readonly sheetArmesRepository: SheetReferenceLinkRepository;
   readonly sheetArmuresRepository: SheetReferenceLinkRepository;
@@ -82,6 +84,7 @@ export function buildCharacterSheetController(
       peupleRepository: deps.peupleRepository,
       competenceRepository: deps.competenceRepository,
       formationCompetenceLink: deps.formationCompetenceLinkRepository,
+      peupleStatBonusLink: deps.peupleStatBonusLinkRepository,
       sheetArmures: deps.sheetArmuresRepository,
       groupAccessService: deps.groupAccessService,
       logger: deps.logger,
@@ -134,9 +137,10 @@ export function buildCharacterSheetExportController(
       peupleRepository: deps.peupleRepository,
       competenceRepository: deps.competenceRepository,
       formationCompetenceLink: deps.formationCompetenceLinkRepository,
+      peupleStatBonusLink: deps.peupleStatBonusLinkRepository,
       sheetArmes: deps.sheetArmesRepository,
       sheetArmures: deps.sheetArmuresRepository,
-      sheetCompetences: deps.sheetCompetencesRepository,
+      // Pas de `sheetCompetences` : les compétences du PDF sont dérivées de la formation.
       sheetEquipements: deps.sheetEquipementsRepository,
       sheetSorts: deps.sheetSortsRepository,
       sheetMiracles: deps.sheetMiraclesRepository,

@@ -3,6 +3,7 @@ import { CredentialRepository } from "@application/features/auth/abstractions/re
 import { RefreshTokenRepository } from "@application/features/auth/abstractions/repositories/RefreshTokenRepository";
 import { CampaignRepository } from "@application/features/campaign/abstractions/repositories/CampaignRepository";
 import { SessionRepository } from "@application/features/session/abstractions/repositories/SessionRepository";
+import { SessionParticipantRepository } from "@application/features/session/abstractions/repositories/SessionParticipantRepository";
 import { CharacterSheetRepository } from "@application/features/character-sheet/abstractions/repositories/CharacterSheetRepository";
 import {
   ArmeRepository,
@@ -23,6 +24,7 @@ import {
   SheetSortLinkRepository,
 } from "@application/features/reference/abstractions/repositories/SheetReferenceLinkRepository";
 import { FormationCompetenceLinkRepository } from "@application/features/reference/abstractions/repositories/FormationCompetenceLinkRepository";
+import { PeupleStatBonusRepository } from "@application/features/reference/abstractions/repositories/PeupleStatBonusRepository";
 import { FriendGroupRepository } from "@application/features/friend-group/abstractions/repositories/FriendGroupRepository";
 import { GroupMemberRepository } from "@application/features/friend-group/abstractions/repositories/GroupMemberRepository";
 import { GroupInvitationRepository } from "@application/features/friend-group/abstractions/repositories/GroupInvitationRepository";
@@ -39,6 +41,7 @@ export interface TransactionalRepositories {
   readonly refreshTokens: RefreshTokenRepository;
   readonly campaigns: CampaignRepository;
   readonly sessions: SessionRepository;
+  readonly sessionParticipants: SessionParticipantRepository;
   readonly characterSheets: CharacterSheetRepository;
   // Catalogues d'éléments de référence (un par type).
   readonly formations: FormationRepository;
@@ -58,6 +61,8 @@ export interface TransactionalRepositories {
   readonly sheetMiracles: SheetMiracleLinkRepository;
   // Liaison N‑N formation ↔ compétences.
   readonly formationCompetences: FormationCompetenceLinkRepository;
+  // Bonus de statistique d'un peuple (0..N, au plus un par stat).
+  readonly peupleStatBonuses: PeupleStatBonusRepository;
   // Groupes d'amis.
   readonly friendGroups: FriendGroupRepository;
   readonly groupMembers: GroupMemberRepository;

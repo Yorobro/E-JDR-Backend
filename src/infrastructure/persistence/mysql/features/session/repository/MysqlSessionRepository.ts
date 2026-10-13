@@ -30,6 +30,8 @@ export class MysqlSessionRepository implements SessionRepository {
       id: session.id,
       title: session.title.value,
       date: session.date,
+      status: session.status.value,
+      started_at: session.startedAt,
     });
   }
 
